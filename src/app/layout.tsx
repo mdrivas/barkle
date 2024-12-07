@@ -5,7 +5,6 @@ import { type Metadata } from "next";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "~/components/ui/toaster";
-import { NavigationBar } from "./components/NavigationBar";
 import { AuthProvider } from "./components/AuthProvider";
 import { Suspense } from "react";
 
@@ -25,7 +24,6 @@ export default function RootLayout({
           <Toaster />
           <TRPCReactProvider>
             <Suspense>
-              <NavigationBar />
               {children}
             </Suspense>
           </TRPCReactProvider>
