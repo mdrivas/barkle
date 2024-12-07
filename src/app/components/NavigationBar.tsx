@@ -11,16 +11,14 @@ export function NavigationBar() {
 
   return (
     <nav className="w-full bg-gradient-to-br from-[#1a1a1b] to-[#121213] border-b border-green-900/30">
-      {/* Main navigation content */}
       <div className="max-w-7xl mx-auto">
-        {/* Top links row */}
-        <div className="w-full px-4 py-2 flex justify-end gap-4 text-xs text-green-500">
+        <div className="w-full px-3 py-1.5 flex justify-end gap-2 text-[10px] text-green-500">
           <Link href="/privacy" className="hover:text-green-400 transition-colors">
-            Privacy Policy
+            Privacy
           </Link>
           <span className="text-green-800">|</span>
           <Link href="/terms" className="hover:text-green-400 transition-colors">
-            Terms of Service
+            Terms
           </Link>
           <span className="text-green-800">|</span>
           <FAQSheet />

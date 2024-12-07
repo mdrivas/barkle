@@ -19,7 +19,7 @@ export function LeaderboardModal() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button 
-          className="w-full py-7 text-xl font-bold bg-gradient-to-br from-zinc-700 to-zinc-800 hover:from-zinc-600 hover:to-zinc-700 text-white rounded-2xl shadow-lg transform transition-all active:scale-95 border border-zinc-600/20"
+          className="flex-1 py-3 text-sm font-semibold bg-zinc-600 hover:bg-zinc-500 text-white rounded-full shadow-lg"
         >
           LEADERBOARD
         </Button>

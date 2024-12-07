@@ -18,7 +18,7 @@ export function GameModeModal() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button 
-          className="w-full py-7 text-xl font-bold bg-gradient-to-br from-[#4A6741] to-[#3d5635] hover:from-[#3d5635] hover:to-[#2f422a] text-white rounded-2xl shadow-lg transform transition-all active:scale-95 border border-green-800/20"
+          className="flex-1 py-3 text-sm font-semibold bg-[#58A84D] hover:bg-[#4A9341] text-white rounded-full shadow-lg"
         >
           PLAY
         </Button>

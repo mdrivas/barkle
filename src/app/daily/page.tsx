@@ -9,6 +9,7 @@ import { GameFinishedDialog } from "./components/GameFinishedDialog";
 import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
+import Link from "next/link";
 
 interface DogBreed {
   breed: string;
@@ -116,11 +117,17 @@ export default function DailyGame() {
     void fetchNewRound();
   }, [fetchNewRound]);
 
+  // Add state to track correct/incorrect answers
+  const [questionResults, setQuestionResults] = useState<Array<boolean>>([]);
+
   const handleGuess = (selectedBreed: string) => {
     if (!gameState.currentBreed || gameState.gameOver) return;
 
     const isCorrect = selectedBreed === gameState.currentBreed.breed;
     setAnsweredBreed(selectedBreed);
+    
+    // Add result to questionResults
+    setQuestionResults(prev => [...prev, isCorrect]);
 
     const newGuessesRemaining = gameState.guessesRemaining - 1;
     const isGameOver = newGuessesRemaining === 0;
@@ -185,33 +192,41 @@ export default function DailyGame() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">
       <div className="container max-w-4xl mx-auto">
-        <Button
-          onClick={() => {
-            setGameState(prev => ({
-              ...prev,
-              gameOver: true,
-              guessesRemaining: 0
-            }));
-          }}
-          className="mb-4 bg-red-500 hover:bg-red-600"
-        >
-          Test Game Over
-        </Button>
-
         <div className="text-center mb-8 space-y-4">
-          <h1 className="text-5xl font-bold tracking-tight text-[#F9F8E4]">
-            Barkle<span className="text-[#538D4E]">?</span>
-          </h1>
-          <div className="inline-flex items-center justify-center gap-4">
-            <div className="px-4 py-2 rounded-full bg-zinc-900/50 backdrop-blur-sm border border-zinc-800">
-              <p className="text-xl text-[#538D4E] font-medium">
-                Score: <span className="text-zinc-100 ">{gameState.score}</span>
-              </p>
+          <Link href="/">
+            <h1 className="text-5xl font-bold tracking-tight text-[#F9F8E4] hover:text-[#538D4E] transition-colors cursor-pointer">
+              Barkle
+            </h1>
+          </Link>
+          
+          {/* Modern Score Display */}
+          <div className="inline-flex items-center justify-center gap-2 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-3 border border-zinc-800">
+            <div className="flex items-center gap-3">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-6 h-8 rounded-full transition-all duration-300 relative flex items-center justify-center",
+                    {
+                      "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20": 
+                        questionResults[i] === true,
+                      "bg-gradient-to-b from-red-500 to-red-600 shadow-lg shadow-red-500/20":
+                        questionResults[i] === false,
+                      "bg-zinc-800":
+                        questionResults[i] === undefined
+                    }
+                  )}
+                >
+                  <span className="text-[10px] text-white/90">
+                    {questionResults[i] === true && "🐕"}
+                    {questionResults[i] === false && "😢"}
+                    {questionResults[i] === undefined && "🐾"}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="px-4 py-2 rounded-full bg-zinc-900/50 backdrop-blur-sm border border-zinc-800">
-              <p className="text-xl text-amber-400 font-medium">
-                Guesses: <span className="text-zinc-100">{gameState.guessesRemaining}</span>
-              </p>
+            <div className="text-xl font-bold text-zinc-400 pl-4 border-l border-zinc-800">
+              {gameState.score}/5
             </div>
           </div>
         </div>

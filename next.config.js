@@ -11,6 +11,11 @@ const config = {
       {
         protocol: 'https',
         hostname: 'images.dog.ceo'
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/a/**'
       }
     ]
   }
