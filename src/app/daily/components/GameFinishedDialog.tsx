@@ -9,6 +9,8 @@ import {
 import { useSession, signIn } from "next-auth/react";
 import { GoogleLogo } from "~/components/icons";
 import { api } from "~/trpc/react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "~/components/ui/tooltip";
+import { cn } from "~/lib/utils";
 
 interface GameFinishedDialogProps {
   isOpen: boolean;
@@ -78,30 +80,75 @@ export function GameFinishedDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-zinc-900 border-zinc-800">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-zinc-50">
+          <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
             {score > 0 ? "Congratulations! 🎉" : "Game Over! 🐾"}
           </DialogTitle>
         </DialogHeader>
         
         <div className="flex flex-col gap-4 items-center mt-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-emerald-500 mb-2">
+              {score} Points! 🐾
+            </p>
+            <p className="text-gray-300">
+              {score > 0 
+                ? "You're off to an amazing start!" 
+                : "Don't worry, every dog has its day!"}
+            </p>
+          </div>
+
           {session ? (
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 text-lg"
-            >
-              Play Again Tomorrow
-            </Button>
+            <div className="flex flex-col gap-4 w-full">
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 text-lg"
+              >
+                Play Again Tomorrow
+              </Button>
+              <Button
+                variant="outline"
+                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              >
+                View Leaderboard
+              </Button>
+            </div>
           ) : (
             <>
-              <p className="text-gray-300">
-                Sign in to keep track of your progress and save your high scores!
-              </p>
-              <button
-                onClick={handleSignIn}
-                className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-2 hover:bg-gray-50 w-full"
-              >
-                <GoogleLogo />
-                Continue with Google
-              </button>
+              <div className="space-y-3 text-center">
+                <p className="text-gray-300">
+                  Join the pack of top players!
+                </p>
+                <ul className="text-sm text-gray-400">
+                  <li>✓ Save your scores and track progress</li>
+                  <li>✓ Compete on the leaderboard</li>
+                  <li>✓ Build your winning streak</li>
+                </ul>
+              </div>
+
+              <div className="flex flex-col gap-3 w-full">
+                <button
+                  onClick={handleSignIn}
+                  className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-2 hover:bg-gray-50 w-full"
+                >
+                  <GoogleLogo />
+                  Continue with Google
+                </button>
+                <Tooltip delayDuration={100}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline" 
+                      className={cn(
+                        "border-zinc-700 text-zinc-300",
+                        "cursor-not-allowed opacity-70"
+                      )}
+                    >
+                      View Leaderboard
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={8}>
+                    <p>Sign in to view and compete!</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </>
           )}
         </div>

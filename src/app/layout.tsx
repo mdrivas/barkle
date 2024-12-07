@@ -8,6 +8,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "~/components/ui/toaster";
 import { AuthProvider } from "./components/AuthProvider";
 import { Suspense } from "react";
+import { TooltipProvider } from "~/components/ui/tooltip"
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -27,14 +28,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable} ${poppins.variable}`}>
       <body>
-        <AuthProvider>
-          <Toaster />
-          <TRPCReactProvider>
-            <Suspense>
-              {children}
-            </Suspense>
-          </TRPCReactProvider>
-        </AuthProvider>
+        <TooltipProvider>
+          <AuthProvider>
+            <Toaster />
+            <TRPCReactProvider>
+              <Suspense>
+                {children}
+              </Suspense>
+            </TRPCReactProvider>
+          </AuthProvider>
+        </TooltipProvider>
       </body>
     </html>
   );
