@@ -64,3 +64,40 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes medal-shine {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 200%;
+  }
+}
+
+.animate-medal-shine {
+  animation: medal-shine 8s linear infinite;
+}
+
+.bg-gold {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.5) 25%, rgba(184, 134, 11, 0.5) 25%, rgba(255, 215, 0, 0.5) 50%, rgba(184, 134, 11, 0.5) 50%, rgba(255, 215, 0, 0.5) 75%, rgba(184, 134, 11, 0.5) 75%, rgba(255, 215, 0, 0.5));
+  background-size: 200% 200%;
+}
+
+.bg-silver {
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.5) 25%, rgba(128, 128, 128, 0.5) 25%, rgba(192, 192, 192, 0.5) 50%, rgba(128, 128, 128, 0.5) 50%, rgba(192, 192, 192, 0.5) 75%, rgba(128, 128, 128, 0.5) 75%, rgba(192, 192, 192, 0.5));
+  background-size: 200% 200%;
+}
+
+.bg-bronze {
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.5) 25%, rgba(139, 69, 19, 0.5) 25%, rgba(205, 127, 50, 0.5) 50%, rgba(139, 69, 19, 0.5) 50%, rgba(205, 127, 50, 0.5) 75%, rgba(139, 69, 19, 0.5) 75%, rgba(205, 127, 50, 0.5));
+  background-size: 200% 200%;
+}

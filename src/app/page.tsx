@@ -1,22 +1,24 @@
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { NavigationBar } from "./components/NavigationBar";
+import { LeaderboardModal } from "./components/LeaderboardModal";
 import Image from "next/image";
 import Link from "next/link";
+import { GameModeModal } from "./components/GameModeModal";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center bg-black text-white">
+    <main className="flex min-h-screen flex-col items-center bg-gradient-to-br from-[#1a1a1b] to-[#121213] text-zinc-50">
       <NavigationBar />
 
       {/* Main Content */}
-      <div className="flex flex-col items-center justify-center gap-6 px-4 py-8 max-w-md mx-auto w-full">
+      <div className="flex flex-col items-center justify-center gap-4 px-4 py-8 max-w-md mx-auto w-full">
         {/* Logo */}
-        <div className="w-72 h-72 relative">
+        <div className="w-72 h-72 relative mb-2">
           <Image
             src="/barklelogo.png"
             alt="Barkle Logo"
-            width={384}  // 24 * 4 to ensure high quality
+            width={384}
             height={384}
             priority
             className="rounded-full"
@@ -24,7 +26,7 @@ export default function Home() {
         </div>
 
         {/* Title */}
-        <h1 className="text-4xl font-bold tracking-wider">BARKLE</h1>
+        <h1 className="text-4xl font-bold tracking-wider -mt-2">BARKLE</h1>
 
         {/* Description */}
         <p className="text-center text-lg px-6">
@@ -33,26 +35,14 @@ export default function Home() {
 
         {/* Buttons */}
         <div className="flex flex-col gap-4 w-full px-6">
-          <Link href="/daily" className="w-full">
-            <Button 
-              className="w-full py-6 text-xl font-semibold bg-[#4A6741] hover:bg-[#3d5635] text-white rounded-md"
-            >
-              PLAY
-            </Button>
-          </Link>
-          
-          <Button 
-            variant="secondary"
-            className="w-full py-6 text-xl font-semibold bg-gray-700 hover:bg-gray-600 text-white rounded-md"
-          >
-            LEADERBOARD
-          </Button>
+          <GameModeModal />
+          <LeaderboardModal />
         </div>
 
         {/* Games Counter */}
-        <Card className="bg-[#C4A484] text-black px-6 py-3 rounded-full mt-4">
+        <Card className="bg-gradient-to-r from-[#C4A484] to-[#B08968] text-black px-6 py-3 rounded-full mt-4">
           <p className="text-sm font-medium">
-          🐾 163232 Games Played Today 🐾
+            🐾 163232 Games Played Today 🐾
           </p>
         </Card>
       </div>
