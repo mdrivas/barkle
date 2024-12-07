@@ -1,8 +1,8 @@
 import {
   relations,
   sql,
-  InferSelectModel,
-  InferInsertModel,
+  type InferSelectModel,
+  type InferInsertModel,
 } from "drizzle-orm";
 import {
   index,

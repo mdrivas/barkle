@@ -3,8 +3,7 @@
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { useToast } from "~/hooks/use-toast";
-import { cn } from "~/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 
 interface DogBreed {
@@ -41,11 +40,7 @@ export default function DailyGame() {
 
   const { toast } = useToast();
 
-  useEffect(() => {
-    void fetchNewRound();
-  }, []);
-
-  const fetchNewRound = async () => {
+  const fetchNewRound = useCallback(async () => {
     try {
       setGameState(prev => ({ ...prev, isLoading: true }));
 
@@ -95,7 +90,12 @@ export default function DailyGame() {
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    void fetchNewRound();
+  }, [fetchNewRound]);
+
 
   const handleGuess = (selectedBreed: string) => {
     if (!gameState.currentBreed) return;
