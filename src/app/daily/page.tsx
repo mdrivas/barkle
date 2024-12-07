@@ -8,6 +8,7 @@ import Image from "next/image";
 import { GameFinishedDialog } from "./components/GameFinishedDialog";
 import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
+import { cn } from "~/lib/utils";
 
 interface DogBreed {
   breed: string;
@@ -47,6 +48,7 @@ export default function DailyGame() {
 
   const { toast } = useToast();
 
+  const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
 
   //TODO: call trpc method to check if user can play today, if user cannot play today, pop up modal saying you cannot play any more today
 
@@ -118,6 +120,8 @@ export default function DailyGame() {
     if (!gameState.currentBreed || gameState.gameOver) return;
 
     const isCorrect = selectedBreed === gameState.currentBreed.breed;
+    setAnsweredBreed(selectedBreed);
+
     const newGuessesRemaining = gameState.guessesRemaining - 1;
     const isGameOver = newGuessesRemaining === 0;
     
@@ -147,7 +151,10 @@ export default function DailyGame() {
 
     // Fetch next round after delay if not game over
     if (!isGameOver) {
-      setTimeout(() => void fetchNewRound(), 1500);
+      setTimeout(() => {
+        setAnsweredBreed(null);
+        void fetchNewRound();
+      }, 1500);
     }
   };
 
@@ -192,13 +199,13 @@ export default function DailyGame() {
         </Button>
 
         <div className="text-center mb-8 space-y-4">
-          <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-            Guess the Dog Breed!
+          <h1 className="text-5xl font-bold tracking-tight text-[#F9F8E4]">
+            Barkle<span className="text-[#538D4E]">?</span>
           </h1>
           <div className="inline-flex items-center justify-center gap-4">
             <div className="px-4 py-2 rounded-full bg-zinc-900/50 backdrop-blur-sm border border-zinc-800">
-              <p className="text-xl text-emerald-400 font-medium">
-                Score: <span className="text-zinc-100">{gameState.score}</span>
+              <p className="text-xl text-[#538D4E] font-medium">
+                Score: <span className="text-zinc-100 ">{gameState.score}</span>
               </p>
             </div>
             <div className="px-4 py-2 rounded-full bg-zinc-900/50 backdrop-blur-sm border border-zinc-800">
@@ -226,8 +233,25 @@ export default function DailyGame() {
             <Button
               key={breed}
               onClick={() => handleGuess(breed)}
-              disabled={gameState.gameOver}
-              className="p-6 text-lg capitalize bg-zinc-900/50 hover:bg-zinc-800/50 text-zinc-100 border border-zinc-800 hover:border-emerald-500/50 transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50"
+              disabled={gameState.gameOver || answeredBreed !== null}
+              className={cn(
+                // Base styles that apply to all states
+                "p-6 text-lg uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-zinc-800",
+                {
+                  // Default state - only add hover effect
+                  "hover:border-emerald-500/50": 
+                    !answeredBreed,
+                  // Correct answer
+                  "border-green-500 text-green-500": 
+                    answeredBreed && breed === gameState.currentBreed?.breed,
+                  // Wrong answer selected
+                  "border-red-500 text-red-500 !text-red-500": // Added !text-red-500 to force text color
+                    answeredBreed === breed && breed !== gameState.currentBreed?.breed,
+                  // Other options when answer is selected
+                  "opacity-0": 
+                    answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
+                }
+              )}
               variant="outline"
             >
               {breed.replace('-', ' ')}
