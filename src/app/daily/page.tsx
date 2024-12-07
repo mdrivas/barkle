@@ -1,8 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+"use client";
+
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { useToast } from "~/hooks/use-toast";
+import { cn } from "~/lib/utils";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface DogBreed {
   breed: string;
@@ -17,6 +20,16 @@ interface GameState {
   totalGuesses: number;
 }
 
+interface BreedsResponse {
+  message: Record<string, string[]>;
+  status: string;
+}
+
+interface ImageResponse {
+  message: string;
+  status: string;
+}
+
 export default function DailyGame() {
   const [gameState, setGameState] = useState<GameState>({
     currentBreed: null,
@@ -29,7 +42,7 @@ export default function DailyGame() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchNewRound();
+    void fetchNewRound();
   }, []);
 
   const fetchNewRound = async () => {
@@ -38,7 +51,7 @@ export default function DailyGame() {
 
       // Fetch list of all breeds
       const breedsResponse = await fetch('https://dog.ceo/api/breeds/list/all');
-      const breedsData = await breedsResponse.json();
+      const breedsData = (await breedsResponse.json()) as BreedsResponse;
       const allBreeds = Object.keys(breedsData.message);
 
       // Select random breed for correct answer
@@ -46,19 +59,23 @@ export default function DailyGame() {
 
       // Fetch random image for correct breed
       const imageResponse = await fetch(`https://dog.ceo/api/breed/${correctBreed}/images/random`);
-      const imageData = await imageResponse.json();
+      const imageData = (await imageResponse.json()) as ImageResponse;
 
       // Generate 3 wrong options
       const wrongOptions = new Set<string>();
       while (wrongOptions.size < 3) {
         const wrongBreed = allBreeds[Math.floor(Math.random() * allBreeds.length)];
-        if (wrongBreed !== correctBreed) {
+        if (wrongBreed && wrongBreed !== correctBreed) {
           wrongOptions.add(wrongBreed);
         }
       }
 
       // Combine and shuffle options
-      const options = [...wrongOptions, correctBreed].sort(() => Math.random() - 0.5);
+      const options = [...wrongOptions, correctBreed]
+        .filter((breed): breed is string => breed !== undefined)
+        .sort(() => Math.random() - 0.5);
+
+      if (!correctBreed) throw new Error("No breed selected");
 
       setGameState(prev => ({
         ...prev,
@@ -100,7 +117,7 @@ export default function DailyGame() {
     });
 
     // Fetch next round after short delay
-    setTimeout((fetchNewRound, 1500);
+    setTimeout(() => void fetchNewRound(), 1500);
   };
 
   if (gameState.isLoading) {
@@ -122,9 +139,11 @@ export default function DailyGame() {
 
       {gameState.currentBreed && (
         <Card className="overflow-hidden mb-8">
-          <img
+          <Image
             src={gameState.currentBreed.imageUrl}
             alt="Mystery dog"
+            width={800}
+            height={400}
             className="w-full h-[400px] object-cover"
           />
         </Card>
