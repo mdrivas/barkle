@@ -139,3 +139,14 @@ export const verificationTokens = createTable(
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
   }),
 );
+
+export const scores = createTable("scores", {
+  id: serial("id").primaryKey(),
+  score: integer("score").notNull(),
+  userId: varchar("user_id", { length: 255 })
+    .references(() => users.id),
+  tempId: varchar("temp_id", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
