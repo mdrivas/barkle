@@ -3,8 +3,15 @@
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { useToast } from "~/hooks/use-toast";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 
 interface DogBreed {
   breed: string;
@@ -16,7 +23,8 @@ interface GameState {
   options: string[];
   isLoading: boolean;
   score: number;
-  totalGuesses: number;
+  guessesRemaining: number;
+  gameOver: boolean;
 }
 
 interface BreedsResponse {
@@ -35,10 +43,19 @@ export default function DailyGame() {
     options: [],
     isLoading: true,
     score: 0,
-    totalGuesses: 0
+    guessesRemaining: 5,
+    gameOver: false
   });
 
   const { toast } = useToast();
+
+  const happyBarkRef = useRef<HTMLAudioElement | null>(null);
+  const angryBarkRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    happyBarkRef.current = new Audio('/happy_bark.mp3');
+    angryBarkRef.current = new Audio('/angry_bark.mp3');
+  }, []);
 
   const fetchNewRound = useCallback(async () => {
     try {
@@ -98,69 +115,118 @@ export default function DailyGame() {
 
 
   const handleGuess = (selectedBreed: string) => {
-    if (!gameState.currentBreed) return;
+    if (!gameState.currentBreed || gameState.gameOver) return;
 
     const isCorrect = selectedBreed === gameState.currentBreed.breed;
+    const newGuessesRemaining = gameState.guessesRemaining - 1;
+    const isGameOver = newGuessesRemaining === 0;
     
+    if (isCorrect) {
+      happyBarkRef.current?.play().catch(console.error);
+    } else {
+      angryBarkRef.current?.play().catch(console.error);
+    }
+
     setGameState(prev => ({
       ...prev,
       score: isCorrect ? prev.score + 1 : prev.score,
-      totalGuesses: prev.totalGuesses + 1
+      guessesRemaining: newGuessesRemaining,
+      gameOver: isGameOver
     }));
 
     toast({
       title: isCorrect ? "Correct!" : "Wrong!",
       description: isCorrect 
         ? "Good job! That's the right breed!"
-        : `Sorry, it was a ${gameState.currentBreed.breed}`,
-      variant: isCorrect ? "default" : "destructive"
+        : `Sorry, it was a ${gameState.currentBreed.breed}. ${newGuessesRemaining} guesses remaining`,
+      variant: isCorrect ? "default" : "destructive",
+      duration: 2000
     });
 
-    // Fetch next round after short delay
-    setTimeout(() => void fetchNewRound(), 1500);
+    // Always fetch next round after a short delay if not game over
+    if (!isGameOver) {
+      setTimeout(() => void fetchNewRound(), 1500);
+    }
   };
 
   if (gameState.isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
+      <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-emerald-500" />
       </div>
     );
   }
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-2">Guess the Dog Breed!</h1>
-        <p className="text-xl text-gray-600">
-          Score: {gameState.score} / {gameState.totalGuesses}
-        </p>
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">
+      <div className="container max-w-4xl mx-auto">
+        <div className="text-center mb-8 space-y-4">
+          <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+            Guess the Dog Breed!
+          </h1>
+          <div className="inline-flex items-center justify-center gap-4">
+            <div className="px-4 py-2 rounded-full bg-zinc-900/50 backdrop-blur-sm border border-zinc-800">
+              <p className="text-xl text-emerald-400 font-medium">
+                Score: <span className="text-zinc-100">{gameState.score}</span>
+              </p>
+            </div>
+            <div className="px-4 py-2 rounded-full bg-zinc-900/50 backdrop-blur-sm border border-zinc-800">
+              <p className="text-xl text-amber-400 font-medium">
+                Guesses: <span className="text-zinc-100">{gameState.guessesRemaining}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {gameState.currentBreed && (
+          <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+            <Image
+              src={gameState.currentBreed.imageUrl}
+              alt="Mystery dog"
+              width={800}
+              height={400}
+              className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
+            />
+          </Card>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          {gameState.options.map((breed) => (
+            <Button
+              key={breed}
+              onClick={() => handleGuess(breed)}
+              disabled={gameState.gameOver}
+              className="p-6 text-lg capitalize bg-zinc-900/50 hover:bg-zinc-800/50 text-zinc-100 border border-zinc-800 hover:border-emerald-500/50 transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50"
+              variant="outline"
+            >
+              {breed.replace('-', ' ')}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {gameState.currentBreed && (
-        <Card className="overflow-hidden mb-8">
-          <Image
-            src={gameState.currentBreed.imageUrl}
-            alt="Mystery dog"
-            width={800}
-            height={400}
-            className="w-full h-[400px] object-cover"
-          />
-        </Card>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        {gameState.options.map((breed) => (
-          <Button
-            key={breed}
-            onClick={() => handleGuess(breed)}
-            className="p-4 text-lg capitalize"
-            variant="outline"
-          >
-            {breed.replace('-', ' ')}
-          </Button>
-        ))}
-      </div>
+      <Dialog open={gameState.gameOver} onOpenChange={() => {}}>
+        <DialogContent className="bg-zinc-900 border-zinc-800">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-zinc-50">
+              {gameState.score > 0 ? "Congratulations! 🎉" : "Game Over! 🐾"}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 text-lg">
+              {gameState.score > 0 
+                ? "You correctly identified the dog breed!"
+                : `The correct breed was: ${gameState.currentBreed?.breed}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center mt-4">
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 text-lg"
+            >
+              Play Again Tomorrow
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
