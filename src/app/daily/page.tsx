@@ -47,6 +47,9 @@ export default function DailyGame() {
 
   const { toast } = useToast();
 
+
+  //TODO: call trpc method to check if user can play today, if user cannot play today, pop up modal saying you cannot play any more today
+
   const happyBarkRef = useRef<HTMLAudioElement | null>(null);
   const angryBarkRef = useRef<HTMLAudioElement | null>(null);
 

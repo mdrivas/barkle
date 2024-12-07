@@ -4,6 +4,10 @@ import { scores } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
+
+
+//TODO: if the user logs in and already has a score today, do not save the score and do not let them play again today
+
 export const scoreRouter = createTRPCRouter({
   saveScore: publicProcedure
     .input(z.object({ 
@@ -42,4 +46,7 @@ export const scoreRouter = createTRPCRouter({
 
       return { success: true };
     }),
+
+
+    //TODO: make a query here to check if user can play today, call database get scores by user within the last 24 hours, if there are any, return false, otherwise return true
 }); 
