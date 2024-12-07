@@ -5,13 +5,9 @@ import { Card } from "~/components/ui/card";
 import { useToast } from "~/hooks/use-toast";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "~/components/ui/dialog";
+import { GameFinishedDialog } from "./components/GameFinishedDialog";
+import { useSession } from "next-auth/react";
+import { api } from "~/trpc/react";
 
 interface DogBreed {
   breed: string;
@@ -38,6 +34,8 @@ interface ImageResponse {
 }
 
 export default function DailyGame() {
+  const { data: session } = useSession();
+
   const [gameState, setGameState] = useState<GameState>({
     currentBreed: null,
     options: [],
@@ -113,7 +111,6 @@ export default function DailyGame() {
     void fetchNewRound();
   }, [fetchNewRound]);
 
-
   const handleGuess = (selectedBreed: string) => {
     if (!gameState.currentBreed || gameState.gameOver) return;
 
@@ -127,9 +124,11 @@ export default function DailyGame() {
       angryBarkRef.current?.play().catch(console.error);
     }
 
+    const newScore = isCorrect ? gameState.score + 1 : gameState.score;
+
     setGameState(prev => ({
       ...prev,
-      score: isCorrect ? prev.score + 1 : prev.score,
+      score: newScore,
       guessesRemaining: newGuessesRemaining,
       gameOver: isGameOver
     }));
@@ -143,9 +142,25 @@ export default function DailyGame() {
       duration: 2000
     });
 
-    // Always fetch next round after a short delay if not game over
+    // Fetch next round after delay if not game over
     if (!isGameOver) {
       setTimeout(() => void fetchNewRound(), 1500);
+    }
+  };
+
+  const handleGameFinishedClose = () => {
+    // Only reset the game if the user is authenticated
+    if (session?.user) {
+      setGameState(prev => ({
+        ...prev,
+        currentBreed: null,
+        options: [],
+        isLoading: true,
+        score: 0,
+        guessesRemaining: 5,
+        gameOver: false
+      }));
+      void fetchNewRound();
     }
   };
 
@@ -160,6 +175,19 @@ export default function DailyGame() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">
       <div className="container max-w-4xl mx-auto">
+        <Button
+          onClick={() => {
+            setGameState(prev => ({
+              ...prev,
+              gameOver: true,
+              guessesRemaining: 0
+            }));
+          }}
+          className="mb-4 bg-red-500 hover:bg-red-600"
+        >
+          Test Game Over
+        </Button>
+
         <div className="text-center mb-8 space-y-4">
           <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
             Guess the Dog Breed!
@@ -205,28 +233,11 @@ export default function DailyGame() {
         </div>
       </div>
 
-      <Dialog open={gameState.gameOver} onOpenChange={() => {}}>
-        <DialogContent className="bg-zinc-900 border-zinc-800">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-zinc-50">
-              {gameState.score > 0 ? "Congratulations! 🎉" : "Game Over! 🐾"}
-            </DialogTitle>
-            <DialogDescription className="text-zinc-400 text-lg">
-              {gameState.score > 0 
-                ? "You correctly identified the dog breed!"
-                : `The correct breed was: ${gameState.currentBreed?.breed}`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-center mt-4">
-            <Button
-              onClick={() => window.location.reload()}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 text-lg"
-            >
-              Play Again Tomorrow
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <GameFinishedDialog 
+        isOpen={gameState.gameOver}
+        score={gameState.score}
+        onClose={handleGameFinishedClose}
+      />
     </div>
   );
 }
