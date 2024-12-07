@@ -55,7 +55,39 @@ export default {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			}
-  		}
+  		},
+  		keyframes: {
+  			'accordion-down': {
+  				from: { height: '0' },
+  				to: { height: 'var(--radix-accordion-content-height)' }
+  			},
+  			'accordion-up': {
+  				from: { height: 'var(--radix-accordion-content-height)' },
+  				to: { height: '0' }
+  			},
+        'shimmer': {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' }
+        },
+        'medal-shine': {
+          '0%': { backgroundPosition: '0% 0%' },
+          '100%': { backgroundPosition: '200% 200%' }
+        }
+  		},
+  		animation: {
+  			'accordion-down': 'accordion-down 0.2s ease-out',
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+        'shimmer': 'shimmer 3s linear infinite',
+        'medal-shine': 'medal-shine 8s linear infinite'
+  		},
+      backgroundImage: {
+        'gold-gradient': 'linear-gradient(135deg, rgba(255, 215, 0, 0.5) 25%, rgba(184, 134, 11, 0.5) 25%, rgba(255, 215, 0, 0.5) 50%, rgba(184, 134, 11, 0.5) 50%, rgba(255, 215, 0, 0.5) 75%, rgba(184, 134, 11, 0.5) 75%, rgba(255, 215, 0, 0.5))',
+        'silver-gradient': 'linear-gradient(135deg, rgba(192, 192, 192, 0.5) 25%, rgba(128, 128, 128, 0.5) 25%, rgba(192, 192, 192, 0.5) 50%, rgba(128, 128, 128, 0.5) 50%, rgba(192, 192, 192, 0.5) 75%, rgba(128, 128, 128, 0.5) 75%, rgba(192, 192, 192, 0.5))',
+        'bronze-gradient': 'linear-gradient(135deg, rgba(205, 127, 50, 0.5) 25%, rgba(139, 69, 19, 0.5) 25%, rgba(205, 127, 50, 0.5) 50%, rgba(139, 69, 19, 0.5) 50%, rgba(205, 127, 50, 0.5) 75%, rgba(139, 69, 19, 0.5) 75%, rgba(205, 127, 50, 0.5))'
+      },
+      backgroundSize: {
+        '200': '200% 200%',
+      },
   	}
   },
   plugins: [require("tailwindcss-animate")],
