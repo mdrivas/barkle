@@ -26,6 +26,7 @@ interface GameState {
   score: number;
   guessesRemaining: number;
   gameOver: boolean;
+  hasSavedScore: boolean;
 }
 
 interface BreedsResponse {
@@ -104,7 +105,8 @@ export default function DailyGame() {
     isLoading: true,
     score: 0,
     guessesRemaining: 5,
-    gameOver: false
+    gameOver: false,
+    hasSavedScore: false
   });
 
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
@@ -180,56 +182,62 @@ export default function DailyGame() {
   // Add the mutation hook at component level
   const saveScoreMutation = api.score.saveScore.useMutation();
 
-  const handleGuess = (selectedBreed: string) => {
-    if (!gameState.currentBreed || gameState.gameOver) return;
+  const handleGuess = async (breed: string) => {
+    if (gameState.isLoading || gameState.gameOver) return;
 
-    const isCorrect = selectedBreed === gameState.currentBreed.breed;
-    setAnsweredBreed(selectedBreed);
-    
-    // Add result to questionResults
+    const isCorrect = breed === gameState.currentBreed?.breed;
+    const newScore = isCorrect ? gameState.score + 1 : gameState.score;
+    const newGuessesRemaining = gameState.guessesRemaining - 1;
+    const newGameOver = newGuessesRemaining === 0;
+
+    // Update game state
+    setGameState(prev => ({
+      ...prev,
+      score: newScore,
+      guessesRemaining: newGuessesRemaining,
+      gameOver: newGameOver,
+    }));
+
+    setAnsweredBreed(breed);
     setQuestionResults(prev => [...prev, isCorrect]);
 
-    const newGuessesRemaining = gameState.guessesRemaining - 1;
-    const isGameOver = newGuessesRemaining === 0;
-    
+    // Play sound effects
     if (isCorrect) {
       happyBarkRef.current?.play().catch(console.error);
     } else {
       angryBarkRef.current?.play().catch(console.error);
     }
 
-    const newScore = isCorrect ? gameState.score + 1 : gameState.score;
-
-    setGameState(prev => ({
-      ...prev,
-      score: newScore,
-      guessesRemaining: newGuessesRemaining,
-      gameOver: isGameOver
-    }));
-
+    // Show feedback toast
     toast({
       title: isCorrect ? "Correct!" : "Wrong!",
       description: isCorrect 
         ? "Good job! That's the right breed!"
-        : `Sorry, it was a ${gameState.currentBreed.breed}. ${newGuessesRemaining} guesses remaining`,
+        : `Sorry, it was a ${gameState.currentBreed?.breed ?? 'unknown breed'}. ${newGuessesRemaining} guesses remaining`,
       variant: isCorrect ? "default" : "destructive",
       duration: 2000
     });
 
-    // Save score when game is over
-    if (isGameOver) {
-      const resultsWithCurrentGuess = [...questionResults, isCorrect];
-      
-      saveScoreMutation.mutate({
-        score: newScore,
-        results: resultsWithCurrentGuess,
-        tempId: !session?.user ? localTempId ?? undefined : undefined,
-        timezone: new Date().getTimezoneOffset()
-      });
-    }
-
-    // Fetch next round after delay if not game over
-    if (!isGameOver) {
+    // If game is over, save the score and show dialog
+    if (newGameOver) {
+      try {
+        await saveScoreMutation.mutateAsync({
+          score: newScore,
+          results: [...questionResults, isCorrect].map(r => r ? '1' : '0').join(','),
+          tempId: !session?.user ? localTempId ?? undefined : undefined,
+          timezone: new Date().getTimezoneOffset()
+        });
+        setShowGameResults(true);
+      } catch (error) {
+        console.error('Failed to save score:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save score. Please try again later.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Fetch next round after delay if not game over
       setTimeout(() => {
         setAnsweredBreed(null);
         void fetchNewRound();
@@ -286,6 +294,66 @@ export default function DailyGame() {
     }
   );
 
+  // Move this up with other API hooks (near saveScoreMutation)
+  const attachUserToTempScore = api.score.attachScoreToUser.useMutation();
+
+  // Add this state to track if we've handled the auth return
+  const hasHandledAuthRef = useRef(false);
+
+  // Add this state to track if we've started the attachment process
+  const [isAttaching, setIsAttaching] = useState(false);
+
+  // Update the auth return effect
+  useEffect(() => {
+    let isActive = true;
+
+    const handleAttachScore = async () => {
+      if (
+        session?.user && 
+        tempId && 
+        !hasHandledAuthRef.current && 
+        !attachUserToTempScore.isSuccess && 
+        !isAttaching
+      ) {
+        try {
+          hasHandledAuthRef.current = true;
+          setIsAttaching(true);
+          
+          const timezoneOffset = new Date().getTimezoneOffset();
+          
+          await attachUserToTempScore.mutateAsync({ 
+            tempId,
+            timezone: timezoneOffset
+          });
+
+          if (!isActive) return;
+          
+          router.replace(window.location.pathname);
+          toast({
+            title: "Score saved!",
+            description: "Your score has been attached to your account.",
+            duration: 3000,
+          });
+        } catch (error) {
+          if (!isActive) return;
+          console.error("Failed to attach score:", error);
+          toast({
+            title: "Error",
+            description: "Failed to attach score to your account.",
+            variant: "destructive",
+            duration: 3000,
+          });
+        }
+      }
+    };
+
+    void handleAttachScore();
+
+    return () => {
+      isActive = false;
+    };
+  }, [session?.user, tempId]); // Simplified dependencies
+
   // Show loading until canPlayQuery is settled
   if (canPlayQuery.isLoading) {
     return (
@@ -297,7 +365,6 @@ export default function DailyGame() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">
-      {/* Show game UI when returning from auth OR when canPlay is true */}
       {(isReturningFromAuth || canPlayQuery.data?.canPlay) ? (
         <div className="container max-w-4xl mx-auto">
           <div className="text-center mb-8 space-y-4">
@@ -385,18 +452,28 @@ export default function DailyGame() {
       ) : (
         <>
           <GameFinishedDialog 
-            isOpen={gameState.gameOver || (!!tempId && !!session?.user) || (!canPlayQuery.data?.canPlay)}
-            score={!canPlayQuery.data?.canPlay ? (todayScoreQuery.data?.score ?? 0) : gameState.score}
-            questionResults={!canPlayQuery.data?.canPlay 
-              ? (typeof todayScoreQuery.data?.results === 'string' 
-                  ? todayScoreQuery.data.results.split(',').map(r => r === '1') 
-                  : [])
-              : questionResults}
-            onClose={!canPlayQuery.data?.canPlay ? () => router.push('/') : handleGameFinishedClose}
+            isOpen={true}
+            score={todayScoreQuery.data?.score ?? 0}
+            questionResults={
+              todayScoreQuery.data?.results 
+                ? todayScoreQuery.data.results.split(',').map(r => r === '1')
+                : []
+            }
+            onClose={() => router.push('/')}
           />
           <div className="opacity-0">placeholder</div>
         </>
       )}
+
+      <GameFinishedDialog 
+        isOpen={showGameResults || (!canPlayQuery.data?.canPlay && !!todayScoreQuery.data)}
+        score={gameState.score}
+        questionResults={questionResults}
+        onClose={() => {
+          setShowGameResults(false);
+          router.push('/');
+        }}
+      />
 
       <DailyInstructions
         isOpen={showInstructions}

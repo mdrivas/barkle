@@ -42,21 +42,20 @@ export const scoreRouter = createTRPCRouter({
       };
     }),
 
-  saveScore: publicProcedure
+    saveScore: publicProcedure
     .input(z.object({
       score: z.number(),
-      results: z.array(z.boolean()),
       tempId: z.string().uuid().optional(),
+      results: z.string(),
       timezone: z.number()
     }))
     .mutation(async ({ ctx, input }) => {
-      // Get start of today in user's local time
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       today.setMinutes(today.getMinutes() - input.timezone);
 
-      // Check if user can play
-      const canPlayCheck = await ctx.db
+      // Check for existing scores today
+      const existingScore = await ctx.db
         .select()
         .from(scores)
         .where(
@@ -69,54 +68,86 @@ export const scoreRouter = createTRPCRouter({
         )
         .limit(1);
 
-      if (canPlayCheck.length > 0) {
+      if (existingScore.length > 0) {
         throw new TRPCError({
-          code: "FORBIDDEN",
+          code: 'CONFLICT',
           message: "You've already played today. Try again tomorrow!"
         });
       }
 
-      const result = await ctx.db.insert(scores).values({
+      // If no existing score, insert new score
+      return ctx.db.insert(scores).values({
         score: input.score,
-        results: input.results.map(r => r ? '1' : '0').join(','),
-        userId: ctx.session?.user?.id ?? null,
-        tempId: ctx.session?.user?.id ? null : input.tempId,
-        createdAt: new Date()
-      })    
-      .returning({ id: scores.id });
-
-      if (!result || result.length === 0 || !result[0]?.id) {
-        throw new TRPCError({ 
-          code: "INTERNAL_SERVER_ERROR", 
-          message: "Failed to save score" 
-        });
-      }
-
-      return { id: result[0].id };
+        userId: ctx.session?.user?.id,
+        tempId: !ctx.session?.user?.id ? input.tempId : null,
+        results: input.results,
+      });
     }),
 
   attachScoreToUser: protectedProcedure
     .input(z.object({ 
-      tempId: z.string().uuid()
+      tempId: z.string().uuid(),
+      timezone: z.number()
     }))
     .mutation(async ({ ctx, input }) => {
-      // Find the temporary score
+      console.log("attachScoreToUser Mutation Input:", input);
+
+      // Get start of today in user's local time
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      today.setMinutes(today.getMinutes() - input.timezone);
+
+      // Find the temporary score from today
       const tempScore = await ctx.db
         .select()
         .from(scores)
-        .where(eq(scores.tempId, input.tempId))
+        .where(
+          and(
+            eq(scores.tempId, input.tempId),
+            gte(scores.createdAt, today)
+          )
+        )
         .limit(1);
 
-      if (tempScore.length > 0) {
-        // Update the temporary score with the user ID and clear tempId
-        await ctx.db
-          .update(scores)
-          .set({ 
-            userId: ctx.session.user.id,
-            tempId: null  // Clear the tempId to prevent duplication
-          })
-          .where(eq(scores.tempId, input.tempId));
+      if (tempScore.length === 0) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'No score found with this temporary ID for today'
+        });
       }
+
+      // Check if user already has a score for today
+      const existingUserScore = await ctx.db
+        .select()
+        .from(scores)
+        .where(
+          and(
+            eq(scores.userId, ctx.session.user.id),
+            gte(scores.createdAt, today)
+          )
+        )
+        .limit(1);
+
+      if (existingUserScore.length > 0) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'User already has a score for today'
+        });
+      }
+
+      // Update the temporary score with the user ID
+      await ctx.db
+        .update(scores)
+        .set({ 
+          userId: ctx.session.user.id,
+          tempId: null
+        })
+        .where(
+          and(
+            eq(scores.tempId, input.tempId),
+            gte(scores.createdAt, today)
+          )
+        );
 
       return { success: true };
     }),
@@ -144,12 +175,12 @@ export const scoreRouter = createTRPCRouter({
         )
         .limit(1);
 
-      return score[0] 
-        ? { 
-            score: score[0].score,
-            results: score[0].results ?? []
-          }
-        : null;
+      if (!score.length) return null;
+
+      return {
+        score: score[0]?.score ?? 0,
+        results: score[0]?.results ?? ''
+      };
     }),
 
 }); 

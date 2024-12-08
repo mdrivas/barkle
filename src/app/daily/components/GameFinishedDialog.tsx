@@ -33,36 +33,28 @@ export function GameFinishedDialog({
   // Hooks initialization
   const router = useRouter();
   const { data: session } = useSession();
-  const saveScore = api.score.saveScore.useMutation();
   const attachUserToTempScore = api.score.attachScoreToUser.useMutation();
-  const [scoreSaved, setScoreSaved] = useState(false);
+  const saveScore = api.score.saveScore.useMutation();
   const [scoreAttached, setScoreAttached] = useState(false);
   const { toast } = useToast();
 
-  // Handler for leaderboard navigation
+  // Define handleViewLeaderboard at the top level of the component
   const handleViewLeaderboard = () => {
-    if (session) {
-      router.push('/?showLeaderboard=true');
-    } else {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to view the leaderboard and track your progress! 🐾",
-        variant: "default",
-      });
-    }
+    router.push('/?showLeaderboard=true');
   };
 
   // Effect to handle user returning from authentication
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tempId = urlParams.get('tempId');
+    const urlScore = urlParams.get('score');
+    const urlResults = urlParams.get('results');
     
-    if (tempId && session?.user && !scoreAttached && !attachUserToTempScore.isPending) {
+    if (tempId && session?.user && !scoreAttached && urlScore && urlResults) {
       // Attach score to user
       attachUserToTempScore.mutate({ tempId }, {
         onSuccess: () => {
           setScoreAttached(true);
-          setScoreSaved(true); // Prevent additional save attempts
           // Clean up URL
           window.history.replaceState({}, '', window.location.pathname);
         },
@@ -73,64 +65,34 @@ export function GameFinishedDialog({
     }
   }, [session?.user, attachUserToTempScore, scoreAttached]);
 
-  // Effect to save score for new games and not when returning from auth
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tempId = urlParams.get('tempId');
-    
-    if (isOpen && !tempId && !scoreSaved) {
-      if (session?.user) {
-        // Logged in user, save directly
-        saveScore.mutate({
-          score,
-          timestamp: new Date().toISOString(),
-        }, {
-          onSuccess: () => {
-            setScoreSaved(true);
-          },
-          onError: (error) => {
-            console.error("Failed to save score:", error);
-          },
-        });
-      }
-      // No else block needed as anonymous users should have tempId
-    }
-  }, [isOpen, session?.user, scoreSaved, saveScore, score]);
-
-  // Reset states when dialog closes
-  useEffect(() => {
-    if (!isOpen) {
-      setScoreSaved(false);
-      setScoreAttached(false);
-    }
-  }, [isOpen]);
-
   // Handler for Google sign in
   const handleSignIn = async () => {
-    if (scoreSaved) return;
-
-    const tempId = crypto.randomUUID();
+    const existingTempId = localStorage.getItem('barkle_temp_id');
+    const newTempId = crypto.randomUUID();
     const resultsString = questionResults.map(r => r ? '1' : '0').join(',');
     
-    // Save score with tempId for anonymous user
     try {
-      await saveScore.mutateAsync({
-        score,
-        timestamp: new Date().toISOString(),
-        tempId,
-      });
-      setScoreSaved(true);
-
-    // Include score and results in URL for after auth
-    void signIn("google", {
-      callbackUrl: `${window.location.pathname}?tempId=${tempId}&score=${score}&results=${resultsString}`,
-    });
-      // Include score and results in URL
+      if (!existingTempId) {
+        localStorage.setItem('barkle_temp_id', newTempId);
+        
+        await saveScore.mutateAsync({
+          score,
+          results: resultsString,
+          tempId: newTempId,
+          timezone: new Date().getTimezoneOffset()
+        });
+      }
+      
       void signIn("google", {
-        callbackUrl: `${window.location.pathname}?tempId=${tempId}&score=${score}&results=${resultsString}`,
+        callbackUrl: `${window.location.pathname}?tempId=${existingTempId || newTempId}&score=${score}&results=${resultsString}`,
       });
     } catch (error) {
       console.error("Failed to save score for anonymous user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save score. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
