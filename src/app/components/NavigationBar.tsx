@@ -30,7 +30,9 @@ export function NavigationBar() {
           {navItems.map(({ Component }, index) => (
             <React.Fragment key={index}>
               {index > 0 && <span className="text-green-800">|</span>}
-              <Component />
+              <div className="[&>*]:!text-[10px] [&>*]:!font-normal [&>*]:!p-0">
+                <Component />
+              </div>
             </React.Fragment>
           ))}
         </div>
