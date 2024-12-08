@@ -110,21 +110,24 @@ export function GameFinishedDialog({
               >
                 View Leaderboard
               </Button>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+              >
+                Share 🔗
+              </Button>
             </div>
-          ) : (
+          ) : ( // if no session, show sign in and share buttons
             <>
               <div className="space-y-3 text-center">
                 <p className="text-gray-300">
-                  Join the pack of top players!
+                  Want to start tracking 
+                  your stats and 
+                  streaks?
                 </p>
-                <ul className="text-sm text-gray-400">
-                  <li>✓ Save your scores and track progress</li>
-                  <li>✓ Compete on the leaderboard</li>
-                  <li>✓ Build your winning streak</li>
-                </ul>
+
               </div>
 
-              <div className="flex flex-col gap-3 w-full">
+              <div className="flex flex-col gap-4 w-full">
                 <button
                   onClick={handleSignIn}
                   className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-2 hover:bg-gray-50 w-full"
@@ -132,22 +135,11 @@ export function GameFinishedDialog({
                   <GoogleLogo />
                   Continue with Google
                 </button>
-                <Tooltip delayDuration={100}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline" 
-                      className={cn(
-                        "border-zinc-700 text-zinc-300",
-                        "cursor-not-allowed opacity-70"
-                      )}
-                    >
-                      View Leaderboard
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" sideOffset={8}>
-                    <p>Sign in to view and compete!</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+              >
+                Share 🔗
+              </Button>
               </div>
             </>
           )}

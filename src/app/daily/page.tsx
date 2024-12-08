@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 import Link from "next/link";
+import { DailyInstructions } from "./components/DailyInstructions";
 
 interface DogBreed {
   breed: string;
@@ -37,6 +38,7 @@ interface ImageResponse {
 
 export default function DailyGame() {
   const { data: session } = useSession();
+  const [showInstructions, setShowInstructions] = useState(true);
 
   const [gameState, setGameState] = useState<GameState>({
     currentBreed: null,
@@ -279,6 +281,11 @@ export default function DailyGame() {
         isOpen={gameState.gameOver}
         score={gameState.score}
         onClose={handleGameFinishedClose}
+      />
+
+      <DailyInstructions
+        isOpen={showInstructions}
+        onClose={() => setShowInstructions(false)}
       />
     </div>
   );
