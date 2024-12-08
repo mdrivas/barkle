@@ -30,11 +30,13 @@ declare module "next-auth" {
     user: {
       id: string;
       role: "admin" | "user";
+      username: string | null;
     } & DefaultSession["user"];
   }
 
   interface User {
     role: "admin" | "user";
+    username: string | null;
   }
 }
 /**
@@ -44,12 +46,13 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: ({ session, user }) => ({
+    session: ({ session, token, user }) => ({
       ...session,
       user: {
         ...session.user,
-        id: user.id,
-        role: user.role,
+        id: token?.id ?? user?.id,
+        role: token?.role ?? user?.role ?? "user",
+        username: token?.username ?? user?.username,
       },
     }),
   },

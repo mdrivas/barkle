@@ -37,51 +37,51 @@ export function GameFinishedDialog({
     router.push('/?showLeaderboard=true');
   };
 
+  // Check if user is returning from auth and attach score
   useEffect(() => {
-    // Only check for tempId when user logs in
-    if (session?.user) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tempId = urlParams.get('tempId');
-      if (tempId) {
-        attachUserToTempScore.mutate({ tempId });
-        // Clean up URL after attaching score
-        window.history.replaceState({}, '', window.location.pathname);
-      }
+    const urlParams = new URLSearchParams(window.location.search);
+    const tempId = urlParams.get('tempId');
+    
+    if (tempId && session?.user) {
+      // Attach score to user
+      attachUserToTempScore.mutate({ tempId });
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
     }
   }, [session?.user, attachUserToTempScore]);
 
-  // Move score saving to a separate useEffect that runs only once when dialog opens
+  // Save score only for new games (no tempId)
   useEffect(() => {
-    if (isOpen && session?.user && !scoreSaved) {
-      saveScore.mutate({
-        score,
-        timestamp: new Date().toISOString(),
-      });
+    const urlParams = new URLSearchParams(window.location.search);
+    const tempId = urlParams.get('tempId');
+    
+    if (isOpen && !tempId && !scoreSaved) {
+      if (session?.user) {
+        // Logged in user, save directly
+        saveScore.mutate({
+          score,
+          timestamp: new Date().toISOString(),
+        });
+      }
       setScoreSaved(true);
     }
-  }, [isOpen, session?.user, scoreSaved, saveScore, score]); // Add scoreSaved as dependency
-
-  // Reset scoreSaved when dialog closes
-  useEffect(() => {
-    if (!isOpen) {
-      setScoreSaved(false);
-    }
-  }, [isOpen]);
+  }, [isOpen, session?.user, scoreSaved, saveScore, score]);
 
   const handleSignIn = async () => {
-    // Generate a temporary ID
     const tempId = crypto.randomUUID();
+    const resultsString = questionResults.map(r => r ? '1' : '0').join(',');
     
-    // Save the score with the temporary ID
+    // Save score with tempId for anonymous user
     await saveScore.mutateAsync({
       score,
       timestamp: new Date().toISOString(),
       tempId,
     });
 
-    // Redirect to sign in with the temp ID
+    // Include score and results in URL
     void signIn("google", {
-      callbackUrl: `${window.location.pathname}?tempId=${tempId}`,
+      callbackUrl: `${window.location.pathname}?tempId=${tempId}&score=${score}&results=${resultsString}`,
     });
   };
 

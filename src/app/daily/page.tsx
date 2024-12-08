@@ -11,6 +11,8 @@ import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 import Link from "next/link";
 import { DailyInstructions } from "./components/DailyInstructions";
+import { UsernameDialog } from "./components/UsernameDialog";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface DogBreed {
   breed: string;
@@ -37,8 +39,43 @@ interface ImageResponse {
 }
 
 export default function DailyGame() {
-  const { data: session } = useSession();
-  const [showInstructions, setShowInstructions] = useState(true);
+  const { data: session, status } = useSession();
+  const { toast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tempId = searchParams.get('tempId');
+  const isReturningFromAuth = !!tempId;
+
+  const [showInstructions, setShowInstructions] = useState(!isReturningFromAuth);
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+  const [showGameResults, setShowGameResults] = useState(false);
+
+  // Skip canPlay check when returning from auth
+  const canPlayQuery = api.score.canPlayToday.useQuery({ 
+    tempId: !session?.user ? (tempId ?? undefined) : undefined 
+  }, {
+    enabled: !isReturningFromAuth // Disable query when returning from auth
+  });
+
+  // Remove the canPlay check toast when returning from auth
+  useEffect(() => {
+    if (!isReturningFromAuth && canPlayQuery.data && !canPlayQuery.data.canPlay) {
+      const nextPlay = canPlayQuery.data.nextPlayTime 
+        ? new Date(canPlayQuery.data.nextPlayTime)
+        : new Date();
+      nextPlay.setUTCHours(24, 0, 0, 0);
+
+      toast({
+        title: "You've already played today!",
+        description: `Next game available at ${nextPlay.toLocaleTimeString([], {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        })} your local time`,
+        variant: "destructive",
+      });
+    }
+  }, [canPlayQuery.data, toast, isReturningFromAuth]);
 
   const [gameState, setGameState] = useState<GameState>({
     currentBreed: null,
@@ -49,11 +86,8 @@ export default function DailyGame() {
     gameOver: false
   });
 
-  const { toast } = useToast();
-
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
 
-  //TODO: call trpc method to check if user can play today, if user cannot play today, pop up modal saying you cannot play any more today
 
   const happyBarkRef = useRef<HTMLAudioElement | null>(null);
   const angryBarkRef = useRef<HTMLAudioElement | null>(null);
@@ -174,6 +208,30 @@ export default function DailyGame() {
     }));
   };
 
+  // Show username dialog when user returns from auth with tempId
+  useEffect(() => {
+    if (session?.user && tempId) {
+      setShowUsernameDialog(true);
+      // Get the score from URL if available
+      const urlScore = searchParams.get('score');
+      const urlResults = searchParams.get('results');
+      
+      if (urlScore && urlResults) {
+        setGameState(prev => ({
+          ...prev,
+          score: parseInt(urlScore),
+          gameOver: true
+        }));
+        setQuestionResults(urlResults.split(',').map(r => r === '1'));
+      }
+    }
+  }, [session, tempId, searchParams]);
+
+  // Handle username submission
+  const onUsernameSubmit = async () => {
+    setShowUsernameDialog(false);
+  };
+
   if (gameState.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-zinc-950">
@@ -184,92 +242,115 @@ export default function DailyGame() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">
-      <div className="container max-w-4xl mx-auto">
-        <div className="text-center mb-8 space-y-4">
-          <Link href="/">
-            <h1 className="text-5xl font-bold tracking-tight text-[#F9F8E4] hover:text-[#538D4E] transition-colors cursor-pointer">
-              Barkle
-            </h1>
-          </Link>
-          
-          {/* Modern Score Display */}
-          <div className="inline-flex items-center justify-center gap-2 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-3 border border-zinc-800">
-            <div className="flex items-center gap-3">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "w-6 h-8 rounded-full transition-all duration-300 relative flex items-center justify-center",
-                    {
-                      "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20": 
-                        questionResults[i] === true,
-                      "bg-gradient-to-b from-red-500 to-red-600 shadow-lg shadow-red-500/20":
-                        questionResults[i] === false,
-                      "bg-zinc-800":
-                        questionResults[i] === undefined
-                    }
-                  )}
-                >
-                  <span className="text-[10px] text-white/90">
-                    {questionResults[i] === true && "🐕"}
-                    {questionResults[i] === false && "😢"}
-                    {questionResults[i] === undefined && "🐾"}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="text-xl font-bold text-zinc-400 pl-4 border-l border-zinc-800">
-              {gameState.score}/5
+      {/* Show game UI when returning from auth OR when canPlay is true */}
+      {(isReturningFromAuth || canPlayQuery.data?.canPlay) ? (
+        <div className="container max-w-4xl mx-auto">
+          <div className="text-center mb-8 space-y-4">
+            <Link href="/">
+              <h1 className="text-5xl font-bold tracking-tight text-[#F9F8E4] hover:text-[#538D4E] transition-colors cursor-pointer">
+                Barkle
+              </h1>
+            </Link>
+            
+            {/* Modern Score Display */}
+            <div className="inline-flex items-center justify-center gap-2 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-3 border border-zinc-800">
+              <div className="flex items-center gap-3">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "w-6 h-8 rounded-full transition-all duration-300 relative flex items-center justify-center",
+                      {
+                        "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20": 
+                          questionResults[i] === true,
+                        "bg-gradient-to-b from-red-500 to-red-600 shadow-lg shadow-red-500/20":
+                          questionResults[i] === false,
+                        "bg-zinc-800":
+                          questionResults[i] === undefined
+                      }
+                    )}
+                  >
+                    <span className="text-[10px] text-white/90">
+                      {questionResults[i] === true && "🐕"}
+                      {questionResults[i] === false && "😢"}
+                      {questionResults[i] === undefined && "🐾"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="text-xl font-bold text-zinc-400 pl-4 border-l border-zinc-800">
+                {gameState.score}/5
+              </div>
             </div>
           </div>
-        </div>
 
-        {gameState.currentBreed && (
-          <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
-            <Image
-              src={gameState.currentBreed.imageUrl}
-              alt="Mystery dog"
-              width={800}
-              height={400}
-              className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
-            />
-          </Card>
-        )}
+          {gameState.currentBreed && (
+            <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+              <Image
+                src={gameState.currentBreed.imageUrl}
+                alt="Mystery dog"
+                width={800}
+                height={400}
+                className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
+              />
+            </Card>
+          )}
 
-        <div className="grid grid-cols-2 gap-4">
-          {gameState.options.map((breed) => (
-            <Button
-              key={breed}
-              onClick={() => handleGuess(breed)}
-              disabled={gameState.gameOver || answeredBreed !== null}
-              className={cn(
-                // Base styles that apply to all states
-                "p-6 text-lg uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-zinc-800",
-                {
-                  // Default state - only add hover effect
-                  "hover:border-emerald-500/50": 
-                    !answeredBreed,
-                  // Correct answer
-                  "border-green-500 text-green-500": 
-                    answeredBreed && breed === gameState.currentBreed?.breed,
-                  // Wrong answer selected
-                  "border-red-500 text-red-500 !text-red-500": // Added !text-red-500 to force text color
-                    answeredBreed === breed && breed !== gameState.currentBreed?.breed,
-                  // Other options when answer is selected
-                  "opacity-0": 
-                    answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
-                }
-              )}
-              variant="outline"
-            >
-              {breed.replace('-', ' ')}
-            </Button>
-          ))}
+          <div className="grid grid-cols-2 gap-4">
+            {gameState.options.map((breed) => (
+              <Button
+                key={breed}
+                onClick={() => handleGuess(breed)}
+                disabled={gameState.gameOver || answeredBreed !== null}
+                className={cn(
+                  // Base styles that apply to all states
+                  "p-6 text-lg uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-zinc-800",
+                  {
+                    // Default state - only add hover effect
+                    "hover:border-emerald-500/50": 
+                      !answeredBreed,
+                    // Correct answer
+                    "border-green-500 text-green-500": 
+                      answeredBreed && breed === gameState.currentBreed?.breed,
+                    // Wrong answer selected
+                    "border-red-500 text-red-500 !text-red-500": // Added !text-red-500 to force text color
+                      answeredBreed === breed && breed !== gameState.currentBreed?.breed,
+                    // Other options when answer is selected
+                    "opacity-0": 
+                      answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
+                  }
+                )}
+                variant="outline"
+              >
+                {breed.replace('-', ' ')}
+              </Button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <h2 className="text-2xl font-bold mb-4">Come Back Tomorrow!</h2>
+          <p className="text-zinc-400">
+            You've already completed today's Barkle challenge.
+          </p>
+          {canPlayQuery.data?.nextPlayTime && (
+            <p className="text-zinc-400 mt-2">
+              Next game available at: {new Date(canPlayQuery.data.nextPlayTime)
+                .toLocaleTimeString([], {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true
+                })}
+            </p>
+          )}
+          <Link href="/" className="mt-8">
+            <Button variant="outline">Return Home</Button>
+          </Link>
+        </div>
+      )}
 
       <GameFinishedDialog 
-        isOpen={gameState.gameOver}
+        isOpen={gameState.gameOver || (!!tempId && !!session?.user)}
         score={gameState.score}
         questionResults={questionResults}
         onClose={handleGameFinishedClose}
@@ -279,6 +360,14 @@ export default function DailyGame() {
         isOpen={showInstructions}
         onClose={() => setShowInstructions(false)}
       />
+
+      {showUsernameDialog && (
+        <UsernameDialog 
+          isOpen={showUsernameDialog}
+          onClose={() => setShowUsernameDialog(false)}
+          onSubmit={onUsernameSubmit}
+        />
+      )}
     </div>
   );
 }
