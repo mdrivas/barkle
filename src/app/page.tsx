@@ -7,8 +7,10 @@ import { LeaderboardModal } from "./components/LeaderboardModal";
 import Image from "next/image";
 import Link from "next/link";
 import { GameModeModal } from "./components/GameModeModal";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { Roboto } from "next/font/google";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -18,13 +20,22 @@ const roboto = Roboto({
 
 export default function Home() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  
+  useEffect(() => {
+    if (searchParams.get('showLeaderboard') === 'true') {
+      setShowLeaderboard(true);
+      window.history.replaceState({}, '', '/');
+    }
+  }, [searchParams]);
 
   return (
     <main className={`flex min-h-screen flex-col items-center bg-[#121213] text-zinc-50 font-sans ${roboto.variable}`}>
       <NavigationBar />
 
       {/* Account Area */}
-      {session?.user && (
+      {session?.user ? (
         <div className="w-full max-w-4xl mx-auto px-4 py-2">
           <div className="flex items-center justify-end gap-3">
             <Link href="/account">
@@ -55,6 +66,18 @@ export default function Home() {
             </Link>
           </div>
         </div>
+      ) : (
+        <div className="w-full max-w-4xl mx-auto px-4 py-2">
+          <div className="flex justify-end">
+            <Button
+              onClick={() => void signIn("google")}
+              variant="ghost"
+              className="text-zinc-400 hover:text-zinc-200"
+            >
+              Sign In
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Main Content */}
@@ -82,9 +105,12 @@ export default function Home() {
         </p>
 
         {/* Buttons */}
-        <div className="flex gap-4 w-full max-w-lg mb-6">
+        <div className="flex gap-4 w-full max-w-lg px-4 mb-6">
           <GameModeModal />
-          <LeaderboardModal />
+          <LeaderboardModal 
+            open={showLeaderboard} 
+            onOpenChange={setShowLeaderboard}
+          />
         </div>
 
         {/* Games Counter */}

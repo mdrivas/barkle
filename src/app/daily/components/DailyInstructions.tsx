@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,49 +15,41 @@ interface DailyInstructionsProps {
 export function DailyInstructions({ isOpen, onClose }: DailyInstructionsProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-zinc-900 text-zinc-50">
+      <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center mb-4">
-            How To Play
+          <DialogTitle className="text-2xl font-bold text-center">
+            How to Play
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          {/* Objective Section */}
-          <div>
-            <h3 className="text-lg font-semibold text-green-400 mb-2">
-              🎯 Objective
-            </h3>
-            <p className="text-zinc-300">
-              Identify the dog breed shown in the image.
-            </p>
+        <div className="space-y-6 px-4 sm:px-6">
+          {/* Main Instructions */}
+          <p className="text-zinc-300 text-center text-sm sm:text-base">
+            Barkle gives you 5 dogs to identify each day. Choose the correct breed from 4 options!
+          </p>
+
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-3 bg-zinc-900/50 p-2.5 sm:p-3 rounded-lg border border-zinc-800">
+              <span className="text-lg sm:text-xl">🎯</span>
+              <p className="text-xs sm:text-sm text-zinc-300">4 breed options per dog</p>
+            </div>
+            
+            <div className="flex items-center gap-3 bg-zinc-900/50 p-2.5 sm:p-3 rounded-lg border border-zinc-800">
+              <span className="text-lg sm:text-xl">✨</span>
+              <p className="text-xs sm:text-sm text-zinc-300">Green for correct, red for wrong</p>
+            </div>
+            
+            <div className="flex items-center gap-3 bg-zinc-900/50 p-2.5 sm:p-3 rounded-lg border border-zinc-800">
+              <span className="text-lg sm:text-xl">🔄</span>
+              <p className="text-xs sm:text-sm text-zinc-300">New pups every day!</p>
+            </div>
           </div>
 
-          {/* How to Play Section */}
-          <div>
-            <h3 className="text-lg font-semibold text-blue-400 mb-2">
-              🎮 How to Play
-            </h3>
-            <ul className="list-disc list-inside space-y-1 text-zinc-300">
-              <li>Look at the dog image</li>
-              <li>Select from one of four breed options</li>
-              <li>Try to get as many correct as you can</li>
-            </ul>
-          </div>
-
-          {/* Hints Section */}
-          <div>
-            <h3 className="text-lg font-semibold text-yellow-400 mb-2">
-              💡 Scoring
-            </h3>
-            <ul className="list-disc list-inside space-y-1 text-zinc-300">
-              <li>Get 1 point for each correct guess</li>
-              <li>Try to get all 5 points!</li>
-              <li>Come back tomorrow for a new challenge</li>
-            </ul>
-          </div>
+          <p className="text-center text-zinc-400 text-xs sm:text-sm pt-2 border-t border-zinc-800">
+            How many can you get right? 🐕
+          </p>
         </div>
       </DialogContent>
     </Dialog>
   );
-} 
+}

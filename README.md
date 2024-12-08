@@ -23,8 +23,8 @@ Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/ver
 # How to run the project
 
 1. Create .env file by copying .env.example and filling in the required fields, define your database name in the start-database.sh script. Ensure docker is running and installed. You can leave the database password as "password" and it will be generated for you or change it to your desired password.
-2. Run `./start-database.sh` to start a local postgres database in a docker container
-3. Run `npm run db:push` to push default migrations
+DONT DIS 2. Run `./start-database.sh` to start a local postgres database in a docker container
+DONT DO DIS 3. Run `npm run db:push` to push default migrations
 4. Run `npm install` to install the dependencies
 5. Run `npm run dev` to start the development server
 

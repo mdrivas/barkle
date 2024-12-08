@@ -1,5 +1,8 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -9,24 +12,30 @@ import {
 import { useSession, signIn } from "next-auth/react";
 import { GoogleLogo } from "~/components/icons";
 import { api } from "~/trpc/react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "~/components/ui/tooltip";
-import { cn } from "~/lib/utils";
+import { ShareResultsDialog } from "~/app/components/ShareResultsDialog";
 
 interface GameFinishedDialogProps {
   isOpen: boolean;
   score: number;
+  questionResults: boolean[];
   onClose?: () => void;
 }
 
 export function GameFinishedDialog({ 
   isOpen, 
   score, 
+  questionResults,
   onClose,
 }: GameFinishedDialogProps) {
+  const router = useRouter();
   const { data: session } = useSession();
   const saveScore = api.score.saveScore.useMutation();
   const attachUserToTempScore = api.score.attachScoreToUser.useMutation();
   const [scoreSaved, setScoreSaved] = useState(false);
+
+  const handleViewLeaderboard = () => {
+    router.push('/?showLeaderboard=true');
+  };
 
   useEffect(() => {
     // Only check for tempId when user logs in
@@ -76,47 +85,62 @@ export function GameFinishedDialog({
     });
   };
 
+  const getScoreMessage = (score: number) => {
+    if (score === 5) {
+      return "Pawsome! You're the top dog! 🌟";
+    } else if (score === 4) {
+      return "Tail-wagging performance! Almost perfect! 🐕";
+    } else if (score === 3) {
+      return "Barking brilliant! You're getting the hang of it! 🦮";
+    } else if (score === 2) {
+      return "Ruff day? You're still learning new tricks! 🦴";
+    } else if (score === 1) {
+      return "Paw-sitive attitude! Every dog was once a puppy! 🐾";
+    } else {
+      return "Don't roll over yet - every dog has its day! 🐶";
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open && onClose) {
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="bg-zinc-900 border-zinc-800">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
-            {score > 0 ? "Congratulations! 🎉" : "Game Over! 🐾"}
+            {score > 0 ? "Congratulations! 🎉" : "Game Over"}
           </DialogTitle>
         </DialogHeader>
         
         <div className="flex flex-col gap-4 items-center mt-4">
           <div className="text-center">
             <p className="text-2xl font-bold text-emerald-500 mb-2">
-              {score} Points! 🐾
+              {score} {score === 1 ? "Point" : "Points"} 🐾
             </p>
-            <p className="text-gray-300">
-              {score > 0 
-                ? "You're off to an amazing start!" 
-                : "Don't worry, every dog has its day!"}
+            <p className="text-gray-300 text-sm sm:text-base">
+              {getScoreMessage(score)}
             </p>
           </div>
 
           {session ? (
             <div className="flex flex-col gap-4 w-full">
               <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 text-lg"
+                onClick={handleViewLeaderboard}
+                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-none transition-all duration-200 flex items-center justify-center gap-2 py-6 text-lg font-medium"
               >
-                Play Again Tomorrow
+                View Leaderboard 🏆
               </Button>
-              <Button
-                variant="outline"
-                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-              >
-                View Leaderboard
-              </Button>
-              <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
-              >
-                Share 🔗
-              </Button>
+              <ShareResultsDialog 
+                score={score}
+                questionResults={questionResults}
+              />
             </div>
-          ) : ( // if no session, show sign in and share buttons
+          ) : (
             <>
               <div className="space-y-3 text-center">
                 <p className="text-gray-300">
@@ -124,22 +148,26 @@ export function GameFinishedDialog({
                   your stats and 
                   streaks?
                 </p>
-
               </div>
 
               <div className="flex flex-col gap-4 w-full">
                 <button
                   onClick={handleSignIn}
-                  className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-2 hover:bg-gray-50 w-full"
+                  className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-2 hover:bg-gray-50 w-full transition-colors duration-200"
                 >
                   <GoogleLogo />
                   Continue with Google
                 </button>
                 <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
-              >
-                Share 🔗
-              </Button>
+                  onClick={handleViewLeaderboard}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-none transition-all duration-200 flex items-center justify-center gap-2 py-6 text-lg font-medium"
+                >
+                  View Leaderboard 🏆
+                </Button>
+                <ShareResultsDialog 
+                  score={score}
+                  questionResults={questionResults}
+                />
               </div>
             </>
           )}

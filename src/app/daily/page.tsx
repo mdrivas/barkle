@@ -168,19 +168,10 @@ export default function DailyGame() {
   };
 
   const handleGameFinishedClose = () => {
-    // Only reset the game if the user is authenticated
-    if (session?.user) {
-      setGameState(prev => ({
-        ...prev,
-        currentBreed: null,
-        options: [],
-        isLoading: true,
-        score: 0,
-        guessesRemaining: 5,
-        gameOver: false
-      }));
-      void fetchNewRound();
-    }
+    setGameState(prev => ({
+      ...prev,
+      gameOver: false
+    }));
   };
 
   if (gameState.isLoading) {
@@ -280,6 +271,7 @@ export default function DailyGame() {
       <GameFinishedDialog 
         isOpen={gameState.gameOver}
         score={gameState.score}
+        questionResults={questionResults}
         onClose={handleGameFinishedClose}
       />
 

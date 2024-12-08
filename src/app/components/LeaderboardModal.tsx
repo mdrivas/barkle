@@ -11,15 +11,19 @@ import {
 import { Button } from "~/components/ui/button";
 import { LeaderboardContent } from "./LeaderboardContent";
 
-export function LeaderboardModal() {
-  const [open, setOpen] = useState(false);
+interface LeaderboardModalProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function LeaderboardModal({ open, onOpenChange }: LeaderboardModalProps) {
   const [mode, setMode] = useState<"daily" | "pawsistence">("daily");
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button 
-          className="flex-1 py-3 text-sm font-semibold bg-zinc-600 hover:bg-zinc-500 text-white rounded-full shadow-lg"
+          className="w-full py-7 text-xl font-bold bg-gradient-to-br from-zinc-700 to-zinc-800 hover:from-zinc-600 hover:to-zinc-700 text-white rounded-2xl shadow-lg transform transition-all active:scale-95 border border-zinc-600/20"
         >
           LEADERBOARD
         </Button>
