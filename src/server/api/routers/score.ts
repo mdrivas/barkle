@@ -7,12 +7,14 @@ import { TRPCError } from "@trpc/server";
 export const scoreRouter = createTRPCRouter({
   canPlayToday: publicProcedure
     .input(z.object({ 
-      tempId: z.string().uuid().optional() 
+      tempId: z.string().uuid().optional(),
+      timezone: z.number()
     }))
     .query(async ({ ctx, input }) => {
-      // Get start of today in UTC
+      // Get start of today in user's local time
       const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      today.setMinutes(today.getMinutes() - input.timezone);
 
       // Check for existing scores today
       const recentScores = await ctx.db
@@ -20,7 +22,6 @@ export const scoreRouter = createTRPCRouter({
         .from(scores)
         .where(
           and(
-            // Check either userId (if logged in) or tempId
             ctx.session?.user?.id
               ? eq(scores.userId, ctx.session.user.id)
               : eq(scores.tempId, input.tempId ?? ''),
@@ -30,9 +31,9 @@ export const scoreRouter = createTRPCRouter({
         .orderBy(scores.createdAt)
         .limit(1);
 
-      // Calculate next play time (midnight UTC)
+      // Calculate next play time (local midnight)
       const tomorrow = new Date();
-      tomorrow.setUTCHours(24, 0, 0, 0);
+      tomorrow.setHours(24, 0, 0, 0);
 
       return {
         canPlay: recentScores.length === 0,
@@ -42,12 +43,18 @@ export const scoreRouter = createTRPCRouter({
     }),
 
   saveScore: publicProcedure
-    .input(z.object({ 
-      score: z.number().min(0).max(5),
-      timestamp: z.string().datetime(),
+    .input(z.object({
+      score: z.number(),
+      results: z.array(z.boolean()),
       tempId: z.string().uuid().optional(),
+      timezone: z.number()
     }))
     .mutation(async ({ ctx, input }) => {
+      // Get start of today in user's local time
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      today.setMinutes(today.getMinutes() - input.timezone);
+
       // Check if user can play
       const canPlayCheck = await ctx.db
         .select()
@@ -57,7 +64,7 @@ export const scoreRouter = createTRPCRouter({
             ctx.session?.user?.id
               ? eq(scores.userId, ctx.session.user.id)
               : eq(scores.tempId, input.tempId ?? ''),
-            gte(scores.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1000))
+            gte(scores.createdAt, today)
           )
         )
         .limit(1);
@@ -71,9 +78,10 @@ export const scoreRouter = createTRPCRouter({
 
       const result = await ctx.db.insert(scores).values({
         score: input.score,
+        results: input.results.map(r => r ? '1' : '0').join(','),
         userId: ctx.session?.user?.id ?? null,
         tempId: ctx.session?.user?.id ? null : input.tempId,
-        createdAt: new Date(input.timestamp)
+        createdAt: new Date()
       })    
       .returning({ id: scores.id });
 
@@ -92,13 +100,56 @@ export const scoreRouter = createTRPCRouter({
       tempId: z.string().uuid()
     }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(scores)
-        .set({ userId: ctx.session.user.id })
-        .where(eq(scores.tempId, input.tempId));
+      // Find the temporary score
+      const tempScore = await ctx.db
+        .select()
+        .from(scores)
+        .where(eq(scores.tempId, input.tempId))
+        .limit(1);
+
+      if (tempScore.length > 0) {
+        // Update the temporary score with the user ID and clear tempId
+        await ctx.db
+          .update(scores)
+          .set({ 
+            userId: ctx.session.user.id,
+            tempId: null  // Clear the tempId to prevent duplication
+          })
+          .where(eq(scores.tempId, input.tempId));
+      }
 
       return { success: true };
     }),
 
+  getTodayScore: publicProcedure
+    .input(z.object({
+      tempId: z.string().uuid().optional(),
+      timezone: z.number()
+    }))
+    .query(async ({ ctx, input }) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      today.setMinutes(today.getMinutes() - input.timezone);
+
+      const score = await ctx.db
+        .select()
+        .from(scores)
+        .where(
+          and(
+            ctx.session?.user?.id
+              ? eq(scores.userId, ctx.session.user.id)
+              : eq(scores.tempId, input.tempId ?? ''),
+            gte(scores.createdAt, today)
+          )
+        )
+        .limit(1);
+
+      return score[0] 
+        ? { 
+            score: score[0].score,
+            results: score[0].results ?? []
+          }
+        : null;
+    }),
 
 }); 

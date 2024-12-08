@@ -39,43 +39,64 @@ interface ImageResponse {
 }
 
 export default function DailyGame() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tempId = searchParams.get('tempId');
   const isReturningFromAuth = !!tempId;
 
-  const [showInstructions, setShowInstructions] = useState(!isReturningFromAuth);
+  // Get or create tempId for non-signed in users
+  const [localTempId, setLocalTempId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!session?.user) {
+      const storedTempId = localStorage.getItem('barkle_temp_id');
+      if (storedTempId) {
+        setLocalTempId(storedTempId);
+      } else {
+        const newTempId = crypto.randomUUID();
+        localStorage.setItem('barkle_temp_id', newTempId);
+        setLocalTempId(newTempId);
+      }
+    }
+  }, [session?.user]);
+
+  // Single canPlayQuery
+  const canPlayQuery = api.score.canPlayToday.useQuery({ 
+    tempId: !session?.user ? (tempId ?? localTempId ?? undefined) : undefined,
+    timezone: new Date().getTimezoneOffset()
+  }, {
+    enabled: !!localTempId || !!session?.user // Enable when we have either localTempId or session
+  });
+
+  const [showInstructions, setShowInstructions] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const [showGameResults, setShowGameResults] = useState(false);
 
-  // Skip canPlay check when returning from auth
-  const canPlayQuery = api.score.canPlayToday.useQuery({ 
-    tempId: !session?.user ? (tempId ?? undefined) : undefined 
-  }, {
-    enabled: !isReturningFromAuth // Disable query when returning from auth
-  });
+  // Add at the top with other state declarations
+  const [hasShownToast, setHasShownToast] = useState(false);
 
-  // Remove the canPlay check toast when returning from auth
+  // Update the toast effect
   useEffect(() => {
-    if (!isReturningFromAuth && canPlayQuery.data && !canPlayQuery.data.canPlay) {
-      const nextPlay = canPlayQuery.data.nextPlayTime 
-        ? new Date(canPlayQuery.data.nextPlayTime)
-        : new Date();
-      nextPlay.setUTCHours(24, 0, 0, 0);
+    if (!isReturningFromAuth && !hasShownToast && canPlayQuery.data && !canPlayQuery.data.canPlay) {
+      const tomorrow = new Date();
+      tomorrow.setHours(24, 0, 0, 0);
 
       toast({
         title: "You've already played today!",
-        description: `Next game available at ${nextPlay.toLocaleTimeString([], {
+        description: `Next game available at ${tomorrow.toLocaleTimeString([], {
           hour: 'numeric',
           minute: '2-digit',
           hour12: true
         })} your local time`,
         variant: "destructive",
+        duration: 3000,
       });
+      
+      setHasShownToast(true);
     }
-  }, [canPlayQuery.data, toast, isReturningFromAuth]);
+  }, [canPlayQuery.data, toast, isReturningFromAuth, hasShownToast]);
 
   const [gameState, setGameState] = useState<GameState>({
     currentBreed: null,
@@ -156,6 +177,9 @@ export default function DailyGame() {
   // Add state to track correct/incorrect answers
   const [questionResults, setQuestionResults] = useState<Array<boolean>>([]);
 
+  // Add the mutation hook at component level
+  const saveScoreMutation = api.score.saveScore.useMutation();
+
   const handleGuess = (selectedBreed: string) => {
     if (!gameState.currentBreed || gameState.gameOver) return;
 
@@ -191,6 +215,18 @@ export default function DailyGame() {
       variant: isCorrect ? "default" : "destructive",
       duration: 2000
     });
+
+    // Save score when game is over
+    if (isGameOver) {
+      const resultsWithCurrentGuess = [...questionResults, isCorrect];
+      
+      saveScoreMutation.mutate({
+        score: newScore,
+        results: resultsWithCurrentGuess,
+        tempId: !session?.user ? localTempId ?? undefined : undefined,
+        timezone: new Date().getTimezoneOffset()
+      });
+    }
 
     // Fetch next round after delay if not game over
     if (!isGameOver) {
@@ -232,7 +268,26 @@ export default function DailyGame() {
     setShowUsernameDialog(false);
   };
 
-  if (gameState.isLoading) {
+  // Show instructions only after we confirm they can play
+  useEffect(() => {
+    if (canPlayQuery.data?.canPlay && !isReturningFromAuth) {
+      setShowInstructions(true);
+    }
+  }, [canPlayQuery.data?.canPlay, isReturningFromAuth]);
+
+  // Single todayScoreQuery
+  const todayScoreQuery = api.score.getTodayScore.useQuery(
+    { 
+      tempId: !session?.user ? (tempId ?? localTempId ?? undefined) : undefined,
+      timezone: new Date().getTimezoneOffset()
+    },
+    {
+      enabled: !canPlayQuery.data?.canPlay && (!!localTempId || !!session?.user)
+    }
+  );
+
+  // Show loading until canPlayQuery is settled
+  if (canPlayQuery.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-zinc-950">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-emerald-500" />
@@ -328,33 +383,20 @@ export default function DailyGame() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <h2 className="text-2xl font-bold mb-4">Come Back Tomorrow!</h2>
-          <p className="text-zinc-400">
-            You've already completed today's Barkle challenge.
-          </p>
-          {canPlayQuery.data?.nextPlayTime && (
-            <p className="text-zinc-400 mt-2">
-              Next game available at: {new Date(canPlayQuery.data.nextPlayTime)
-                .toLocaleTimeString([], {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                })}
-            </p>
-          )}
-          <Link href="/" className="mt-8">
-            <Button variant="outline">Return Home</Button>
-          </Link>
-        </div>
+        <>
+          <GameFinishedDialog 
+            isOpen={gameState.gameOver || (!!tempId && !!session?.user) || (!canPlayQuery.data?.canPlay)}
+            score={!canPlayQuery.data?.canPlay ? (todayScoreQuery.data?.score ?? 0) : gameState.score}
+            questionResults={!canPlayQuery.data?.canPlay 
+              ? (typeof todayScoreQuery.data?.results === 'string' 
+                  ? todayScoreQuery.data.results.split(',').map(r => r === '1') 
+                  : [])
+              : questionResults}
+            onClose={!canPlayQuery.data?.canPlay ? () => router.push('/') : handleGameFinishedClose}
+          />
+          <div className="opacity-0">placeholder</div>
+        </>
       )}
-
-      <GameFinishedDialog 
-        isOpen={gameState.gameOver || (!!tempId && !!session?.user)}
-        score={gameState.score}
-        questionResults={questionResults}
-        onClose={handleGameFinishedClose}
-      />
 
       <DailyInstructions
         isOpen={showInstructions}

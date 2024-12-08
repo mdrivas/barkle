@@ -144,6 +144,7 @@ export const verificationTokens = createTable(
 export const scores = createTable("scores", {
   id: serial("id").primaryKey(),
   score: integer("score").notNull(),
+  results: text("results"),
   userId: varchar("user_id", { length: 255 })
     .references(() => users.id),
   tempId: varchar("temp_id", { length: 255 }),
