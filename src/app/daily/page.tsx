@@ -271,8 +271,8 @@ export default function DailyGame() {
                     )}
                   >
                     <span className="text-[10px] text-white/90">
-                      {questionResults[i] === true && "🐕"}
-                      {questionResults[i] === false && "😢"}
+                      {questionResults[i] === true && "🐾"}
+                      {questionResults[i] === false && "🐾"}
                       {questionResults[i] === undefined && "🐾"}
                     </span>
                   </div>

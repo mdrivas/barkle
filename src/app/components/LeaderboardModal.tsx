@@ -28,7 +28,7 @@ export function LeaderboardModal({ open, onOpenChange }: LeaderboardModalProps) 
           LEADERBOARD
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 sm:max-w-[500px] gap-4">
+      <DialogContent className="bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 sm:max-w-[500px] gap-4 [&>button]:text-white">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-zinc-50">
             🏆 Top Scores 🏆

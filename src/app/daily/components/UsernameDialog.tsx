@@ -81,9 +81,9 @@ export function UsernameDialog({ isOpen, onClose, onSubmit }: UsernameDialogProp
           <Button
             type="submit"
             className="w-full bg-emerald-600 hover:bg-emerald-700"
-            disabled={setUsernameMutation.isLoading}
+            disabled={setUsernameMutation.isPending} // changed from is.Loading which was causing a bug. 
           >
-            {setUsernameMutation.isLoading ? "Setting..." : "Set Username"}
+            {setUsernameMutation.isPending ? "Setting..." : "Set Username"} // changed from is.Loading which was causing a bug. 
           </Button>
         </form>
       </DialogContent>
