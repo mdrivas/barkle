@@ -87,9 +87,10 @@ export function ShareResultsDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button 
-          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-2"
+          className="w-full bg-emerald-600 hover:bg-emerald-700 text-zinc-100 transition-all duration-200 py-6 text-lg font-medium rounded-xl flex items-center justify-center gap-2"
         >
-          <Share2 className="w-4 h-4" /> Share
+          Share Results
+          <Share2 className="h-5 w-5" />
         </Button>
       </DialogTrigger>
       <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-900/95 text-zinc-50 border border-zinc-800 rounded-xl">

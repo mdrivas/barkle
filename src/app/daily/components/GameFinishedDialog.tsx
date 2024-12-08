@@ -36,6 +36,7 @@ export function GameFinishedDialog({
   const saveScore = api.score.saveScore.useMutation();
   const attachUserToTempScore = api.score.attachScoreToUser.useMutation();
   const [scoreSaved, setScoreSaved] = useState(false);
+  const [scoreAttached, setScoreAttached] = useState(false);
   const { toast } = useToast();
 
   // Handler for leaderboard navigation
@@ -56,16 +57,23 @@ export function GameFinishedDialog({
     const urlParams = new URLSearchParams(window.location.search);
     const tempId = urlParams.get('tempId');
     
-    if (tempId && session?.user) {
+    if (tempId && session?.user && !scoreAttached && !attachUserToTempScore.isPending) {
       // Attach score to user
-      attachUserToTempScore.mutate({ tempId });
-      // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname);
-      return;
+      attachUserToTempScore.mutate({ tempId }, {
+        onSuccess: () => {
+          setScoreAttached(true);
+          setScoreSaved(true); // Prevent additional save attempts
+          // Clean up URL
+          window.history.replaceState({}, '', window.location.pathname);
+        },
+        onError: (error) => {
+          console.error("Failed to attach score to user:", error);
+        },
+      });
     }
-  }, [session?.user, attachUserToTempScore]);
+  }, [session?.user, attachUserToTempScore, scoreAttached]);
 
-  // Effect to save score for new games
+  // Effect to save score for new games and not when returning from auth
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tempId = urlParams.get('tempId');
@@ -76,28 +84,54 @@ export function GameFinishedDialog({
         saveScore.mutate({
           score,
           timestamp: new Date().toISOString(),
+        }, {
+          onSuccess: () => {
+            setScoreSaved(true);
+          },
+          onError: (error) => {
+            console.error("Failed to save score:", error);
+          },
         });
       }
-      setScoreSaved(true);
+      // No else block needed as anonymous users should have tempId
     }
   }, [isOpen, session?.user, scoreSaved, saveScore, score]);
 
+  // Reset states when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setScoreSaved(false);
+      setScoreAttached(false);
+    }
+  }, [isOpen]);
+
   // Handler for Google sign in
   const handleSignIn = async () => {
+    if (scoreSaved) return;
+
     const tempId = crypto.randomUUID();
     const resultsString = questionResults.map(r => r ? '1' : '0').join(',');
     
     // Save score with tempId for anonymous user
-    await saveScore.mutateAsync({
-      score,
-      timestamp: new Date().toISOString(),
-      tempId,
-    });
+    try {
+      await saveScore.mutateAsync({
+        score,
+        timestamp: new Date().toISOString(),
+        tempId,
+      });
+      setScoreSaved(true);
 
     // Include score and results in URL for after auth
     void signIn("google", {
       callbackUrl: `${window.location.pathname}?tempId=${tempId}&score=${score}&results=${resultsString}`,
     });
+      // Include score and results in URL
+      void signIn("google", {
+        callbackUrl: `${window.location.pathname}?tempId=${tempId}&score=${score}&results=${resultsString}`,
+      });
+    } catch (error) {
+      console.error("Failed to save score for anonymous user:", error);
+    }
   };
 
   // Function to get appropriate message based on score
@@ -159,7 +193,7 @@ export function GameFinishedDialog({
   const GoogleSignInButton = () => (
     <button
       onClick={handleSignIn}
-      className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-2 hover:bg-gray-50 w-full transition-colors duration-200"
+      className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-2 hover:bg-gray-50 w-full transition-colors duration-200 text-gray-900"
     >
       <GoogleLogo />
       Continue with Google
@@ -188,7 +222,7 @@ export function GameFinishedDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
-      <DialogContent className="bg-zinc-900 border-zinc-800">
+      <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
             {score > 0 ? "Congratulations! 🎉" : "Game Over"}
