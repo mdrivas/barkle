@@ -40,7 +40,7 @@ export function FAQSheet() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger className="text-green-500 hover:text-green-400 transition-colors">
-        FAQ
+        FAQ & Help
       </SheetTrigger>
       <SheetContent side="bottom" className="h-[80vh] bg-zinc-900 border-zinc-800">
         <SheetHeader>
