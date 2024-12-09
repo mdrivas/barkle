@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 import { scores } from "~/server/db/schema";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, gte, sql, isNotNull, desc, asc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { users } from "~/server/db/schema";
 
@@ -168,4 +168,50 @@ export const scoreRouter = createTRPCRouter({
       return gamesCount[0]?.count ?? 0;
     }),
 
+  getDailyLeaderboard: publicProcedure
+    .input(z.object({ timezone: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      today.setMinutes(today.getMinutes() - input.timezone);
+
+      return ctx.db
+        .select({
+          username: users.username,
+          score: scores.score,
+          currentStreak: users.currentGuessStreak,
+          dailyStreak: users.currentDailyStreak,
+          userId: scores.userId,
+          createdAt: scores.createdAt,
+        })
+        .from(scores)
+        .leftJoin(users, eq(scores.userId, users.id))
+        .where(
+          and(
+            gte(scores.createdAt, today),
+            isNotNull(scores.userId)
+          )
+        )
+        .orderBy(desc(scores.score), desc(users.currentGuessStreak), asc(scores.createdAt))
+        .limit(100);
+    }),
+
+  getPawsistenceLeaderboard: publicProcedure.query(async ({ ctx }) => {
+    return ctx.db
+      .select({
+        username: users.username,
+        highestStreak: users.highestGuessStreak,
+        gamesPlayed: sql<number>`COUNT(${scores.id})`,
+        averageScore: sql<number>`AVG(${scores.score})`,
+      })
+      .from(users)
+      .leftJoin(scores, eq(scores.userId, users.id))
+      .where(isNotNull(users.username))
+      .groupBy(users.id, users.username, users.highestGuessStreak)
+      .orderBy(
+        desc(users.highestGuessStreak),
+        desc(sql<number>`AVG(${scores.score})`)
+      )
+      .limit(100);
+  }),
 }); 
