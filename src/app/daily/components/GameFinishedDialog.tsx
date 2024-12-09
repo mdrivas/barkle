@@ -52,7 +52,7 @@ export function GameFinishedDialog({
     
     if (tempId && session?.user && !scoreAttached && urlScore && urlResults) {
       // Attach score to user
-      attachUserToTempScore.mutate({ tempId }, {
+      attachUserToTempScore.mutate({ tempId, timezone: new Date().getTimezoneOffset() }, {
         onSuccess: () => {
           setScoreAttached(true);
           // Clean up URL
