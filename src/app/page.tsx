@@ -12,6 +12,7 @@ import { Roboto } from "next/font/google";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DogSubmissionModal } from "./components/DogSubmissionModal";
+import { api } from "~/trpc/react";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -30,6 +31,10 @@ export default function Home() {
       window.history.replaceState({}, '', '/');
     }
   }, [searchParams]);
+
+  const { data: gamesCount, isLoading } = api.score.getTodayGames.useQuery({
+    timezone: new Date().getTimezoneOffset()
+  });
 
   return (
     <main className={`flex min-h-screen flex-col items-center bg-[#121213] text-zinc-50 font-sans ${roboto.variable}`}>
@@ -82,49 +87,50 @@ export default function Home() {
       )}
 
       {/* Main Content */}
-      <div className="flex flex-col items-center justify-center gap-6 px-4 py-12 max-w-2xl mx-auto w-full">
+      <div className="flex flex-col items-center justify-center gap-4 px-4 py-8 max-w-2xl mx-auto w-full">
         {/* Logo */}
-        <div className="w-72 h-72 relative flex items-center justify-center">
+        <div className="w-64 h-64 relative flex items-center justify-center">
           <Image
             src="/barklelogo.png"
             alt="Barkle Logo"
-            width={288}
-            height={288}
+            width={256}
+            height={256}
             priority
             className="rounded-full"
           />
         </div>
 
         {/* Title */}
-        <h1 className="text-6xl font-bold tracking-[0.15em] text-zinc-50 font-roboto">
+        <h1 className="text-5xl font-bold tracking-[0.15em] text-zinc-50 font-roboto mt-2">
           BARKLE
         </h1>
 
         {/* Description */}
-        <p className="text-center text-zinc-300 text-lg px-6 max-w-[400px] mb-4 font-roboto">
+        <p className="text-center text-zinc-300 text-lg px-6 max-w-[400px] font-roboto">
           5 chances to guess different dog breeds from their photos. A new set of pups every day!
         </p>
 
-        {/* Buttons */}
-        <div className="flex gap-4 w-full max-w-lg px-4 mb-6">
-          <GameModeModal />
-          <LeaderboardModal 
-            open={showLeaderboard} 
-            onOpenChange={setShowLeaderboard}
-          />
-        </div>
-
-        {/* Submit Photo Button */}
-        <div className="flex gap-4 w-full max-w-lg px-4">
-          <DogSubmissionModal />
-        </div>
-
         {/* Games Counter */}
-        <Card className="bg-[#C4A484] text-black px-8 py-3 rounded-full">
-          <p className="text-sm font-medium">
-            🐾 16 Games Played Today 🐾
+        <Card className="bg-[#C4A484] text-black px-6 py-2 rounded-full text-sm">
+          <p className="font-medium">
+            🐾 {isLoading ? "..." : gamesCount ?? 0} Games Played Today 🐾
           </p>
         </Card>
+
+        {/* Game Buttons and Submit Link */}
+        <div className="flex flex-col items-center gap-2 w-full max-w-lg px-4 mt-2">
+          <div className="flex gap-4 w-full">
+            <GameModeModal />
+            <LeaderboardModal 
+              open={showLeaderboard} 
+              onOpenChange={setShowLeaderboard}
+            />
+          </div>
+          <DogSubmissionModal 
+            className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+            variant="link"
+          />
+        </div>
       </div>
     </main>
   );

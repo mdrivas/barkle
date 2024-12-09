@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { users } from "~/server/db/schema";
-import { eq } from "drizzle-orm";
+import { users, scores } from "~/server/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const userRouter = createTRPCRouter({
@@ -26,6 +26,41 @@ export const userRouter = createTRPCRouter({
       await ctx.db
         .update(users)
         .set({ username: input.username })
+        .where(eq(users.id, ctx.session.user.id));
+
+      return { success: true };
+    }),
+  getProfile: protectedProcedure
+    .query(async ({ ctx }) => {
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.session.user.id),
+        columns: {
+          username: true,
+          image: true,
+          currentDailyStreak: true,
+          highestDailyStreak: true,
+        },
+      });
+
+      // Count games played with explicit count
+      const gamesCount = await ctx.db
+        .select()
+        .from(scores)
+        .where(eq(scores.userId, ctx.session.user.id));
+
+      return {
+        ...user,
+        gamesPlayed: gamesCount.length,
+      };
+    }),
+  updateProfileImage: protectedProcedure
+    .input(z.object({
+      imageUrl: z.string().url(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(users)
+        .set({ image: input.imageUrl })
         .where(eq(users.id, ctx.session.user.id));
 
       return { success: true };

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 import { scores } from "~/server/db/schema";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { users } from "~/server/db/schema";
 
@@ -70,7 +70,8 @@ export const scoreRouter = createTRPCRouter({
         )
         .limit(1);
 
-      if (existingScore.length > 0) {
+      // If user is authenticated and there's no existing score, allow saving
+      if (existingScore.length > 0 && !(ctx.session?.user?.id && existingScore[0]?.userId === null)) {
         throw new TRPCError({
           code: 'CONFLICT',
           message: "You've already played today. Try again tomorrow!"
@@ -116,74 +117,6 @@ export const scoreRouter = createTRPCRouter({
       });
     }),
 
-  attachScoreToUser: protectedProcedure
-    .input(z.object({ 
-      tempId: z.string().uuid(),
-      timezone: z.number()
-    }))
-    .mutation(async ({ ctx, input }) => {
-      console.log("attachScoreToUser Mutation Input:", input);
-
-      // Get start of today in user's local time
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      today.setMinutes(today.getMinutes() - input.timezone);
-
-      // Find the temporary score from today
-      const tempScore = await ctx.db
-        .select()
-        .from(scores)
-        .where(
-          and(
-            eq(scores.tempId, input.tempId),
-            gte(scores.createdAt, today)
-          )
-        )
-        .limit(1);
-
-      if (tempScore.length === 0) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'No score found with this temporary ID for today'
-        });
-      }
-
-      // Check if user already has a score for today
-      const existingUserScore = await ctx.db
-        .select()
-        .from(scores)
-        .where(
-          and(
-            eq(scores.userId, ctx.session.user.id),
-            gte(scores.createdAt, today)
-          )
-        )
-        .limit(1);
-
-      if (existingUserScore.length > 0) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: 'User already has a score for today'
-        });
-      }
-
-      // Update the temporary score with the user ID
-      await ctx.db
-        .update(scores)
-        .set({ 
-          userId: ctx.session.user.id,
-          tempId: null
-        })
-        .where(
-          and(
-            eq(scores.tempId, input.tempId),
-            gte(scores.createdAt, today)
-          )
-        );
-
-      return { success: true };
-    }),
-
   getTodayScore: publicProcedure
     .input(z.object({
       tempId: z.string().uuid().optional(),
@@ -218,6 +151,21 @@ export const scoreRouter = createTRPCRouter({
         score: score[0]?.score ?? 0,
         results: score[0]?.results ?? ''
       };
+    }),
+
+  getTodayGames: publicProcedure
+    .input(z.object({ timezone: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      today.setMinutes(today.getMinutes() - input.timezone);
+
+      const gamesCount = await ctx.db
+        .select({ count: sql<number>`count(*)` })
+        .from(scores)
+        .where(gte(scores.createdAt, today));
+
+      return gamesCount[0]?.count ?? 0;
     }),
 
 }); 

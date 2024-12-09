@@ -318,27 +318,47 @@ export default function DailyGame() {
       const urlResults = searchParams.get("results");
 
       if (urlScore && urlResults) {
-        setGameState((prev) => ({
+        // Just update game state, don't show results yet
+        setGameState(prev => ({
           ...prev,
           score: parseInt(urlScore),
           gameOver: true,
         }));
-        setQuestionResults(urlResults.split(",").map((r) => r === "1"));
+        setQuestionResults(urlResults.split(",").map(r => r === "1"));
       }
     }
-  }, [session, tempId, searchParams]);
+  }, [session?.user, tempId, searchParams]);
 
   // Handle username submission
   const onUsernameSubmit = async () => {
+    const urlScore = searchParams.get("score");
+    const urlResults = searchParams.get("results");
+
+    if (urlScore && urlResults && tempId) {
+      // Save score after username is set
+      await saveScoreMutation.mutateAsync({
+        score: parseInt(urlScore),
+        tempId,
+        results: urlResults,
+        timezone: new Date().getTimezoneOffset(),
+        currentGuessStreak: 0
+      });
+      
+      // Clean up URL and localStorage
+      window.history.replaceState({}, '', window.location.pathname);
+      localStorage.removeItem('barkle_temp_id');
+    }
+
     setShowUsernameDialog(false);
+    setShowGameResults(true);
   };
 
-  // Show instructions only after we confirm they can play
+  // Update the instructions effect to check isReturningFromAuth
   useEffect(() => {
-    if (canPlayQuery.data?.canPlay && !isReturningFromAuth) {
+    if (canPlayQuery.data?.canPlay && !isReturningFromAuth && !showGameResults) {
       setShowInstructions(true);
     }
-  }, [canPlayQuery.data?.canPlay, isReturningFromAuth]);
+  }, [canPlayQuery.data?.canPlay, isReturningFromAuth, showGameResults]);
 
   // Single todayScoreQuery
   const todayScoreQuery = api.score.getTodayScore.useQuery(
@@ -351,66 +371,6 @@ export default function DailyGame() {
         !canPlayQuery.data?.canPlay && (!!localTempId || !!session?.user),
     }
   );
-
-  // Move this up with other API hooks (near saveScoreMutation)
-  const attachUserToTempScore = api.score.attachScoreToUser.useMutation();
-
-  // Add this state to track if we've handled the auth return
-  const hasHandledAuthRef = useRef(false);
-
-  // Add this state to track if we've started the attachment process
-  const [isAttaching, setIsAttaching] = useState(false);
-
-  // Update the auth return effect
-  useEffect(() => {
-    let isActive = true;
-
-    const handleAttachScore = async () => {
-      if (
-        session?.user &&
-        tempId &&
-        !hasHandledAuthRef.current &&
-        !attachUserToTempScore.isSuccess &&
-        !isAttaching
-      ) {
-        try {
-          hasHandledAuthRef.current = true;
-          setIsAttaching(true);
-
-          const timezoneOffset = new Date().getTimezoneOffset();
-
-          await attachUserToTempScore.mutateAsync({
-            tempId,
-            timezone: timezoneOffset,
-          });
-
-          if (!isActive) return;
-
-          router.replace(window.location.pathname);
-          toast({
-            title: "Score saved!",
-            description: "Your score has been attached to your account.",
-            duration: 3000,
-          });
-        } catch (error) {
-          if (!isActive) return;
-          console.error("Failed to attach score:", error);
-          toast({
-            title: "Error",
-            description: "Failed to attach score to your account.",
-            variant: "destructive",
-            duration: 3000,
-          });
-        }
-      }
-    };
-
-    void handleAttachScore();
-
-    return () => {
-      isActive = false;
-    };
-  }, [session?.user, tempId]); // Simplified dependencies
 
   // Show loading until canPlayQuery is settled
   if (canPlayQuery.isLoading) {

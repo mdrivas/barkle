@@ -98,11 +98,15 @@ export function ShareResultsDialog({
               <div
                 key={i}
                 className={cn(
-                  "w-8 h-8 rounded-lg flex items-center justify-center text-lg",
-                  result ? "bg-green-500" : "bg-zinc-700"
+                  "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                  result 
+                    ? "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20"
+                    : "bg-zinc-800"
                 )}
               >
-                {result ? "🐕" : "😢"}
+                <span className="text-[10px] text-white/90">
+                  🐾
+                </span>
               </div>
             ))}
           </div>

@@ -66,7 +66,10 @@ export const users = createTable("user", {
   currentGuessStreak: integer("current_guess_streak").default(0),
   highestGuessStreak: integer("highest_guess_streak").default(0),
   lastPlayedAt: timestamp("last_played_at", { withTimezone: true }),
-});
+}, (table) => ({
+  usernameIdx: index("username_idx").on(table.username),
+  emailIdx: index("email_idx").on(table.email),
+}));
 
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
@@ -156,7 +159,10 @@ export const scores = createTable("scores", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
-});
+}, (table) => ({
+  userIdIdx: index("scores_user_id_idx").on(table.userId),
+  createdAtIdx: index("scores_created_at_idx").on(table.createdAt),
+}));
 
 export const dailyBreeds = createTable("daily_breeds", {
   id: serial("id").primaryKey(),

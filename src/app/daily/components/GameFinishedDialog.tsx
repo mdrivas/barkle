@@ -23,6 +23,7 @@ interface GameFinishedDialogProps {
   score: number;
   questionResults: boolean[];
   onClose?: () => void;
+  isReturningFromAuth?: boolean;
 }
 
 export function GameFinishedDialog({ 
@@ -30,13 +31,12 @@ export function GameFinishedDialog({
   score, 
   questionResults,
   onClose,
+  isReturningFromAuth = false,
 }: GameFinishedDialogProps) {
   // Hooks initialization
   const router = useRouter();
   const { data: session } = useSession();
-  const attachUserToTempScore = api.score.attachScoreToUser.useMutation();
   const saveScore = api.score.saveScore.useMutation();
-  const [scoreAttached, setScoreAttached] = useState(false);
   const { toast } = useToast();
 
   // Add state for share dialog
@@ -44,6 +44,19 @@ export function GameFinishedDialog({
 
   // Add state for tempId
   const [localTempId, setLocalTempId] = useState<string | undefined>();
+
+  // Add state to track if we've handled the auth return
+  const [hasHandledAuthReturn, setHasHandledAuthReturn] = useState(false);
+
+  // Add state to track if username has been set
+  const [shouldShowResults, setShouldShowResults] = useState(!isReturningFromAuth);
+
+  // Add effect to update shouldShowResults when username is set
+  useEffect(() => {
+    if (!isReturningFromAuth) {
+      setShouldShowResults(true);
+    }
+  }, [isReturningFromAuth]);
 
   // Add useEffect to get localStorage value
   useEffect(() => {
@@ -55,31 +68,6 @@ export function GameFinishedDialog({
     router.push('/?showLeaderboard=true');
   };
 
-  // Effect to handle user returning from authentication
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tempId = urlParams.get('tempId');
-    const urlScore = urlParams.get('score');
-    const urlResults = urlParams.get('results');
-    
-    if (tempId && session?.user && !scoreAttached && urlScore && urlResults) {
-      // Attach score to user
-      attachUserToTempScore.mutate({ 
-        tempId,
-        timezone: new Date().getTimezoneOffset()
-      }, {
-        onSuccess: () => {
-          setScoreAttached(true);
-          // Clean up URL
-          window.history.replaceState({}, '', window.location.pathname);
-        },
-        onError: (error) => {
-          console.error("Failed to attach score to user:", error);
-        },
-      });
-    }
-  }, [session?.user, attachUserToTempScore, scoreAttached]);
-
   // Handler for Google sign in
   const handleSignIn = async () => {
     const existingTempId = localStorage.getItem('barkle_temp_id');
@@ -87,20 +75,22 @@ export function GameFinishedDialog({
     const resultsString = questionResults.map(r => r ? '1' : '0').join(',');
     
     try {
+      // Save score with new tempId if none exists
+      const tempIdToUse = existingTempId || newTempId;
       if (!existingTempId) {
         localStorage.setItem('barkle_temp_id', newTempId);
         
         await saveScore.mutateAsync({
           score,
           results: resultsString,
-          tempId: newTempId,
+          tempId: tempIdToUse,
           timezone: new Date().getTimezoneOffset(),
           currentGuessStreak: 0
         });
       }
       
       void signIn("google", {
-        callbackUrl: `${window.location.pathname}?tempId=${existingTempId || newTempId}&score=${score}&results=${resultsString}`,
+        callbackUrl: `${window.location.pathname}?tempId=${tempIdToUse}&score=${score}&results=${resultsString}`,
       });
     } catch (error) {
       console.error("Failed to save score for anonymous user:", error);
@@ -215,7 +205,7 @@ export function GameFinishedDialog({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+      <Dialog open={isOpen && shouldShowResults} onOpenChange={(open) => !open && onClose?.()}>
         <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
