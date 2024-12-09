@@ -56,3 +56,10 @@ DONT DO DIS 3. Run `npm run db:push` to push default migrations
 1. Shadcn UI components are located in `src/components/ui`
 2. Use npx shadcn-ui@latest add {component} to add a new component it will automatically update the `src/components/ui/index.tsx` file
 3. Reference the website for the component you want to use here: https://ui.shadcn.com/
+
+## Testing
+
+1. Run `npm run test` to run the tests
+2. Run `npm run test:watch` to run the tests in watch mode
+3. Run `npm run test:coverage` to run the tests and generate a coverage report
+4. Run `npm run test:ui` to run the tests in interactive watch mode

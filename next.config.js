@@ -16,7 +16,13 @@ const config = {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
         pathname: '/a/**'
-      }
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/dog-submissions/**',
+      },
     ]
   }
 };
