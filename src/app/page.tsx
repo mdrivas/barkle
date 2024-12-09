@@ -11,6 +11,7 @@ import { useSession, signIn } from "next-auth/react";
 import { Roboto } from "next/font/google";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DogSubmissionModal } from "./components/DogSubmissionModal";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -111,6 +112,11 @@ export default function Home() {
             open={showLeaderboard} 
             onOpenChange={setShowLeaderboard}
           />
+        </div>
+
+        {/* Submit Photo Button */}
+        <div className="flex gap-4 w-full max-w-lg px-4">
+          <DogSubmissionModal />
         </div>
 
         {/* Games Counter */}
