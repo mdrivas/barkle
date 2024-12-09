@@ -27,6 +27,7 @@ interface GameState {
   guessesRemaining: number;
   gameOver: boolean;
   hasSavedScore: boolean;
+  currentGuessStreak: number;
 }
 
 interface BreedsResponse {
@@ -106,7 +107,8 @@ export default function DailyGame() {
     score: 0,
     guessesRemaining: 5,
     gameOver: false,
-    hasSavedScore: false
+    hasSavedScore: false,
+    currentGuessStreak: 0
   });
 
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
@@ -190,12 +192,16 @@ export default function DailyGame() {
     const newGuessesRemaining = gameState.guessesRemaining - 1;
     const newGameOver = newGuessesRemaining === 0;
 
+    // Update guess streak
+    const newGuessStreak = isCorrect ? gameState.currentGuessStreak + 1 : 0;
+
     // Update game state
     setGameState(prev => ({
       ...prev,
       score: newScore,
       guessesRemaining: newGuessesRemaining,
       gameOver: newGameOver,
+      currentGuessStreak: newGuessStreak
     }));
 
     setAnsweredBreed(breed);
@@ -225,7 +231,8 @@ export default function DailyGame() {
           score: newScore,
           results: [...questionResults, isCorrect].map(r => r ? '1' : '0').join(','),
           tempId: !session?.user ? localTempId ?? undefined : undefined,
-          timezone: new Date().getTimezoneOffset()
+          timezone: new Date().getTimezoneOffset(),
+          currentGuessStreak: newGuessStreak
         });
         setShowGameResults(true);
       } catch (error) {

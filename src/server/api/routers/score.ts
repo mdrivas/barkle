@@ -3,6 +3,7 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/
 import { scores } from "~/server/db/schema";
 import { eq, and, gte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { users } from "~/server/db/schema";
 
 export const scoreRouter = createTRPCRouter({
   canPlayToday: publicProcedure
@@ -47,7 +48,8 @@ export const scoreRouter = createTRPCRouter({
       score: z.number(),
       tempId: z.string().uuid().optional(),
       results: z.string(),
-      timezone: z.number()
+      timezone: z.number(),
+      currentGuessStreak: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
       const today = new Date();
@@ -75,7 +77,37 @@ export const scoreRouter = createTRPCRouter({
         });
       }
 
-      // If no existing score, insert new score
+      // If user is authenticated, update their streaks
+      if (ctx.session?.user?.id) {
+        const user = await ctx.db.query.users.findFirst({
+          where: eq(users.id, ctx.session.user.id),
+        });
+
+        if (user) {
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+
+          // Calculate new daily streak
+          let newDailyStreak = 1; // Default to 1 for a new streak
+          if (user.lastPlayedAt && user.lastPlayedAt >= yesterday) {
+            newDailyStreak = (user.currentDailyStreak ?? 0) + 1;
+          }
+
+          // Update user stats
+          await ctx.db
+            .update(users)
+            .set({
+              currentDailyStreak: newDailyStreak,
+              highestDailyStreak: Math.max(newDailyStreak, user.highestDailyStreak ?? 0),
+              currentGuessStreak: input.currentGuessStreak,
+              highestGuessStreak: Math.max(input.currentGuessStreak, user.highestGuessStreak ?? 0),
+              lastPlayedAt: new Date(),
+            })
+            .where(eq(users.id, ctx.session.user.id));
+        }
+      }
+
+      // Save the score
       return ctx.db.insert(scores).values({
         score: input.score,
         userId: ctx.session?.user?.id,
@@ -163,7 +195,10 @@ export const scoreRouter = createTRPCRouter({
       today.setMinutes(today.getMinutes() - input.timezone);
 
       const score = await ctx.db
-        .select()
+        .select({
+          score: scores.score,
+          results: scores.results,
+        })
         .from(scores)
         .where(
           and(
@@ -175,8 +210,10 @@ export const scoreRouter = createTRPCRouter({
         )
         .limit(1);
 
+      // If no score found, return null instead of default values
       if (!score.length) return null;
 
+      // Return the actual score data
       return {
         score: score[0]?.score ?? 0,
         results: score[0]?.results ?? ''

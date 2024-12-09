@@ -54,13 +54,18 @@ export const users = createTable("user", {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: varchar("name", { length: 255 }),
-  username: varchar("username", { length: 30 }).unique(), // Add this line
+  username: varchar("username", { length: 30 }).unique(),
   email: varchar("email", { length: 255 }).notNull(),
   emailVerified: timestamp("email_verified", {
     mode: "date",
     withTimezone: true,
   }).default(sql`CURRENT_TIMESTAMP`),
   image: varchar("image", { length: 255 }),
+  currentDailyStreak: integer("current_daily_streak").default(0),
+  highestDailyStreak: integer("highest_daily_streak").default(0),
+  currentGuessStreak: integer("current_guess_streak").default(0),
+  highestGuessStreak: integer("highest_guess_streak").default(0),
+  lastPlayedAt: timestamp("last_played_at", { withTimezone: true }),
 });
 
 export type User = InferSelectModel<typeof users>;

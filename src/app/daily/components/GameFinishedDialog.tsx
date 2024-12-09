@@ -15,6 +15,7 @@ import { GoogleLogo } from "~/components/icons";
 import { api } from "~/trpc/react";
 import { ShareResultsDialog } from "~/app/components/ShareResultsDialog";
 import { useToast } from "~/hooks/use-toast";
+import { Share2 } from "lucide-react";
 
 // Props interface for GameFinishedDialog component
 interface GameFinishedDialogProps {
@@ -38,6 +39,9 @@ export function GameFinishedDialog({
   const [scoreAttached, setScoreAttached] = useState(false);
   const { toast } = useToast();
 
+  // Add state for share dialog
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
   // Define handleViewLeaderboard at the top level of the component
   const handleViewLeaderboard = () => {
     router.push('/?showLeaderboard=true');
@@ -52,7 +56,10 @@ export function GameFinishedDialog({
     
     if (tempId && session?.user && !scoreAttached && urlScore && urlResults) {
       // Attach score to user
-      attachUserToTempScore.mutate({ tempId, timezone: new Date().getTimezoneOffset() }, {
+      attachUserToTempScore.mutate({ 
+        tempId,
+        timezone: new Date().getTimezoneOffset()
+      }, {
         onSuccess: () => {
           setScoreAttached(true);
           // Clean up URL
@@ -79,7 +86,8 @@ export function GameFinishedDialog({
           score,
           results: resultsString,
           tempId: newTempId,
-          timezone: new Date().getTimezoneOffset()
+          timezone: new Date().getTimezoneOffset(),
+          currentGuessStreak: 0
         });
       }
       
@@ -113,12 +121,27 @@ export function GameFinishedDialog({
     }
   };
 
-  // Shared components used in both states
+  // Get today's score if it exists
+  const todayScoreQuery = api.score.getTodayScore.useQuery({
+    tempId: !session?.user ? localStorage.getItem('barkle_temp_id') ?? undefined : undefined,
+    timezone: new Date().getTimezoneOffset()
+  });
+
+  // Use the actual score from props or query
+  const displayScore = todayScoreQuery.data?.score ?? score;
+  const displayResults = todayScoreQuery.data?.results 
+    ? todayScoreQuery.data.results.split(',').map(r => r === '1')
+    : questionResults;
+
+  // Replace shareResults component with button
   const shareResults = (
-    <ShareResultsDialog 
-      score={score}
-      questionResults={questionResults}
-    />
+    <Button 
+      onClick={() => setIsShareDialogOpen(true)}
+      className="w-full bg-emerald-600 hover:bg-emerald-700 text-zinc-100 transition-all duration-200 py-6 text-lg font-medium rounded-xl flex items-center justify-center gap-2"
+    >
+      Share Results
+      <Share2 className="h-5 w-5" />
+    </Button>
   );
 
   const leaderboardButton = (
@@ -183,27 +206,36 @@ export function GameFinishedDialog({
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
-      <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
-            {score > 0 ? "Congratulations! 🎉" : "Game Over"}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="flex flex-col gap-4 items-center mt-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-emerald-500 mb-2">
-              {score} {score === 1 ? "Point" : "Points"} 🐾
-            </p>
-            <p className="text-gray-300 text-sm sm:text-base">
-              {getScoreMessage(score)}
-            </p>
-          </div>
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+        <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
+              {displayScore > 0 ? "Congratulations! 🎉" : "Game Over"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex flex-col gap-4 items-center mt-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-emerald-500 mb-2">
+                {displayScore} {displayScore === 1 ? "Point" : "Points"} 🐾
+              </p>
+              <p className="text-gray-300 text-sm sm:text-base">
+                {getScoreMessage(displayScore)}
+              </p>
+            </div>
 
-          {session ? authenticatedContent : unauthenticatedContent}
-        </div>
-      </DialogContent>
-    </Dialog>
+            {session ? authenticatedContent : unauthenticatedContent}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ShareResultsDialog 
+        score={displayScore}
+        questionResults={displayResults}
+        isOpen={isShareDialogOpen}
+        onOpenChange={setIsShareDialogOpen}
+      />
+    </>
   );
 }
