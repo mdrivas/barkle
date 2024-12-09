@@ -14,7 +14,6 @@ type DailyScore = {
   currentStreak: number | null;
   dailyStreak: number | null;
   userId: string | null;
-  createdAt: Date;
 };
 
 type PawsistenceScore = {
@@ -27,6 +26,18 @@ type PawsistenceScore = {
 // Add type guard
 const isPawsistenceScore = (score: DailyScore | PawsistenceScore): score is PawsistenceScore => 
   'highestStreak' in score;
+
+// Add this helper function at the top
+const getScoreEmoji = (score: number) => {
+  switch (score) {
+    case 5: return "🏆"; // Perfect score
+    case 4: return "🌟"; // Almost perfect
+    case 3: return "🎯"; // Good score
+    case 2: return "🐾"; // Getting there
+    case 1: return "🦴"; // At least they got one
+    default: return "🐕"; // Default/zero
+  }
+};
 
 export function LeaderboardContent({ mode }: LeaderboardContentProps) {
   const { data: session } = useSession();
@@ -82,7 +93,9 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
               </>
             ) : (
               <>
-                <div className="text-amber-500">{userScore.score}/5</div>
+                <div className="text-amber-500">
+                  {userScore.score}/5 {getScoreEmoji(userScore.score)}
+                </div>
                 <div className="text-green-500">{userScore.currentStreak}🔥</div>
                 <div className="text-amber-500">{userScore.dailyStreak}🔥</div>
               </>
@@ -138,7 +151,9 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
               </>
             ) : (
               <>
-                <div className="text-amber-500">{entry.score}/5</div>
+                <div className="text-amber-500">
+                  {entry.score}/5 {getScoreEmoji(entry.score)}
+                </div>
                 <div className="text-green-500">{entry.currentStreak}🔥</div>
                 <div className="text-amber-500">{entry.dailyStreak}🔥</div>
               </>

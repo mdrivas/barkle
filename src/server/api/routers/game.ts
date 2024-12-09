@@ -8,14 +8,11 @@ export const gameRouter = createTRPCRouter({
   getDailyBreeds: publicProcedure
     .input(z.object({ timezone: z.number() }))
     .query(async ({ ctx, input }) => {
-      // Adjust date for timezone
-      const date = new Date();
-      date.setMinutes(date.getMinutes() + input.timezone);
-      const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
       // Check if we already have breeds for today
       const existingBreeds = await ctx.db.query.dailyBreeds.findFirst({
-        where: (breeds) => eq(breeds.date, dateString),
+        where: (breeds) => eq(breeds.date, today!)
       });
 
       if (existingBreeds) {
@@ -23,7 +20,7 @@ export const gameRouter = createTRPCRouter({
       }
 
       // If not, generate new breeds
-      const rng = seedrandom(dateString);
+      const rng = seedrandom(today);
       const breedsResponse = await fetch('https://dog.ceo/api/breeds/list/all');
       const breedsData = await breedsResponse.json();
       const allBreeds = Object.keys(breedsData.message);
@@ -48,11 +45,13 @@ export const gameRouter = createTRPCRouter({
         }
       }
 
-      // Store in database
-      const newDailyBreeds = await ctx.db.insert(dailyBreeds).values({
-        date: dateString,
-        breeds: JSON.stringify(selectedBreeds)
-      }).returning();
+      // Store in database with consistent date format
+      const newDailyBreeds = await ctx.db.insert(dailyBreeds)
+        .values({
+          date: today!,  // Assert today is not undefined
+          breeds: JSON.stringify(selectedBreeds)
+        })
+        .returning();
 
       return newDailyBreeds[0];
     }),

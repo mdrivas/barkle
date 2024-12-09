@@ -56,20 +56,16 @@ export const users = createTable("user", {
   name: varchar("name", { length: 255 }),
   username: varchar("username", { length: 30 }).unique(),
   email: varchar("email", { length: 255 }).notNull(),
-  emailVerified: timestamp("email_verified", {
-    mode: "date",
-    withTimezone: true,
-  }).default(sql`CURRENT_TIMESTAMP`),
+  emailVerified: timestamp("email_verified", { mode: "date", withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`),
   image: varchar("image", { length: 255 }),
   currentDailyStreak: integer("current_daily_streak").default(0),
   highestDailyStreak: integer("highest_daily_streak").default(0),
   currentGuessStreak: integer("current_guess_streak").default(0),
   highestGuessStreak: integer("highest_guess_streak").default(0),
-  lastPlayedAt: timestamp("last_played_at", { withTimezone: true }),
-}, (table) => ({
-  usernameIdx: index("username_idx").on(table.username),
-  emailIdx: index("email_idx").on(table.email),
-}));
+  lastPlayedDate: varchar("last_played_date", { length: 10 })
+    .default(sql`to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD')`),
+});
 
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
@@ -153,16 +149,12 @@ export const scores = createTable("scores", {
   id: serial("id").primaryKey(),
   score: integer("score").notNull(),
   results: text("results"),
-  userId: varchar("user_id", { length: 255 })
-    .references(() => users.id),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
   tempId: varchar("temp_id", { length: 255 }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
-}, (table) => ({
-  userIdIdx: index("scores_user_id_idx").on(table.userId),
-  createdAtIdx: index("scores_created_at_idx").on(table.createdAt),
-}));
+  playDate: varchar("play_date", { length: 10 })
+    .notNull()
+    .default(sql`to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD')`),
+});
 
 export const dailyBreeds = createTable("daily_breeds", {
   id: serial("id").primaryKey(),

@@ -9,15 +9,10 @@ export const scoreRouter = createTRPCRouter({
   canPlayToday: publicProcedure
     .input(z.object({ 
       tempId: z.string().uuid().optional(),
-      timezone: z.number()
     }))
     .query(async ({ ctx, input }) => {
-      // Get start of today in user's local time
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      today.setMinutes(today.getMinutes() - input.timezone);
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-      // Check for existing scores today
       const recentScores = await ctx.db
         .select()
         .from(scores)
@@ -26,20 +21,14 @@ export const scoreRouter = createTRPCRouter({
             ctx.session?.user?.id
               ? eq(scores.userId, ctx.session.user.id)
               : eq(scores.tempId, input.tempId ?? ''),
-            gte(scores.createdAt, today)
+            eq(scores.playDate, today!)
           )
         )
-        .orderBy(scores.createdAt)
         .limit(1);
-
-      // Calculate next play time (local midnight)
-      const tomorrow = new Date();
-      tomorrow.setHours(24, 0, 0, 0);
 
       return {
         canPlay: recentScores.length === 0,
-        nextPlayTime: recentScores.length > 0 ? tomorrow : null,
-        lastPlayedAt: recentScores[0]?.createdAt ?? null
+        lastPlayedDate: recentScores[0]?.playDate ?? null
       };
     }),
 
@@ -48,53 +37,37 @@ export const scoreRouter = createTRPCRouter({
       score: z.number(),
       tempId: z.string().uuid().optional(),
       results: z.string(),
-      timezone: z.number(),
       currentGuessStreak: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      today.setMinutes(today.getMinutes() - input.timezone);
+      const today = new Date().toISOString().split('T')[0];
 
-      // Check for existing scores today
-      const existingScore = await ctx.db
-        .select()
-        .from(scores)
-        .where(
-          and(
-            ctx.session?.user?.id
-              ? eq(scores.userId, ctx.session.user.id)
-              : eq(scores.tempId, input.tempId ?? ''),
-            gte(scores.createdAt, today)
-          )
-        )
-        .limit(1);
+      // Save the score with today's date
+      await ctx.db.insert(scores).values({
+        score: input.score,
+        userId: ctx.session?.user?.id ?? null,
+        tempId: !ctx.session?.user?.id ? (input.tempId ?? null) : null,
+        results: input.results,
+        playDate: today!
+      });
 
-      // If user is authenticated and there's no existing score, allow saving
-      if (existingScore.length > 0 && !(ctx.session?.user?.id && existingScore[0]?.userId === null)) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: "You've already played today. Try again tomorrow!"
-        });
-      }
-
-      // If user is authenticated, update their streaks
+      // Update user stats if authenticated
       if (ctx.session?.user?.id) {
         const user = await ctx.db.query.users.findFirst({
           where: eq(users.id, ctx.session.user.id),
         });
 
         if (user) {
-          const yesterday = new Date(today);
+          const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayString = yesterday.toISOString().split('T')[0];
 
           // Calculate new daily streak
-          let newDailyStreak = 1; // Default to 1 for a new streak
-          if (user.lastPlayedAt && user.lastPlayedAt >= yesterday) {
+          let newDailyStreak = 1;
+          if (user.lastPlayedDate === yesterdayString) {
             newDailyStreak = (user.currentDailyStreak ?? 0) + 1;
           }
 
-          // Update user stats
           await ctx.db
             .update(users)
             .set({
@@ -102,19 +75,11 @@ export const scoreRouter = createTRPCRouter({
               highestDailyStreak: Math.max(newDailyStreak, user.highestDailyStreak ?? 0),
               currentGuessStreak: input.currentGuessStreak,
               highestGuessStreak: Math.max(input.currentGuessStreak, user.highestGuessStreak ?? 0),
-              lastPlayedAt: new Date(),
+              lastPlayedDate: today,
             })
             .where(eq(users.id, ctx.session.user.id));
         }
       }
-
-      // Save the score
-      return ctx.db.insert(scores).values({
-        score: input.score,
-        userId: ctx.session?.user?.id,
-        tempId: !ctx.session?.user?.id ? input.tempId : null,
-        results: input.results,
-      });
     }),
 
   getTodayScore: publicProcedure
@@ -123,9 +88,7 @@ export const scoreRouter = createTRPCRouter({
       timezone: z.number()
     }))
     .query(async ({ ctx, input }) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      today.setMinutes(today.getMinutes() - input.timezone);
+      const today = new Date().toISOString().split('T')[0];
 
       const score = await ctx.db
         .select({
@@ -138,7 +101,7 @@ export const scoreRouter = createTRPCRouter({
             ctx.session?.user?.id
               ? eq(scores.userId, ctx.session.user.id)
               : eq(scores.tempId, input.tempId ?? ''),
-            gte(scores.createdAt, today)
+            eq(scores.playDate, today!)
           )
         )
         .limit(1);
@@ -155,25 +118,21 @@ export const scoreRouter = createTRPCRouter({
 
   getTodayGames: publicProcedure
     .input(z.object({ timezone: z.number() }))
-    .query(async ({ ctx, input }) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      today.setMinutes(today.getMinutes() - input.timezone);
+    .query(async ({ ctx }) => {
+      const today = new Date().toISOString().split('T')[0];
 
       const gamesCount = await ctx.db
         .select({ count: sql<number>`count(*)` })
         .from(scores)
-        .where(gte(scores.createdAt, today));
+        .where(eq(scores.playDate, today!));
 
       return gamesCount[0]?.count ?? 0;
     }),
 
   getDailyLeaderboard: publicProcedure
     .input(z.object({ timezone: z.number() }))
-    .query(async ({ ctx, input }) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      today.setMinutes(today.getMinutes() - input.timezone);
+    .query(async ({ ctx }) => {
+      const today = new Date().toISOString().split('T')[0];
 
       return ctx.db
         .select({
@@ -182,17 +141,20 @@ export const scoreRouter = createTRPCRouter({
           currentStreak: users.currentGuessStreak,
           dailyStreak: users.currentDailyStreak,
           userId: scores.userId,
-          createdAt: scores.createdAt,
         })
         .from(scores)
         .leftJoin(users, eq(scores.userId, users.id))
         .where(
           and(
-            gte(scores.createdAt, today),
+            eq(scores.playDate, today!),
             isNotNull(scores.userId)
           )
         )
-        .orderBy(desc(scores.score), desc(users.currentGuessStreak), asc(scores.createdAt))
+        .orderBy(
+          desc(scores.score),
+          desc(users.currentGuessStreak),
+          desc(users.currentDailyStreak)
+        )
         .limit(100);
     }),
 
