@@ -157,3 +157,15 @@ export const scores = createTable("scores", {
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
 });
+
+export const dailyBreeds = createTable("daily_breeds", {
+  id: serial("id").primaryKey(),
+  date: varchar("date", { length: 10 }).notNull().unique(),
+  breeds: text("breeds").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export type DailyBreeds = InferSelectModel<typeof dailyBreeds>;
+export type NewDailyBreeds = InferInsertModel<typeof dailyBreeds>;

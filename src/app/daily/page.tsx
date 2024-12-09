@@ -13,6 +13,7 @@ import Link from "next/link";
 import { DailyInstructions } from "./components/DailyInstructions";
 import { UsernameDialog } from "./components/UsernameDialog";
 import { useRouter, useSearchParams } from "next/navigation";
+import seedrandom from "seedrandom";
 
 interface DogBreed {
   breed: string;
@@ -40,37 +41,54 @@ interface ImageResponse {
   status: string;
 }
 
+interface DailyBreeds {
+  breeds: DogBreed[];
+  date: string;
+}
+
+function getDateString() {
+  const date = new Date();
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+
+function generateDailySeededRandom(seed: string) {
+  return seedrandom(seed);
+}
+
 export default function DailyGame() {
   const { data: session } = useSession();
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tempId = searchParams.get('tempId');
+  const tempId = searchParams.get("tempId");
   const isReturningFromAuth = !!tempId;
 
   // Get or create tempId for non-signed in users
   const [localTempId, setLocalTempId] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (!session?.user) {
-      const storedTempId = localStorage.getItem('barkle_temp_id');
+      const storedTempId = localStorage.getItem("barkle_temp_id");
       if (storedTempId) {
         setLocalTempId(storedTempId);
       } else {
         const newTempId = crypto.randomUUID();
-        localStorage.setItem('barkle_temp_id', newTempId);
+        localStorage.setItem("barkle_temp_id", newTempId);
         setLocalTempId(newTempId);
       }
     }
   }, [session?.user]);
 
   // Single canPlayQuery
-  const canPlayQuery = api.score.canPlayToday.useQuery({ 
-    tempId: !session?.user ? (tempId ?? localTempId ?? undefined) : undefined,
-    timezone: new Date().getTimezoneOffset()
-  }, {
-    enabled: !!localTempId || !!session?.user // Enable when we have either localTempId or session
-  });
+  const canPlayQuery = api.score.canPlayToday.useQuery(
+    {
+      tempId: !session?.user ? tempId ?? localTempId ?? undefined : undefined,
+      timezone: new Date().getTimezoneOffset(),
+    },
+    {
+      enabled: !!localTempId || !!session?.user, // Enable when we have either localTempId or session
+    }
+  );
 
   const [showInstructions, setShowInstructions] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
@@ -81,24 +99,34 @@ export default function DailyGame() {
 
   // Update the toast effect
   useEffect(() => {
-    if (!isReturningFromAuth && !hasShownToast && canPlayQuery.data && !canPlayQuery.data.canPlay) {
+    if (
+      !isReturningFromAuth &&
+      !hasShownToast &&
+      canPlayQuery.data &&
+      !canPlayQuery.data.canPlay
+    ) {
       const tomorrow = new Date();
       tomorrow.setHours(24, 0, 0, 0);
 
       toast({
         title: "You've already played today!",
         description: `Next game available at ${tomorrow.toLocaleTimeString([], {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
         })} your local time`,
         variant: "destructive",
         duration: 3000,
       });
-      
+
       setHasShownToast(true);
     }
-  }, [canPlayQuery.data, toast, isReturningFromAuth, hasShownToast]);
+  }, [
+    canPlayQuery.data,
+    toast,
+    isReturningFromAuth,
+    hasShownToast,
+  ]);
 
   const [gameState, setGameState] = useState<GameState>({
     currentBreed: null,
@@ -108,75 +136,89 @@ export default function DailyGame() {
     guessesRemaining: 5,
     gameOver: false,
     hasSavedScore: false,
-    currentGuessStreak: 0
+    currentGuessStreak: 0,
   });
 
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
 
+  // New state to track the current round index
+  const [currentRoundIndex, setCurrentRoundIndex] = useState<number>(0);
 
   const happyBarkRef = useRef<HTMLAudioElement | null>(null);
   const angryBarkRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    happyBarkRef.current = new Audio('/happy_bark.mp3');
-    angryBarkRef.current = new Audio('/angry_bark.mp3');
+    happyBarkRef.current = new Audio("/happy_bark.mp3");
+    angryBarkRef.current = new Audio("/angry_bark.mp3");
   }, []);
 
+  // Add this query to fetch daily breeds
+  const dailyBreedsQuery = api.game.getDailyBreeds.useQuery(
+    { timezone: new Date().getTimezoneOffset() },
+    { enabled: canPlayQuery.data?.canPlay }
+  );
+
+  // Replace the fetchNewRound function with this version
   const fetchNewRound = useCallback(async () => {
-    try {
-      setGameState(prev => ({ ...prev, isLoading: true }));
+    if (!dailyBreedsQuery.data) return;
 
-      // Fetch list of all breeds
-      const breedsResponse = await fetch('https://dog.ceo/api/breeds/list/all');
-      const breedsData = (await breedsResponse.json()) as BreedsResponse;
-      const allBreeds = Object.keys(breedsData.message);
+    const parsedBreeds: DogBreed[] = JSON.parse(dailyBreedsQuery.data.breeds);
+    if (currentRoundIndex >= parsedBreeds.length) return;
 
-      // Select random breed for correct answer
-      const correctBreed = allBreeds[Math.floor(Math.random() * allBreeds.length)];
+    const currentBreed = parsedBreeds[currentRoundIndex];
+    if (!currentBreed) return;
 
-      // Fetch random image for correct breed
-      const imageResponse = await fetch(`https://dog.ceo/api/breed/${correctBreed}/images/random`);
-      const imageData = (await imageResponse.json()) as ImageResponse;
+    // Get all possible breeds from the API
+    const breedsResponse = await fetch("https://dog.ceo/api/breeds/list/all");
+    const breedsData: BreedsResponse = await breedsResponse.json();
 
-      // Generate 3 wrong options
-      const wrongOptions = new Set<string>();
-      while (wrongOptions.size < 3) {
-        const wrongBreed = allBreeds[Math.floor(Math.random() * allBreeds.length)];
-        if (wrongBreed && wrongBreed !== correctBreed) {
-          wrongOptions.add(wrongBreed);
-        }
-      }
+    // Use round-specific seed for consistent randomization
+    const roundSeed = `${getDateString()}-${currentRoundIndex}`;
+    const roundRng = generateDailySeededRandom(roundSeed);
 
-      // Combine and shuffle options
-      const options = [...wrongOptions, correctBreed]
-        .filter((breed): breed is string => breed !== undefined)
-        .sort(() => Math.random() - 0.5);
+    // First, get all images for this breed
+    const breedImagesResponse = await fetch(
+      `https://dog.ceo/api/breed/${currentBreed.breed}/images`
+    );
+    const breedImagesData = await breedImagesResponse.json();
+    const images = breedImagesData.message as string[];
 
-      if (!correctBreed) throw new Error("No breed selected");
+    // Use seeded random to select consistent image
+    const imageIndex = Math.floor(roundRng() * images.length);
+    const selectedImage = images[imageIndex] ?? images[0] ?? "https://dog.ceo/api/breeds/image/random";
 
-      setGameState(prev => ({
-        ...prev,
-        currentBreed: {
-          breed: correctBreed,
-          imageUrl: imageData.message
-        },
-        options,
-        isLoading: false
-      }));
+    // Rest of the function (wrong answers, options, etc.)
+    const dailyBreedNames = parsedBreeds.map((b) => b.breed);
+    const possibleWrongBreeds = Object.keys(breedsData.message).filter(
+      (breed) => !dailyBreedNames.includes(breed)
+    );
 
-    } catch (error) {
-      console.error('Error fetching game data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load dog breeds. Please try again.",
-        variant: "destructive"
-      });
-    }
-  }, [toast]);
+    const shuffledWrongBreeds = [...possibleWrongBreeds].sort(
+      () => roundRng() - 0.5
+    );
 
+    const wrongOptions = shuffledWrongBreeds.slice(0, 3);
+    const options = [currentBreed.breed, ...wrongOptions].sort(
+      () => roundRng() - 0.5
+    );
+
+    setGameState((prev) => ({
+      ...prev,
+      currentBreed: {
+        breed: currentBreed.breed,
+        imageUrl: selectedImage,
+      },
+      options,
+      isLoading: false,
+    }));
+  }, [dailyBreedsQuery.data, currentRoundIndex]);
+
+  // Update the useEffect to fetch the current round when currentRoundIndex changes
   useEffect(() => {
-    void fetchNewRound();
-  }, [fetchNewRound]);
+    if (dailyBreedsQuery.data) {
+      void fetchNewRound();
+    }
+  }, [fetchNewRound, dailyBreedsQuery.data, currentRoundIndex]);
 
   // Add state to track correct/incorrect answers
   const [questionResults, setQuestionResults] = useState<Array<boolean>>([]);
@@ -193,19 +235,21 @@ export default function DailyGame() {
     const newGameOver = newGuessesRemaining === 0;
 
     // Update guess streak
-    const newGuessStreak = isCorrect ? gameState.currentGuessStreak + 1 : 0;
+    const newGuessStreak = isCorrect
+      ? gameState.currentGuessStreak + 1
+      : 0;
 
     // Update game state
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       score: newScore,
       guessesRemaining: newGuessesRemaining,
       gameOver: newGameOver,
-      currentGuessStreak: newGuessStreak
+      currentGuessStreak: newGuessStreak,
     }));
 
     setAnsweredBreed(breed);
-    setQuestionResults(prev => [...prev, isCorrect]);
+    setQuestionResults((prev) => [...prev, isCorrect]);
 
     // Play sound effects
     if (isCorrect) {
@@ -217,11 +261,11 @@ export default function DailyGame() {
     // Show feedback toast
     toast({
       title: isCorrect ? "Correct!" : "Wrong!",
-      description: isCorrect 
+      description: isCorrect
         ? "Good job! That's the right breed!"
-        : `Sorry, it was a ${gameState.currentBreed?.breed ?? 'unknown breed'}. ${newGuessesRemaining} guesses remaining`,
+        : `Sorry, it was a ${gameState.currentBreed?.breed ?? "unknown breed"}. ${newGuessesRemaining} guesses remaining`,
       variant: isCorrect ? "default" : "destructive",
-      duration: 2000
+      duration: 2000,
     });
 
     // If game is over, save the score and show dialog
@@ -229,14 +273,16 @@ export default function DailyGame() {
       try {
         await saveScoreMutation.mutateAsync({
           score: newScore,
-          results: [...questionResults, isCorrect].map(r => r ? '1' : '0').join(','),
+          results: [...questionResults, isCorrect]
+            .map((r) => (r ? "1" : "0"))
+            .join(","),
           tempId: !session?.user ? localTempId ?? undefined : undefined,
           timezone: new Date().getTimezoneOffset(),
-          currentGuessStreak: newGuessStreak
+          currentGuessStreak: newGuessStreak,
         });
         setShowGameResults(true);
       } catch (error) {
-        console.error('Failed to save score:', error);
+        console.error("Failed to save score:", error);
         toast({
           title: "Error",
           description: "Failed to save score. Please try again later.",
@@ -244,18 +290,22 @@ export default function DailyGame() {
         });
       }
     } else {
-      // Fetch next round after delay if not game over
+      // Fetch next round after delay
       setTimeout(() => {
         setAnsweredBreed(null);
-        void fetchNewRound();
+        setGameState(prev => ({
+          ...prev,
+          isLoading: true
+        }));
+        setCurrentRoundIndex((prev) => prev + 1);
       }, 1500);
     }
   };
 
   const handleGameFinishedClose = () => {
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
-      gameOver: false
+      gameOver: false,
     }));
   };
 
@@ -264,16 +314,16 @@ export default function DailyGame() {
     if (session?.user && tempId) {
       setShowUsernameDialog(true);
       // Get the score from URL if available
-      const urlScore = searchParams.get('score');
-      const urlResults = searchParams.get('results');
-      
+      const urlScore = searchParams.get("score");
+      const urlResults = searchParams.get("results");
+
       if (urlScore && urlResults) {
-        setGameState(prev => ({
+        setGameState((prev) => ({
           ...prev,
           score: parseInt(urlScore),
-          gameOver: true
+          gameOver: true,
         }));
-        setQuestionResults(urlResults.split(',').map(r => r === '1'));
+        setQuestionResults(urlResults.split(",").map((r) => r === "1"));
       }
     }
   }, [session, tempId, searchParams]);
@@ -292,12 +342,13 @@ export default function DailyGame() {
 
   // Single todayScoreQuery
   const todayScoreQuery = api.score.getTodayScore.useQuery(
-    { 
-      tempId: !session?.user ? (tempId ?? localTempId ?? undefined) : undefined,
-      timezone: new Date().getTimezoneOffset()
+    {
+      tempId: !session?.user ? tempId ?? localTempId ?? undefined : undefined,
+      timezone: new Date().getTimezoneOffset(),
     },
     {
-      enabled: !canPlayQuery.data?.canPlay && (!!localTempId || !!session?.user)
+      enabled:
+        !canPlayQuery.data?.canPlay && (!!localTempId || !!session?.user),
     }
   );
 
@@ -316,25 +367,25 @@ export default function DailyGame() {
 
     const handleAttachScore = async () => {
       if (
-        session?.user && 
-        tempId && 
-        !hasHandledAuthRef.current && 
-        !attachUserToTempScore.isSuccess && 
+        session?.user &&
+        tempId &&
+        !hasHandledAuthRef.current &&
+        !attachUserToTempScore.isSuccess &&
         !isAttaching
       ) {
         try {
           hasHandledAuthRef.current = true;
           setIsAttaching(true);
-          
+
           const timezoneOffset = new Date().getTimezoneOffset();
-          
-          await attachUserToTempScore.mutateAsync({ 
+
+          await attachUserToTempScore.mutateAsync({
             tempId,
-            timezone: timezoneOffset
+            timezone: timezoneOffset,
           });
 
           if (!isActive) return;
-          
+
           router.replace(window.location.pathname);
           toast({
             title: "Score saved!",
@@ -380,7 +431,7 @@ export default function DailyGame() {
                 Barkle
               </h1>
             </Link>
-            
+
             {/* Modern Score Display */}
             <div className="inline-flex items-center justify-center gap-2 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-3 border border-zinc-800">
               <div className="flex items-center gap-3">
@@ -390,12 +441,12 @@ export default function DailyGame() {
                     className={cn(
                       "w-6 h-8 rounded-full transition-all duration-300 relative flex items-center justify-center",
                       {
-                        "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20": 
+                        "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20":
                           questionResults[i] === true,
                         "bg-gradient-to-b from-red-500 to-red-600 shadow-lg shadow-red-500/20":
                           questionResults[i] === false,
                         "bg-zinc-800":
-                          questionResults[i] === undefined
+                          questionResults[i] === undefined,
                       }
                     )}
                   >
@@ -413,7 +464,11 @@ export default function DailyGame() {
             </div>
           </div>
 
-          {gameState.currentBreed && (
+          {gameState.isLoading && !gameState.currentBreed ? (
+            <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+              <div className="w-full h-[400px] bg-zinc-800/50 animate-pulse" />
+            </Card>
+          ) : gameState.currentBreed ? (
             <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
               <Image
                 src={gameState.currentBreed.imageUrl}
@@ -423,7 +478,7 @@ export default function DailyGame() {
                 className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
               />
             </Card>
-          )}
+          ) : null}
 
           <div className="grid grid-cols-2 gap-4">
             {gameState.options.map((breed) => (
@@ -436,49 +491,48 @@ export default function DailyGame() {
                   "p-6 text-lg uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-zinc-800",
                   {
                     // Default state - only add hover effect
-                    "hover:border-emerald-500/50": 
-                      !answeredBreed,
+                    "hover:border-emerald-500/50": !answeredBreed,
                     // Correct answer
-                    "border-green-500 text-green-500": 
+                    "border-green-500 text-green-500":
                       answeredBreed && breed === gameState.currentBreed?.breed,
                     // Wrong answer selected
-                    "border-red-500 text-red-500 !text-red-500": // Added !text-red-500 to force text color
+                    "border-red-500 text-red-500 !text-red-500":
                       answeredBreed === breed && breed !== gameState.currentBreed?.breed,
                     // Other options when answer is selected
-                    "opacity-0": 
+                    "opacity-0":
                       answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
                   }
                 )}
                 variant="outline"
               >
-                {breed.replace('-', ' ')}
+                {breed.replace("-", " ")}
               </Button>
             ))}
           </div>
         </div>
       ) : (
         <>
-          <GameFinishedDialog 
+          <GameFinishedDialog
             isOpen={true}
             score={todayScoreQuery.data?.score ?? 0}
             questionResults={
-              todayScoreQuery.data?.results 
-                ? todayScoreQuery.data.results.split(',').map(r => r === '1')
+              todayScoreQuery.data?.results
+                ? todayScoreQuery.data.results.split(",").map((r) => r === "1")
                 : []
             }
-            onClose={() => router.push('/')}
+            onClose={() => router.push("/")}
           />
           <div className="opacity-0">placeholder</div>
         </>
       )}
 
-      <GameFinishedDialog 
+      <GameFinishedDialog
         isOpen={showGameResults || (!canPlayQuery.data?.canPlay && !!todayScoreQuery.data)}
         score={gameState.score}
         questionResults={questionResults}
         onClose={() => {
           setShowGameResults(false);
-          router.push('/');
+          router.push("/");
         }}
       />
 
@@ -488,7 +542,7 @@ export default function DailyGame() {
       />
 
       {showUsernameDialog && (
-        <UsernameDialog 
+        <UsernameDialog
           isOpen={showUsernameDialog}
           onClose={() => setShowUsernameDialog(false)}
           onSubmit={onUsernameSubmit}

@@ -42,6 +42,14 @@ export function GameFinishedDialog({
   // Add state for share dialog
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
+  // Add state for tempId
+  const [localTempId, setLocalTempId] = useState<string | undefined>();
+
+  // Add useEffect to get localStorage value
+  useEffect(() => {
+    setLocalTempId(localStorage.getItem('barkle_temp_id') ?? undefined);
+  }, []);
+
   // Define handleViewLeaderboard at the top level of the component
   const handleViewLeaderboard = () => {
     router.push('/?showLeaderboard=true');
@@ -121,9 +129,9 @@ export function GameFinishedDialog({
     }
   };
 
-  // Get today's score if it exists
+  // Update the query to use the state
   const todayScoreQuery = api.score.getTodayScore.useQuery({
-    tempId: !session?.user ? localStorage.getItem('barkle_temp_id') ?? undefined : undefined,
+    tempId: !session?.user ? localTempId : undefined,
     timezone: new Date().getTimezoneOffset()
   });
 
