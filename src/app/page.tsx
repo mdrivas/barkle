@@ -32,7 +32,7 @@ export default function Home() {
     }
   }, [searchParams]);
 
-  const { data: gamesCount, isLoading } = api.score.getTodayGames.useQuery({
+  const { data: gamesCount } = api.score.getTodayGames.useQuery({
     timezone: new Date().getTimezoneOffset()
   });
 
@@ -113,7 +113,7 @@ export default function Home() {
         {/* Games Counter */}
         <Card className="bg-[#C4A484] text-black px-6 py-2 rounded-full text-sm">
           <p className="font-medium">
-            🐾 {isLoading ? "..." : gamesCount ?? 0} Games Played Today 🐾
+            🐾 {gamesCount ?? 0} Games Played Today 🐾
           </p>
         </Card>
 
@@ -121,6 +121,12 @@ export default function Home() {
         <div className="flex flex-col items-center gap-2 w-full max-w-lg px-4 mt-2">
           <div className="flex gap-4 w-full">
             <GameModeModal />
+            <Button 
+              onClick={() => setShowLeaderboard(true)}
+              className="w-full py-7 text-xl font-bold bg-gradient-to-br from-zinc-700 to-zinc-800 hover:from-zinc-600 hover:to-zinc-700 text-white rounded-2xl shadow-lg transform transition-all active:scale-95 border border-zinc-600/20"
+            >
+              LEADERBOARD
+            </Button>
             <LeaderboardModal 
               open={showLeaderboard} 
               onOpenChange={setShowLeaderboard}

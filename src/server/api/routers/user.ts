@@ -32,6 +32,7 @@ export const userRouter = createTRPCRouter({
     }),
   getProfile: protectedProcedure
     .query(async ({ ctx }) => {
+      // Get user data
       const user = await ctx.db.query.users.findFirst({
         where: eq(users.id, ctx.session.user.id),
         columns: {
@@ -39,18 +40,36 @@ export const userRouter = createTRPCRouter({
           image: true,
           currentDailyStreak: true,
           highestDailyStreak: true,
+          currentGuessStreak: true,
+          highestGuessStreak: true,
+          lastPlayedDate: true,
+          highestPawsistenceStreak: true,
+          pawsistencePlaysToday: true,
+          lastPawsistenceDate: true,
         },
       });
 
-      // Count games played with explicit count
+      // Count total games
       const gamesCount = await ctx.db
         .select()
         .from(scores)
         .where(eq(scores.userId, ctx.session.user.id));
 
+      // Get latest score to verify streaks
+      const latestScore = await ctx.db.query.scores.findFirst({
+        where: eq(scores.userId, ctx.session.user.id),
+        orderBy: (scores, { desc }) => [desc(scores.playDate)],
+      });
+
       return {
         ...user,
         gamesPlayed: gamesCount.length,
+        currentGuessStreak: user?.currentGuessStreak ?? 0,
+        highestGuessStreak: user?.highestGuessStreak ?? 0,
+        currentDailyStreak: user?.currentDailyStreak ?? 0,
+        highestDailyStreak: user?.highestDailyStreak ?? 0,
+        highestPawsistenceStreak: user?.highestPawsistenceStreak ?? 0,
+        pawsistencePlaysToday: user?.pawsistencePlaysToday ?? 0,
       };
     }),
   updateProfileImage: protectedProcedure
@@ -58,11 +77,19 @@ export const userRouter = createTRPCRouter({
       imageUrl: z.string().url(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Update validation to use correct bucket name
+      if (!input.imageUrl.includes('profile_pics_barkle')) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid image URL",
+        });
+      }
+
       await ctx.db
         .update(users)
         .set({ image: input.imageUrl })
         .where(eq(users.id, ctx.session.user.id));
 
-      return { success: true };
+      return { success: true, imageUrl: input.imageUrl };
     }),
 }); 

@@ -23,7 +23,7 @@ export function GameModeModal() {
           PLAY
         </Button>
       </DialogTrigger>
-      <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
+      <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[425px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">
             Choose Game Mode
@@ -35,7 +35,7 @@ export function GameModeModal() {
             <div className="relative p-6 rounded-xl bg-zinc-900/50 border border-zinc-800 group hover:bg-zinc-800/50 transition-all">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-emerald-400 font-bold text-lg group-hover:text-emerald-300">Today&apos;s Barkle</span>
-                <span className="text-2xl">🐕</span>
+                <span className="text-2xl ml-2 flex-shrink-0">🐕</span>
               </div>
               <p className="text-zinc-400 text-sm group-hover:text-zinc-300">
                 5 chances to guess today&apos;s dog breeds
@@ -44,21 +44,19 @@ export function GameModeModal() {
             </div>
           </Link>
           
-          {/* Coming Soon Mode */}
-          <div className="relative p-6 rounded-xl bg-zinc-900/20 border border-zinc-800/50">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-zinc-500 font-bold text-lg">Pawsistence</span>
-              <span className="text-2xl">🎯</span>
+          {/* Pawsistence Mode */}
+          <Link href="/pawsistence" className="block">
+            <div className="relative p-6 rounded-xl bg-zinc-900/50 border border-zinc-800 group hover:bg-zinc-800/50 transition-all">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-orange-400 font-bold text-lg group-hover:text-orange-300 truncate mr-2">Pawsistence</span>
+                <span className="text-2xl flex-shrink-0">🎯</span>
+              </div>
+              <p className="text-zinc-400 text-sm group-hover:text-zinc-300">
+                Keep playing until you miss! How far can you go?
+              </p>
+              <div className="absolute top-0 right-0 h-full w-1 bg-gradient-to-b from-orange-500/0 via-orange-500/50 to-orange-500/0 group-hover:translate-x-1 transition-transform" />
             </div>
-            <p className="text-zinc-600 text-sm">
-              Keep playing until you miss! Coming soon...
-            </p>
-            <div className="absolute top-3 right-3">
-              <span className="text-xs font-medium text-zinc-500 bg-zinc-800/50 px-2.5 py-1 rounded-full">
-                Coming Soon
-              </span>
-            </div>
-          </div>
+          </Link>
         </div>
       </DialogContent>
     </Dialog>

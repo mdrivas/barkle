@@ -121,12 +121,23 @@ export const scoreRouter = createTRPCRouter({
     .query(async ({ ctx }) => {
       const today = new Date().toISOString().split('T')[0];
 
-      const gamesCount = await ctx.db
+      // Get daily Barkle games count
+      const dailyGames = await ctx.db
         .select({ count: sql<number>`count(*)` })
         .from(scores)
-        .where(eq(scores.playDate, today!));
+        .where(eq(scores.playDate, today!))
+        .then(result => result[0]?.count ?? 0);
 
-      return gamesCount[0]?.count ?? 0;
+      // Get total pawsistence plays for today
+      const pawsistencePlays = await ctx.db
+        .select({
+          total: sql<number>`COALESCE(SUM(${users.pawsistencePlaysToday}), 0)`
+        })
+        .from(users)
+        .then(result => Number(result[0]?.total ?? 0));
+
+      // Return combined total
+      return Number(dailyGames) + pawsistencePlays;
     }),
 
   getDailyLeaderboard: publicProcedure
@@ -162,18 +173,18 @@ export const scoreRouter = createTRPCRouter({
     return ctx.db
       .select({
         username: users.username,
-        highestStreak: users.highestGuessStreak,
-        gamesPlayed: sql<number>`COUNT(${scores.id})`,
-        averageScore: sql<number>`AVG(${scores.score})`,
+        highestStreak: users.highestPawsistenceStreak,
+        pawsistencePlaysToday: users.pawsistencePlaysToday,
       })
       .from(users)
-      .leftJoin(scores, eq(scores.userId, users.id))
-      .where(isNotNull(users.username))
-      .groupBy(users.id, users.username, users.highestGuessStreak)
-      .orderBy(
-        desc(users.highestGuessStreak),
-        desc(sql<number>`AVG(${scores.score})`)
+      .where(
+        and(
+          isNotNull(users.username),
+          isNotNull(users.highestPawsistenceStreak),
+          sql`${users.highestPawsistenceStreak} > 0`
+        )
       )
+      .orderBy(desc(users.highestPawsistenceStreak))
       .limit(100);
   }),
 }); 

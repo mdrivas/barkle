@@ -14,16 +14,18 @@ import { Check, Share2, Home } from "lucide-react";
 
 interface ShareResultsDialogProps {
   score: number;
-  questionResults?: boolean[];
-  isOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  questionResults: boolean[];
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  mode?: "daily" | "pawsistence";
 }
 
 export function ShareResultsDialog({ 
   score, 
   questionResults = Array(5).fill(false),
   isOpen,
-  onOpenChange 
+  onOpenChange,
+  mode
 }: ShareResultsDialogProps) {
   const [copied, setCopied] = useState(false);
 
@@ -53,6 +55,14 @@ export function ShareResultsDialog({
   };
 
   const getShareText = () => {
+    if (mode === "pawsistence") {
+      return `Pawsistence is Key! 🔑
+My Highest Streak: ${score} ${Array(score).fill('🐶').join('')}
+
+Can you beat my streak? https://barkle.vercel.app/pawsistence`;
+    }
+
+    // Original daily mode text
     const date = new Date();
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -88,32 +98,44 @@ export function ShareResultsDialog({
       <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-900/95 text-zinc-50 border border-zinc-800 rounded-xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">
-            Share Your Score! 🎯
+            Share Your Score! {mode === "pawsistence" ? "🔥" : "🎯"}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 px-4 sm:px-6">
-          <div className="flex justify-center gap-2">
-            {safeResults.map((result, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
-                  result 
-                    ? "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20"
-                    : "bg-zinc-800"
-                )}
-              >
-                <span className="text-[10px] text-white/90">
-                  🐾
-                </span>
+          {mode === "pawsistence" ? (
+            <div className="text-center py-4">
+              <div className="text-3xl font-bold mb-2">
+                {score} 🐶
               </div>
-            ))}
-          </div>
-
-          <pre className="font-mono text-sm text-center text-zinc-300 whitespace-pre">
-            {getDogAscii(score)}
-          </pre>
+              <div className="text-zinc-400 text-sm">
+                Highest Streak
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-center gap-2">
+                {safeResults.map((result, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                      result 
+                        ? "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20"
+                        : "bg-zinc-800"
+                    )}
+                  >
+                    <span className="text-[10px] text-white/90">
+                      🐾
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <pre className="font-mono text-sm text-center text-zinc-300 whitespace-pre">
+                {getDogAscii(score)}
+              </pre>
+            </>
+          )}
 
           <div className="flex flex-col gap-2 pt-2 border-t border-zinc-800">
             <Button

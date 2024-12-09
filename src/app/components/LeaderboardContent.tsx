@@ -19,25 +19,11 @@ type DailyScore = {
 type PawsistenceScore = {
   username: string | null;
   highestStreak: number | null;
-  gamesPlayed: number;
-  averageScore: number;
+  pawsistencePlaysToday: number | null;
 };
 
-// Add type guard
 const isPawsistenceScore = (score: DailyScore | PawsistenceScore): score is PawsistenceScore => 
   'highestStreak' in score;
-
-// Add this helper function at the top
-const getScoreEmoji = (score: number) => {
-  switch (score) {
-    case 5: return "🏆"; // Perfect score
-    case 4: return "🌟"; // Almost perfect
-    case 3: return "🎯"; // Good score
-    case 2: return "🐾"; // Getting there
-    case 1: return "🦴"; // At least they got one
-    default: return "🐕"; // Default/zero
-  }
-};
 
 export function LeaderboardContent({ mode }: LeaderboardContentProps) {
   const { data: session } = useSession();
@@ -48,9 +34,6 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
   });
 
   const pawsistenceLeaderboard = api.score.getPawsistenceLeaderboard.useQuery();
-  const todayGames = api.score.getTodayGames.useQuery({
-    timezone: new Date().getTimezoneOffset(),
-  });
 
   const data = mode === "daily" ? dailyLeaderboard.data : pawsistenceLeaderboard.data;
   const isLoading = mode === "daily" ? dailyLeaderboard.isLoading : pawsistenceLeaderboard.isLoading;
@@ -65,7 +48,7 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
 
   if (!data?.length) {
     return <div className="text-center text-zinc-400 py-8">
-      No scores yet today! Be the first to play!
+      No scores yet! Be the first to play!
     </div>;
   }
 
@@ -77,25 +60,20 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
       {userScore && (
         <div className="bg-green-900/20 rounded-lg p-3 border border-green-900/30">
           <div className="text-green-500 text-xs font-medium mb-2">
-            {isPawsistence ? "Your Best" : "Your Rank Today"}
+            {isPawsistence ? "Your Best" : "Your Score Today"}
           </div>
           <div className={cn("grid gap-2 text-xs items-center", 
-            isPawsistence ? "grid-cols-4" : "grid-cols-5"
+            isPawsistence ? "grid-cols-3" : "grid-cols-5"
           )}>
             <div className="text-green-500">
               #{data.findIndex(entry => entry.username === userScore.username) + 1}
             </div>
             <div className="text-zinc-100 truncate">{userScore.username}</div>
             {isPawsistenceScore(userScore) ? (
-              <>
-                <div className="text-amber-500">{userScore.highestStreak}🔥</div>
-                <div className="text-zinc-400">{userScore.gamesPlayed} games</div>
-              </>
+              <div className="text-amber-500">{userScore.highestStreak}🔥</div>
             ) : (
               <>
-                <div className="text-amber-500">
-                  {userScore.score}/5 {getScoreEmoji(userScore.score)}
-                </div>
+                <div className="text-amber-500">{userScore.score}/5</div>
                 <div className="text-green-500">{userScore.currentStreak}🔥</div>
                 <div className="text-amber-500">{userScore.dailyStreak}🔥</div>
               </>
@@ -106,15 +84,12 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
 
       {/* Headers */}
       <div className={cn("grid gap-2 text-xs font-medium text-zinc-400 bg-zinc-800/50 p-2 rounded-lg",
-        isPawsistence ? "grid-cols-4" : "grid-cols-5"
+        isPawsistence ? "grid-cols-3" : "grid-cols-5"
       )}>
         <div className="text-center">Rank</div>
         <div>Player</div>
         {isPawsistence ? (
-          <>
-            <div>Best Streak</div>
-            <div>Games</div>
-          </>
+          <div>Best Streak</div>
         ) : (
           <>
             <div>Score</div>
@@ -131,7 +106,7 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
             key={entry.username}
             className={cn(
               "grid gap-2 text-xs p-2 rounded-lg border items-center shadow-lg",
-              isPawsistence ? "grid-cols-4" : "grid-cols-5",
+              isPawsistence ? "grid-cols-3" : "grid-cols-5",
               {
                 "bg-gold animate-medal-shine": i === 0,
                 "bg-silver animate-medal-shine": i === 1,
@@ -145,15 +120,10 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
               "font-semibold": i < 3
             })}>{entry.username}</div>
             {isPawsistenceScore(entry) ? (
-              <>
-                <div className="text-amber-500">{entry.highestStreak}🔥</div>
-                <div className="text-zinc-400">{entry.gamesPlayed} games</div>
-              </>
+              <div className="text-amber-500">{entry.highestStreak}🔥</div>
             ) : (
               <>
-                <div className="text-amber-500">
-                  {entry.score}/5 {getScoreEmoji(entry.score)}
-                </div>
+                <div className="text-amber-500">{entry.score}/5</div>
                 <div className="text-green-500">{entry.currentStreak}🔥</div>
                 <div className="text-amber-500">{entry.dailyStreak}🔥</div>
               </>
@@ -164,7 +134,7 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
 
       {/* Total Players */}
       <div className="bg-gradient-to-r from-[#8B4513] to-[#DEB887] text-white p-2 rounded-full text-center text-xs font-medium">
-        🏆 {mode === "daily" ? `${todayGames.data ?? 0} Total Players Today` : "Top 100 Streaks"} 🏆
+        🏆 {isPawsistence ? "Top 100 Streaks" : "Today's Top 100"} 🏆
       </div>
     </>
   );

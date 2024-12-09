@@ -1,0 +1,369 @@
+"use client";
+
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { useToast } from "~/hooks/use-toast";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
+import { useSession, signIn } from "next-auth/react";
+import { cn } from "~/lib/utils";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { api } from "~/trpc/react";
+import { PawsistenceFinishedDialog } from "./components/PawsistenceFinishedDialog";
+
+
+interface DogBreed {
+  breed: string;
+  imageUrl: string;
+}
+
+interface GameState {
+  currentBreed: DogBreed | null;
+  options: string[];
+  isLoading: boolean;
+  currentStreak: number;
+  gameOver: boolean;
+  playsRemaining: number;
+  highestStreak: number;
+}
+
+interface BreedsResponse {
+  message: Record<string, string[]>;
+  status: string;
+}
+
+const STORAGE_KEY = 'pawsistence_guest_plays';
+const STORAGE_DATE_KEY = 'pawsistence_guest_date';
+
+const getGuestPlaysRemaining = () => {
+  if (typeof window === 'undefined') return 3;
+  
+  const today = new Date().toDateString();
+  const lastPlayDate = localStorage.getItem(STORAGE_DATE_KEY);
+  const plays = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
+
+  // Reset plays if it's a new day
+  if (lastPlayDate !== today) {
+    localStorage.setItem(STORAGE_DATE_KEY, today);
+    localStorage.setItem(STORAGE_KEY, '0');
+    return 3;
+  }
+
+  return Math.max(0, 3 - plays);
+};
+
+const incrementGuestPlays = () => {
+  const plays = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
+  localStorage.setItem(STORAGE_KEY, String(plays + 1));
+  localStorage.setItem(STORAGE_DATE_KEY, new Date().toDateString());
+};
+
+export default function PawsistenceGame() {
+  const { data: session } = useSession();
+  const { toast } = useToast();
+  const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
+
+  const { data: gameData } = api.pawsistence.getInitialState.useQuery(
+    undefined, 
+    {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      enabled: !!session?.user,
+    }
+  );
+
+  const utils = api.useUtils();
+
+  const { mutate: saveGameResult } = api.pawsistence.saveGame.useMutation({
+    onSuccess: () => {
+      void utils.pawsistence.getInitialState.invalidate();
+    },
+  });
+
+  const [gameState, setGameState] = useState<GameState>({
+    currentBreed: null,
+    options: [],
+    isLoading: true,
+    currentStreak: 0,
+    gameOver: false,
+    playsRemaining: session?.user ? (gameData?.playsRemaining ?? 3) : 3,
+    highestStreak: session?.user ? (gameData?.highestStreak ?? 0) : 0,
+  });
+
+  const happyBarkRef = useRef<HTMLAudioElement | null>(null);
+  const angryBarkRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    happyBarkRef.current = new Audio("/happy_bark.mp3");
+    angryBarkRef.current = new Audio("/angry_bark.mp3");
+  }, []);
+
+  const fetchNewRound = useCallback(async () => {
+    setGameState(prev => ({ ...prev, isLoading: true }));
+
+    try {
+      // Get all possible breeds
+      const breedsResponse = await fetch("https://dog.ceo/api/breeds/list/all");
+      const breedsData: BreedsResponse = await breedsResponse.json();
+      const allBreeds = Object.keys(breedsData.message);
+
+      // Get random breed
+      const correctBreed = allBreeds[Math.floor(Math.random() * allBreeds.length)];
+
+      // Get random image for the breed
+      const breedImagesResponse = await fetch(
+        `https://dog.ceo/api/breed/${correctBreed}/images`
+      );
+      const breedImagesData = await breedImagesResponse.json();
+      const images = breedImagesData.message as string[];
+      const selectedImage = images[Math.floor(Math.random() * images.length)];
+
+      // Get wrong options
+      const wrongOptions = allBreeds
+        .filter(breed => breed !== correctBreed)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+
+      // Combine and shuffle options
+      const options = [correctBreed, ...wrongOptions].sort(() => Math.random() - 0.5);
+
+      setGameState(prev => ({
+        ...prev,
+        currentBreed: {
+          breed: correctBreed as string,
+          imageUrl: selectedImage as string,
+        },
+        options: options as string[],
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error("Error fetching new round:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch new round. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    void fetchNewRound();
+  }, [fetchNewRound]);
+
+  const handleGameOver = useCallback(() => {
+    if (gameState.currentStreak > (gameData?.highestStreak ?? 0)) {
+      saveGameResult({
+        streak: gameState.currentStreak,
+        isNewHighScore: true,
+      });
+    } else {
+      saveGameResult({
+        streak: gameState.currentStreak,
+        isNewHighScore: false,
+      });
+    }
+  }, [gameState.currentStreak, gameData?.highestStreak, saveGameResult]);
+
+  const handleGuess = async (breed: string) => {
+    if (gameState.isLoading || gameState.gameOver) return;
+
+    // Check if non-logged in user has reached play limit
+    if (!session?.user && getGuestPlaysRemaining() <= 0) {
+      setShowNoPlaysDialog(true);
+      return;
+    }
+
+    const isCorrect = breed === gameState.currentBreed?.breed;
+    setAnsweredBreed(breed);
+
+    // Play sound effect
+    if (isCorrect) {
+      void happyBarkRef.current?.play();
+    } else {
+      void angryBarkRef.current?.play();
+    }
+
+    if (isCorrect) {
+      setTimeout(() => {
+        setAnsweredBreed(null);
+        setGameState(prev => ({
+          ...prev,
+          currentStreak: prev.currentStreak + 1,
+        }));
+        // Increment guest plays in localStorage if not logged in
+        if (!session?.user) {
+          incrementGuestPlays();
+        }
+        void fetchNewRound();
+      }, 1500);
+    } else {
+      setGameState(prev => ({
+        ...prev,
+        gameOver: true,
+      }));
+      
+      if (session?.user) {
+        handleGameOver();
+      } else {
+        incrementGuestPlays(); // Also count incorrect guesses
+        toast({
+          title: "Sign in to save your streak!",
+          description: "Create an account to track your progress and compete on the leaderboard.",
+          action: (
+            <Button 
+              onClick={() => void signIn("google")}
+              variant="outline" 
+              className="bg-white text-black hover:bg-gray-100"
+            >
+              Sign In
+            </Button>
+          ),
+        });
+      }
+    }
+  };
+
+  // Modify play again handler
+  const handlePlayAgain = () => {
+    // Check if non-logged in user has reached play limit
+    if (!session?.user && getGuestPlaysRemaining() <= 0) {
+      setShowNoPlaysDialog(true);
+      return;
+    }
+
+    setGameState({
+      currentBreed: null,
+      options: [],
+      isLoading: true,
+      currentStreak: 0,
+      gameOver: false,
+      playsRemaining: session?.user ? (gameData?.playsRemaining ?? 3) : getGuestPlaysRemaining(),
+      highestStreak: session?.user ? (gameData?.highestStreak ?? 0) : 0,
+    });
+    setAnsweredBreed(null);
+    void fetchNewRound();
+  };
+
+  // Add this state to handle no plays remaining
+  const [showNoPlaysDialog, setShowNoPlaysDialog] = useState(false);
+
+  // Check if user can play when gameData loads
+  useEffect(() => {
+    if (gameData && gameData.playsRemaining <= 0) {
+      setShowNoPlaysDialog(true);
+    }
+  }, [gameData]);
+
+  // Update gameState when session/gameData changes
+  useEffect(() => {
+    if (session?.user) {
+      setGameState(prev => ({
+        ...prev,
+        playsRemaining: gameData?.playsRemaining ?? 3,
+        highestStreak: gameData?.highestStreak ?? 0,
+      }));
+    }
+  }, [session, gameData]);
+
+  // Add this effect to check guest plays on mount
+  useEffect(() => {
+    if (!session?.user && typeof window !== 'undefined') {
+      const playsRemaining = getGuestPlaysRemaining();
+      if (playsRemaining <= 0) {
+        setShowNoPlaysDialog(true);
+      }
+    }
+  }, [session]);
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">
+      <div className="container max-w-4xl mx-auto">
+        <div className="text-center mb-8 space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <Link href="/">
+              <Button variant="ghost" className="text-zinc-400 hover:text-zinc-200">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+            </Link>
+            <h1 className="text-4xl font-bold tracking-tight text-[#F9F8E4]">
+              Pawsistence
+            </h1>
+            <div className="w-[100px]" /> {/* Spacer for centering */}
+          </div>
+
+          {/* Streak Display */}
+          <div className="inline-flex items-center justify-center gap-2 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-3 border border-zinc-800">
+            <div className="text-xl font-bold text-zinc-400">
+              Current Streak: {gameState.currentStreak}
+            </div>
+          </div>
+        </div>
+
+        {/* Game Board */}
+        {gameState.isLoading && !gameState.currentBreed ? (
+          <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+            <div className="w-full h-[400px] bg-zinc-800/50 animate-pulse" />
+          </Card>
+        ) : gameState.currentBreed ? (
+          <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+            <Image
+              src={gameState.currentBreed.imageUrl}
+              alt="Mystery dog"
+              width={800}
+              height={400}
+              className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
+            />
+          </Card>
+        ) : null}
+
+        <div className="grid grid-cols-2 gap-4">
+          {gameState.options.map((breed) => (
+            <Button
+              key={breed}
+              onClick={() => handleGuess(breed)}
+              disabled={gameState.gameOver || answeredBreed !== null}
+              className={cn(
+                "p-6 text-lg uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-zinc-800",
+                {
+                  "hover:border-emerald-500/50": !answeredBreed,
+                  "border-green-500 text-green-500":
+                    answeredBreed && breed === gameState.currentBreed?.breed,
+                  "border-red-500 text-red-500":
+                    answeredBreed === breed && breed !== gameState.currentBreed?.breed,
+                  "opacity-0":
+                    answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
+                }
+              )}
+              variant="outline"
+            >
+              {breed.replace("-", " ")}
+            </Button>
+          ))}
+        </div>
+
+        {gameState.gameOver && (
+          <div className="mt-8 text-center">
+            <Button
+              onClick={handlePlayAgain}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Play Again
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Add this dialog for no plays remaining */}
+      <PawsistenceFinishedDialog 
+        isOpen={showNoPlaysDialog}
+        onClose={() => setShowNoPlaysDialog(false)}
+        currentStreak={0}
+        isHighScore={false}
+        playsRemaining={0}
+        highestStreak={gameData?.highestStreak ?? 0}
+      />
+    </div>
+  );
+} 

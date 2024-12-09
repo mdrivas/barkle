@@ -23,7 +23,11 @@ const config = {
         port: '',
         pathname: '/dog-submissions/**',
       },
-    ]
+    ],
+    domains: [
+      "lh3.googleusercontent.com",  // For Google OAuth profile pictures
+      "storage.googleapis.com",     // For GCS uploaded images
+    ],
   }
 };
 

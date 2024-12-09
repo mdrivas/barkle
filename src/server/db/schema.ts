@@ -65,6 +65,10 @@ export const users = createTable("user", {
   highestGuessStreak: integer("highest_guess_streak").default(0),
   lastPlayedDate: varchar("last_played_date", { length: 10 })
     .default(sql`to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD')`),
+  highestPawsistenceStreak: integer("highest_pawsistence_streak").default(0),
+  pawsistencePlaysToday: integer("pawsistence_plays_today").default(0),
+  lastPawsistenceDate: varchar("last_pawsistence_date", { length: 10 })
+    .default(sql`to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD')`),
 });
 
 export type User = InferSelectModel<typeof users>;
