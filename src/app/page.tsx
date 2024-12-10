@@ -87,21 +87,21 @@ export default function Home() {
       )}
 
       {/* Main Content */}
-      <div className="flex flex-col items-center justify-center gap-4 px-4 py-8 max-w-2xl mx-auto w-full">
+      <div className="flex flex-col items-center justify-center gap-1 px-4 py-2 max-w-2xl mx-auto w-full">
         {/* Logo */}
-        <div className="w-64 h-64 relative flex items-center justify-center">
+        <div className="w-56 h-56 relative flex items-center justify-center">
           <Image
             src="/barklelogo.png"
             alt="Barkle Logo"
-            width={256}
-            height={256}
+            width={320}
+            height={320}
             priority
-            className="rounded-full"
+            className="rounded-full object-contain"
           />
         </div>
 
         {/* Title */}
-        <h1 className="text-5xl font-bold tracking-[0.15em] text-zinc-50 font-roboto mt-2">
+        <h1 className="text-5xl font-bold tracking-[0.15em] text-zinc-50 font-roboto">
           BARKLE
         </h1>
 
