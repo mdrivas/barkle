@@ -2,7 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { signOut, useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Terms } from "~/app/components/Terms";
 import { Privacy } from "~/app/components/Privacy";
@@ -14,7 +15,10 @@ interface NavItem {
 }
 
 export function NavigationBar() {
-  const { status } = useSession();
+  const { data: session } = useSession();
+  const { data: isAdmin } = api.user.isAdmin.useQuery(undefined, {
+    enabled: !!session?.user,
+  });
 
   const navItems: NavItem[] = [
     { Component: Privacy },
@@ -27,6 +31,18 @@ export function NavigationBar() {
     <nav className="w-full bg-gradient-to-br from-[#1a1a1b] to-[#121213] border-b border-green-900/30">
       <div className="max-w-7xl mx-auto">
         <div className="w-full px-3 py-1.5 flex justify-end gap-2 text-[10px] text-green-500 [&>*]:hover:text-green-400 [&>*]:transition-colors">
+          {isAdmin && (
+            <>
+              <Link href="/" className="text-[10px] font-normal">
+                Home
+              </Link>
+              <span className="text-green-800">|</span>
+              <Link href="/admin" className="text-[10px] font-normal">
+                Admin
+              </Link>
+              <span className="text-green-800">|</span>
+            </>
+          )}
           {navItems.map(({ Component }, index) => (
             <React.Fragment key={index}>
               {index > 0 && <span className="text-green-800">|</span>}

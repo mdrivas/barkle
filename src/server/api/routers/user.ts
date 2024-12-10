@@ -3,6 +3,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { users, scores } from "~/server/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { env } from "~/env";
 
 export const userRouter = createTRPCRouter({
   setUsername: protectedProcedure
@@ -91,5 +92,10 @@ export const userRouter = createTRPCRouter({
         .where(eq(users.id, ctx.session.user.id));
 
       return { success: true, imageUrl: input.imageUrl };
+    }),
+  isAdmin: protectedProcedure
+    .query(({ ctx }) => {
+      const adminEmails = env.ADMIN_EMAILS.split(",");
+      return adminEmails.includes(ctx.session.user.email ?? "");
     }),
 }); 
