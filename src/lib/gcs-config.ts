@@ -15,4 +15,5 @@ const storage = new Storage({
 });
 
 export const dogSubmissionsBucket = storage.bucket(env.GOOGLE_CLOUD_BUCKET_NAME);
+export const profilePicsBucket = storage.bucket('profile_pics_barkle');
 
