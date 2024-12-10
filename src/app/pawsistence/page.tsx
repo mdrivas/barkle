@@ -405,7 +405,7 @@ export default function PawsistenceGame() {
       {/* Add this dialog for no plays remaining */}
       <PawsistenceFinishedDialog 
         isOpen={showNoPlaysDialog}
-        onClose={() => {}}
+        onClose={() => setShowNoPlaysDialog(false)}
         currentStreak={gameState.currentStreak}
         isHighScore={gameState.currentStreak > (gameData?.highestStreak ?? 0)}
         playsRemaining={gameState.playsRemaining}
