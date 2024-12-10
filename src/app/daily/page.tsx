@@ -377,7 +377,7 @@ export default function DailyGame() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">
       {(isReturningFromAuth || canPlayQuery.data?.canPlay) ? (
-        <div className="container max-w-4xl mx-auto">
+        <div className="container max-w-3xl mx-auto">
           <div className="text-center mb-8 space-y-4">
             <Link href="/">
               <h1 className="text-5xl font-bold tracking-tight text-[#F9F8E4] hover:text-[#538D4E] transition-colors cursor-pointer">
@@ -386,13 +386,13 @@ export default function DailyGame() {
             </Link>
 
             {/* Modern Score Display */}
-            <div className="inline-flex items-center justify-center gap-2 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-3 border border-zinc-800">
-              <div className="flex items-center gap-3">
+            <div className="inline-flex items-center justify-center gap-4 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-4 border border-zinc-800">
+              <div className="flex items-center gap-4">
                 {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
                     className={cn(
-                      "w-6 h-8 rounded-full transition-all duration-300 relative flex items-center justify-center",
+                      "w-8 h-10 rounded-full transition-all duration-300 relative flex items-center justify-center",
                       {
                         "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20":
                           questionResults[i] === true,
@@ -403,7 +403,7 @@ export default function DailyGame() {
                       }
                     )}
                   >
-                    <span className="text-[10px] text-white/90">
+                    <span className="text-[12px] text-white/90">
                       {questionResults[i] === true && "🐾"}
                       {questionResults[i] === false && "🐾"}
                       {questionResults[i] === undefined && "🐾"}
@@ -411,56 +411,58 @@ export default function DailyGame() {
                   </div>
                 ))}
               </div>
-              <div className="text-xl font-bold text-zinc-400 pl-4 border-l border-zinc-800">
+              <div className="text-2xl font-bold text-zinc-400 pl-6 border-l border-zinc-800">
                 {gameState.score}/5
               </div>
             </div>
           </div>
 
-          {gameState.isLoading && !gameState.currentBreed ? (
-            <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
-              <div className="w-full h-[400px] bg-zinc-800/50 animate-pulse" />
-            </Card>
-          ) : gameState.currentBreed ? (
-            <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
-              <Image
-                src={gameState.currentBreed.imageUrl}
-                alt="Mystery dog"
-                width={800}
-                height={400}
-                className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </Card>
-          ) : null}
+          <div className="outline outline-2 outline-offset-2 outline-gray-600 rounded-xl p-4">
+            {gameState.isLoading && !gameState.currentBreed ? (
+              <Card className="overflow-hidden mb-8 border border-gray-500 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+                <div className="w-full h-[300px] bg-zinc-800/50 animate-pulse rounded-xl" />
+              </Card>
+            ) : gameState.currentBreed ? (
+              <Card className="overflow-hidden mb-8 border border-gray-500 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+                <Image
+                  src={gameState.currentBreed.imageUrl}
+                  alt="Mystery dog"
+                  width={600}
+                  height={300}
+                  className="w-full h-[250px] object-cover hover:scale-105 transition-transform duration-500 rounded-xl"
+                />
+              </Card>
+            ) : null}
 
-          <div className="grid grid-cols-2 gap-4">
-            {gameState.options.map((breed) => (
-              <Button
-                key={breed}
-                onClick={() => handleGuess(breed)}
-                disabled={gameState.gameOver || answeredBreed !== null}
-                className={cn(
-                  // Base styles that apply to all states
-                  "p-6 text-lg uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-zinc-800",
-                  {
-                    // Default state - only add hover effect
-                    "hover:border-emerald-500/50": !answeredBreed,
-                    // Correct answer
-                    "border-green-500 text-green-500":
-                      answeredBreed && breed === gameState.currentBreed?.breed,
-                    // Wrong answer selected
-                    "border-red-500 text-red-500 !text-red-500":
-                      answeredBreed === breed && breed !== gameState.currentBreed?.breed,
-                    // Other options when answer is selected
-                    "opacity-0":
-                      answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
-                  }
-                )}
-                variant="outline"
-              >
-                {breed.replace("-", " ")}
-              </Button>
-            ))}
+            <div className="grid grid-cols-2 gap-4">
+              {gameState.options.map((breed) => (
+                <Button
+                  key={breed}
+                  onClick={() => handleGuess(breed)}
+                  disabled={gameState.gameOver || answeredBreed !== null}
+                  className={cn(
+                    // Base styles that apply to all states
+                    "p-4 text-md uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-gray-500",
+                    {
+                      // Default state - only add hover effect
+                      "hover:border-emerald-500/50": !answeredBreed,
+                      // Correct answer
+                      "border-green-500 text-green-500":
+                        answeredBreed && breed === gameState.currentBreed?.breed,
+                      // Wrong answer selected
+                      "border-red-500 text-red-500 !text-red-500":
+                        answeredBreed === breed && breed !== gameState.currentBreed?.breed,
+                      // Other options when answer is selected
+                      "opacity-0":
+                        answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
+                    }
+                  )}
+                  variant="outline"
+                >
+                  {breed.replace("-", " ")}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
       ) : (

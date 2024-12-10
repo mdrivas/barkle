@@ -329,66 +329,69 @@ export default function PawsistenceGame() {
           <div className="flex items-center justify-between w-full mb-2">
             <Link href="/">
               <Button variant="ghost" className="text-zinc-400 hover:text-zinc-200">
-                <ArrowLeft className="mr-1.5 h-5 w-5" />
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
             </Link>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-white-500 mt-0.5 drop-shadow-lg">
+          <h1 className="text-4xl font-bold tracking-tight text-[#FFA500] mt-2">
             Pawsistence
           </h1>
-          {/* Streak Display */}
-          <div className="inline-flex items-center justify-center gap-2 rounded-xl p-2 mt-2 shadow-lg">
-            <div className="text-lg font-bold text-amber-400">
+
+          {/* Smaller Centered Streak Display */}
+          <div className="inline-flex items-center justify-center gap-2 bg-zinc-800/50 backdrop-blur-sm rounded-xl p-1 border border-zinc-700 mt-2">
+            <div className="text-lg font-bold text-[#FFD700]">
               Current Streak: {gameState.currentStreak}
             </div>
           </div>
         </div>
 
         {/* Game Board */}
-        {gameState.isLoading && !gameState.currentBreed ? (
-          <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
-            <div className="w-full h-[400px] bg-zinc-800/50 animate-pulse" />
-          </Card>
-        ) : gameState.currentBreed ? (
-          <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
-            <Image
-              src={gameState.currentBreed.imageUrl}
-              alt="Mystery dog"
-              width={800}
-              height={400}
-              className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
-            />
-          </Card>
-        ) : null}
+        <div className="outline outline-2 outline-offset-2 outline-gray-600 rounded-xl p-4">
+          {gameState.isLoading && !gameState.currentBreed ? (
+            <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+              <div className="w-full h-[300px] bg-zinc-800/50 animate-pulse border border-zinc-700" />
+            </Card>
+          ) : gameState.currentBreed ? (
+            <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+              <Image
+                src={gameState.currentBreed.imageUrl}
+                alt="Mystery dog"
+                width={600}
+                height={300}
+                className="w-full h-[250px] object-cover hover:scale-105 transition-transform duration-500 border border-zinc-700"
+              />
+            </Card>
+          ) : null}
 
-        <div className="grid grid-cols-2 gap-4">
-          {gameState.options.map((breed) => (
-            <Button
-              key={breed}
-              onClick={() => handleGuess(breed)}
-              disabled={
-                gameState.gameOver || 
-                answeredBreed !== null || 
-                gameState.playsRemaining <= 0
-              }
-              className={cn(
-                "p-6 text-lg uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-zinc-800",
-                {
-                  "hover:border-emerald-500/50": !answeredBreed && gameState.playsRemaining > 0,
-                  "border-green-500 text-green-500":
-                    answeredBreed && breed === gameState.currentBreed?.breed,
-                  "border-red-500 text-red-500":
-                    answeredBreed === breed && breed !== gameState.currentBreed?.breed,
-                  "opacity-0":
-                    answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
+          <div className="grid grid-cols-2 gap-4">
+            {gameState.options.map((breed) => (
+              <Button
+                key={breed}
+                onClick={() => handleGuess(breed)}
+                disabled={
+                  gameState.gameOver || 
+                  answeredBreed !== null || 
+                  gameState.playsRemaining <= 0
                 }
-              )}
-              variant="outline"
-            >
-              {breed.replace("-", " ")}
-            </Button>
-          ))}
+                className={cn(
+                  "p-4 text-md uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-zinc-700",
+                  {
+                    "hover:border-emerald-500/50": !answeredBreed && gameState.playsRemaining > 0,
+                    "border-green-500 text-green-500":
+                      answeredBreed && breed === gameState.currentBreed?.breed,
+                    "border-red-500 text-red-500":
+                      answeredBreed === breed && breed !== gameState.currentBreed?.breed,
+                    "opacity-0":
+                      answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
+                  }
+                )}
+                variant="outline"
+              >
+                {breed.replace("-", " ")}
+              </Button>
+            ))}
+          </div>
         </div>
 
         <IncorrectGuessDialog 
