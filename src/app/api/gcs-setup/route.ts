@@ -4,7 +4,7 @@ import { dogSubmissionsBucket, profilePicsBucket } from "~/lib/gcs-config";
 export async function POST() {
   try {
     if (!dogSubmissionsBucket || !profilePicsBucket) {
-      throw new Error('Buckets not initialized');
+      return NextResponse.json({ error: "Buckets not initialized" }, { status: 500 });
     }
 
     // Make both buckets public
@@ -17,7 +17,7 @@ export async function POST() {
     const corsConfig = {
       maxAgeSeconds: 3600,
       method: ["GET", "HEAD", "PUT", "POST", "OPTIONS"],
-      origin: ["*"],  // Allow all origins temporarily
+      origin: ["*"],
       responseHeader: [
         "Content-Type",
         "Access-Control-Allow-Origin",
