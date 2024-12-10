@@ -1,0 +1,21 @@
+{
+  "name": "Barkle",
+  "short_name": "Barkle",
+  "description": "Daily dog breed guessing game",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121213",
+  "theme_color": "#121213",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
