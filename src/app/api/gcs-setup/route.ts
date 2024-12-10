@@ -3,6 +3,10 @@ import { dogSubmissionsBucket, profilePicsBucket } from "~/lib/gcs-config";
 
 export async function POST() {
   try {
+    if (!dogSubmissionsBucket || !profilePicsBucket) {
+      throw new Error('Buckets not initialized');
+    }
+
     // Make both buckets public
     await Promise.all([
       dogSubmissionsBucket.makePublic(),
