@@ -13,7 +13,7 @@ export async function POST() {
     const corsConfig = {
       maxAgeSeconds: 3600,
       method: ["GET", "HEAD", "PUT", "POST", "OPTIONS"],
-      origin: ["http://localhost:3000"],  // Add your production domain later
+      origin: ["*"],  // Allow all origins temporarily
       responseHeader: [
         "Content-Type",
         "Access-Control-Allow-Origin",
