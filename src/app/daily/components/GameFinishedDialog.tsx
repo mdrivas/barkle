@@ -161,15 +161,6 @@ export function GameFinishedDialog({
   );
 
   // Session-specific components
-  const yesterdaysGameButton = (
-    <Button
-      onClick={handleViewLeaderboard}
-      className="bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-50 border border-zinc-700 transition-all duration-200 flex items-center justify-center gap-2 py-6 text-lg font-medium"
-    >
-      Play Yesterday's Game 
-    </Button>
-  );
-
   const SignInPrompt = () => (
     <div className="space-y-3 text-center">
       <p className="text-gray-300">
@@ -192,7 +183,6 @@ export function GameFinishedDialog({
     <div className="flex flex-col gap-4 w-full">
       {shareResults}
       {leaderboardButton}
-      {yesterdaysGameButton}
     </div>
   );
 

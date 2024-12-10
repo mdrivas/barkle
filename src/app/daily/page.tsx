@@ -222,7 +222,7 @@ export default function DailyGame() {
   const saveScoreMutation = api.score.saveScore.useMutation();
 
   const handleGuess = async (breed: string) => {
-    if (gameState.isLoading || gameState.gameOver) return;
+    if (gameState.isLoading || gameState.gameOver || answeredBreed !== null) return;
 
     const isCorrect = breed === gameState.currentBreed?.breed;
     const newScore = isCorrect ? gameState.score + 1 : gameState.score;
