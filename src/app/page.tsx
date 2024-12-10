@@ -123,7 +123,7 @@ export default function Home() {
             <GameModeModal />
             <Button 
               onClick={() => setShowLeaderboard(true)}
-              className="w-full py-7 text-xl font-bold bg-gradient-to-br from-zinc-700 to-zinc-800 hover:from-zinc-600 hover:to-zinc-700 text-white rounded-2xl shadow-lg transform transition-all active:scale-95 border border-zinc-600/20"
+              className="w-full py-7 text-xl font-bold bg-amber-700 hover:bg-amber-800 text-zinc-50 rounded-2xl shadow-lg transform transition-all active:scale-95 border border-zinc-600/20"
             >
               LEADERBOARD
             </Button>
@@ -133,8 +133,8 @@ export default function Home() {
             />
           </div>
           <DogSubmissionModal 
-            className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-            variant="link"
+            className="w-full py-4 mt-2 text-lg font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-xl border border-zinc-700/50 shadow-lg transform transition-all active:scale-95 flex items-center justify-center gap-2"
+            variant="default"
           />
         </div>
       </div>
