@@ -25,29 +25,40 @@ export function DailyInstructions({ isOpen, onClose }: DailyInstructionsProps) {
         <div className="space-y-6 px-4 sm:px-6">
           {/* Main Instructions */}
           <p className="text-zinc-300 text-center text-sm sm:text-base">
-            Barkle gives you 5 dogs to identify each day. Choose the correct breed from 4 options!
+            Guess the breed of 5 dogs each day! Choose the correct breed from 4 options to score big.
           </p>
 
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center gap-3 bg-zinc-900/50 p-2.5 sm:p-3 rounded-lg border border-zinc-800">
-              <span className="text-lg sm:text-xl">🎯</span>
-              <p className="text-xs sm:text-sm text-zinc-300">4 breed options per dog</p>
+          {/* Instructions Grid */}
+          <div className="grid gap-4">
+            <div className="flex items-center gap-3 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800">
+              <div className="w-8 h-8 flex justify-center items-center bg-zinc-800 rounded-full">
+                <span role="img" aria-label="target">🎯</span>
+              </div>
+              <p className="text-sm text-zinc-300">Four choices per dog — pick the right one!</p>
             </div>
-            
-            <div className="flex items-center gap-3 bg-zinc-900/50 p-2.5 sm:p-3 rounded-lg border border-zinc-800">
-              <span className="text-lg sm:text-xl">✨</span>
-              <p className="text-xs sm:text-sm text-zinc-300">Green for correct, red for wrong</p>
+
+            <div className="flex items-center gap-3 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800">
+              <div className="w-8 h-8 flex justify-center items-center bg-zinc-800 rounded-full">
+                <span role="img" aria-label="correct and wrong feedback">✨</span>
+              </div>
+              <p className="text-sm text-zinc-300">Green means correct; red means try again.</p>
             </div>
-            
-            <div className="flex items-center gap-3 bg-zinc-900/50 p-2.5 sm:p-3 rounded-lg border border-zinc-800">
-              <span className="text-lg sm:text-xl">🔄</span>
-              <p className="text-xs sm:text-sm text-zinc-300">New pups every day!</p>
+
+            <div className="flex items-center gap-3 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800">
+              <div className="w-8 h-8 flex justify-center items-center bg-zinc-800 rounded-full">
+                <span role="img" aria-label="daily refresh">🔄</span>
+              </div>
+              <p className="text-sm text-zinc-300">New dogs to guess every day!</p>
             </div>
           </div>
 
-          <p className="text-center text-zinc-400 text-xs sm:text-sm pt-2 border-t border-zinc-800">
-            How many can you get right? 🐕
-          </p>
+          {/* CTA Button */}
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-lg transition-colors"
+          >
+            Let's Play →
+          </button>
         </div>
       </DialogContent>
     </Dialog>
