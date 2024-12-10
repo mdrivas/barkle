@@ -103,7 +103,9 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
       <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
         {data.map((entry, i) => (
           <div 
-            key={entry.username}
+            key={isPawsistenceScore(entry) 
+              ? `${entry.username}-${entry.highestStreak}-${i}` 
+              : `${entry.username}-${entry.score}-${entry.userId}-${i}`}
             className={cn(
               "grid gap-2 text-xs p-2 rounded-lg border items-center shadow-lg",
               isPawsistence ? "grid-cols-3" : "grid-cols-5",

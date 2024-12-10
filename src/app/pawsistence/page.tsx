@@ -12,6 +12,7 @@ import { ArrowLeft } from "lucide-react";
 import { api } from "~/trpc/react";
 import { PawsistenceFinishedDialog } from "./components/PawsistenceFinishedDialog";
 import { IncorrectGuessDialog } from "./components/IncorrectGuessDialog";
+import { getUserLocalDate } from "~/lib/dates";
 
 
 interface DogBreed {
@@ -40,11 +41,10 @@ const STORAGE_DATE_KEY = 'pawsistence_guest_date';
 const getGuestPlaysRemaining = () => {
   if (typeof window === 'undefined') return 3;
   
-  const today = new Date().toDateString();
+  const today = getUserLocalDate();
   const lastPlayDate = localStorage.getItem(STORAGE_DATE_KEY);
   const plays = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
 
-  // Reset plays if it's a new day
   if (lastPlayDate !== today) {
     localStorage.setItem(STORAGE_DATE_KEY, today);
     localStorage.setItem(STORAGE_KEY, '0');
@@ -57,7 +57,7 @@ const getGuestPlaysRemaining = () => {
 const incrementGuestPlays = () => {
   const plays = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
   localStorage.setItem(STORAGE_KEY, String(plays + 1));
-  localStorage.setItem(STORAGE_DATE_KEY, new Date().toDateString());
+  localStorage.setItem(STORAGE_DATE_KEY, getUserLocalDate());
 };
 
 export default function PawsistenceGame() {
@@ -79,6 +79,29 @@ export default function PawsistenceGame() {
   const { mutate: saveGameResult } = api.pawsistence.saveGame.useMutation({
     onSuccess: () => {
       void utils.pawsistence.getInitialState.invalidate();
+    },
+  });
+
+  const { mutate: incrementPlays } = api.pawsistence.incrementPlays.useMutation({
+    onSuccess: (data) => {
+      setGameState(prev => ({
+        ...prev,
+        playsRemaining: data.playsRemaining ?? 0,
+        gameOver: (data.playsRemaining ?? 0) <= 0,
+      }));
+      
+      if ((data.playsRemaining ?? 0) <= 0) {
+        setShowNoPlaysDialog(true);
+      } else {
+        setShowIncorrectDialog(true);
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -152,7 +175,14 @@ export default function PawsistenceGame() {
     void fetchNewRound();
   }, [fetchNewRound]);
 
+  // Add a ref to track if we've already saved this game
+  const hasGameBeenSaved = useRef(false);
+
   const handleGameOver = useCallback(() => {
+    // Prevent multiple saves of the same game
+    if (hasGameBeenSaved.current) return;
+    hasGameBeenSaved.current = true;
+
     if (gameState.currentStreak > (gameData?.highestStreak ?? 0)) {
       saveGameResult({
         streak: gameState.currentStreak,
@@ -180,42 +210,42 @@ export default function PawsistenceGame() {
     const isCorrect = breed === gameState.currentBreed?.breed;
     setAnsweredBreed(breed);
 
-    // Play sound effect
     if (isCorrect) {
       void happyBarkRef.current?.play();
-    } else {
-      void angryBarkRef.current?.play();
-    }
-
-    if (isCorrect) {
       setTimeout(() => {
         setAnsweredBreed(null);
         setGameState(prev => ({
           ...prev,
           currentStreak: prev.currentStreak + 1,
         }));
-        // Increment guest plays in localStorage if not logged in
         if (!session?.user) {
           incrementGuestPlays();
         }
         void fetchNewRound();
       }, 1500);
     } else {
-      // Calculate remaining plays after this incorrect guess
-      const remainingPlays = session?.user 
-        ? (gameData?.playsRemaining ?? 3) - 1 
-        : getGuestPlaysRemaining() - 1;
-
-      setGameState(prev => ({
-        ...prev,
-        gameOver: remainingPlays <= 0,
-        playsRemaining: remainingPlays
-      }));
+      void angryBarkRef.current?.play();
       
       if (session?.user) {
-        handleGameOver();
+        // Let the mutation's onSuccess handle all state updates
+        incrementPlays();
       } else {
+        // For guest users
         incrementGuestPlays();
+        const remainingPlays = getGuestPlaysRemaining();
+        
+        setGameState(prev => ({
+          ...prev,
+          gameOver: remainingPlays <= 0,
+          playsRemaining: remainingPlays
+        }));
+
+        if (remainingPlays <= 0) {
+          setShowNoPlaysDialog(true);
+        } else {
+          setShowIncorrectDialog(true);
+        }
+
         toast({
           title: "Sign in to save your streak!",
           description: "Create an account to track your progress and compete on the leaderboard.",
@@ -230,24 +260,20 @@ export default function PawsistenceGame() {
           ),
         });
       }
-
-      // Only show incorrect dialog if there are remaining tries
-      if (remainingPlays > 0) {
-        setShowIncorrectDialog(true);
-      } else {
-        // Show the finished dialog when no tries remain
-        setShowNoPlaysDialog(true);
-      }
     }
   };
 
   const handlePlayAgain = () => {
+    hasGameBeenSaved.current = false;
     setShowIncorrectDialog(false);
+    
     setGameState(prev => ({
       ...prev,
-      gameOver: false,
+      currentBreed: null,
+      options: [],
+      isLoading: true,
       currentStreak: 0,
-      playsRemaining: session?.user ? (gameData?.playsRemaining ?? 3) : getGuestPlaysRemaining(),
+      gameOver: false,
     }));
     setAnsweredBreed(null);
     void fetchNewRound();
@@ -256,12 +282,35 @@ export default function PawsistenceGame() {
   // Add this state to handle no plays remaining
   const [showNoPlaysDialog, setShowNoPlaysDialog] = useState(false);
 
-  // Check if user can play when gameData loads
+  // Modify the initial effect to be more comprehensive
   useEffect(() => {
-    if (gameData && gameData.playsRemaining <= 0) {
-      setShowNoPlaysDialog(true);
-    }
-  }, [gameData]);
+    const checkPlaysRemaining = () => {
+      if (session?.user) {
+        // For logged in users, check gameData
+        if (gameData && gameData.playsRemaining <= 0) {
+          setShowNoPlaysDialog(true);
+          setGameState(prev => ({
+            ...prev,
+            gameOver: true,
+            playsRemaining: 0,
+          }));
+        }
+      } else {
+        // For guest users, check localStorage
+        const guestPlaysRemaining = getGuestPlaysRemaining();
+        if (guestPlaysRemaining <= 0) {
+          setShowNoPlaysDialog(true);
+          setGameState(prev => ({
+            ...prev,
+            gameOver: true,
+            playsRemaining: 0,
+          }));
+        }
+      }
+    };
+
+    checkPlaysRemaining();
+  }, [session?.user, gameData?.playsRemaining]); // Add gameData.playsRemaining as dependency
 
   // Update gameState when session/gameData changes
   useEffect(() => {
@@ -356,12 +405,7 @@ export default function PawsistenceGame() {
       {/* Add this dialog for no plays remaining */}
       <PawsistenceFinishedDialog 
         isOpen={showNoPlaysDialog}
-        onClose={() => {
-          // Only allow closing if there are plays remaining
-          if (gameState.playsRemaining > 0) {
-            setShowNoPlaysDialog(false);
-          }
-        }}
+        onClose={() => {}}
         currentStreak={gameState.currentStreak}
         isHighScore={gameState.currentStreak > (gameData?.highestStreak ?? 0)}
         playsRemaining={gameState.playsRemaining}

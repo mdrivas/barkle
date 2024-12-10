@@ -14,6 +14,7 @@ import { DailyInstructions } from "./components/DailyInstructions";
 import { UsernameDialog } from "./components/UsernameDialog";
 import { useRouter, useSearchParams } from "next/navigation";
 import seedrandom from "seedrandom";
+import { getUserLocalDate } from "~/lib/dates";
 
 interface DogBreed {
   breed: string;
@@ -44,11 +45,6 @@ interface ImageResponse {
 interface DailyBreeds {
   breeds: DogBreed[];
   date: string;
-}
-
-function getDateString() {
-  const date = new Date();
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 }
 
 function generateDailySeededRandom(seed: string) {
@@ -172,7 +168,7 @@ export default function DailyGame() {
     const breedsData: BreedsResponse = await breedsResponse.json();
 
     // Use round-specific seed for consistent randomization
-    const roundSeed = `${getDateString()}-${currentRoundIndex}`;
+    const roundSeed = `${getUserLocalDate()}-${currentRoundIndex}`;
     const roundRng = generateDailySeededRandom(roundSeed);
 
     // First, get all images for this breed
@@ -277,6 +273,7 @@ export default function DailyGame() {
             .join(","),
           tempId: !session?.user ? localTempId ?? undefined : undefined,
           currentGuessStreak: newGuessStreak,
+          playDate: getUserLocalDate(),
         });
         setShowGameResults(true);
       } catch (error) {
@@ -333,12 +330,12 @@ export default function DailyGame() {
     const urlResults = searchParams.get("results");
 
     if (urlScore && urlResults && tempId) {
-      // Save score after username is set
       await saveScoreMutation.mutateAsync({
         score: parseInt(urlScore),
         tempId,
         results: urlResults,
-        currentGuessStreak: 0
+        currentGuessStreak: 0,
+        playDate: getUserLocalDate(),
       });
       
       // Clean up URL and localStorage
