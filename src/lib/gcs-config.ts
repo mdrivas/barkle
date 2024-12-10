@@ -1,27 +1,21 @@
 import { Storage } from '@google-cloud/storage';
 
 // Validate environment variables
-const requiredEnvVars = {
-  GOOGLE_CLOUD_PROJECT_ID: process.env.GOOGLE_CLOUD_PROJECT_ID,
-  GOOGLE_CLOUD_CLIENT_EMAIL: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-  GOOGLE_CLOUD_PRIVATE_KEY: process.env.GOOGLE_CLOUD_PRIVATE_KEY,
-  GOOGLE_CLOUD_BUCKET_NAME: process.env.GOOGLE_CLOUD_BUCKET_NAME,
-  GCS_PROFILE_PICS_BUCKET: process.env.GCS_PROFILE_PICS_BUCKET,
-} as const;
+if (!process.env.GOOGLE_CLOUD_PROJECT_ID) throw new Error('Missing GOOGLE_CLOUD_PROJECT_ID');
+if (!process.env.GOOGLE_CLOUD_CLIENT_EMAIL) throw new Error('Missing GOOGLE_CLOUD_CLIENT_EMAIL');
+if (!process.env.GOOGLE_CLOUD_PRIVATE_KEY) throw new Error('Missing GOOGLE_CLOUD_PRIVATE_KEY');
+if (!process.env.GOOGLE_CLOUD_BUCKET_NAME) throw new Error('Missing GOOGLE_CLOUD_BUCKET_NAME');
+if (!process.env.GCS_PROFILE_PICS_BUCKET) throw new Error('Missing GCS_PROFILE_PICS_BUCKET');
 
-// Check if we're in a browser environment
-const isBrowser = typeof window !== 'undefined';
-
-// Only initialize storage in server environment
-const storage = !isBrowser ? new Storage({
-  projectId: requiredEnvVars.GOOGLE_CLOUD_PROJECT_ID,
+// Only initialize in server environment
+const storage = new Storage({
+  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
   credentials: {
-    client_email: requiredEnvVars.GOOGLE_CLOUD_CLIENT_EMAIL,
-    private_key: requiredEnvVars.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
   },
-}) : null;
+});
 
-// Export buckets with null fallback for client
-export const dogSubmissionsBucket = !isBrowser ? storage?.bucket(requiredEnvVars.GOOGLE_CLOUD_BUCKET_NAME!) : null;
-export const profilePicsBucket = !isBrowser ? storage?.bucket(requiredEnvVars.GCS_PROFILE_PICS_BUCKET!) : null;
+export const dogSubmissionsBucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET_NAME);
+export const profilePicsBucket = storage.bucket(process.env.GCS_PROFILE_PICS_BUCKET);
 
