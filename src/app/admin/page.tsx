@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { api } from "~/trpc/react";
@@ -18,23 +18,25 @@ interface ImageDecision {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { data: isAdmin, isLoading } = api.user.isAdmin.useQuery();
-
-  // Redirect non-admin users
-  if (!isLoading && !isAdmin) {
-    router.push('/');
-    return null;
-  }
-
   const [viewMode, setViewMode] = useState<ViewMode>("single");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [decisions, setDecisions] = useState<ImageDecision[]>([]);
-
   const utils = api.useUtils();
-
+  
+  const { data: isAdmin, isLoading } = api.user.isAdmin.useQuery();
   const { data: pendingImages, refetch } = api.admin.getPendingImages.useQuery();
-  console.log('Pending Images:', pendingImages);
-  console.log('Current Index:', currentIndex);
+  const { data: stats } = api.admin.getStats.useQuery();
+
+  // Move hooks above any conditional returns
+  useEffect(() => {
+    if (!isLoading && !isAdmin) {
+      router.push('/');
+    }
+  }, [isLoading, isAdmin, router]);
+
+  if (!isLoading && !isAdmin) {
+    return null;
+  }
 
   const currentImage = pendingImages?.[currentIndex];
 
@@ -62,8 +64,6 @@ export default function AdminPage() {
     if (decisions.length === 0) return;
     await batchProcessMutation.mutateAsync({ decisions });
   };
-
-  const { data: stats } = api.admin.getStats.useQuery();
 
   return (
     <div className="min-h-screen bg-[#1a1a1b]">
