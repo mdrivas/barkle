@@ -109,7 +109,7 @@ export default function PawsistenceGame() {
       const allBreeds = Object.keys(breedsData.message);
 
       // Get random breed
-      const correctBreed = allBreeds[Math.floor(Math.random() * allBreeds.length)];
+      const correctBreed = allBreeds[Math.floor(Math.random() * allBreeds.length)]!;
 
       // Get random image for the breed
       const breedImagesResponse = await fetch(
@@ -117,7 +117,7 @@ export default function PawsistenceGame() {
       );
       const breedImagesData = await breedImagesResponse.json();
       const images = breedImagesData.message as string[];
-      const selectedImage = images[Math.floor(Math.random() * images.length)];
+      const selectedImage = images[Math.floor(Math.random() * images.length)]!;
 
       // Get wrong options
       const wrongOptions = allBreeds
@@ -131,10 +131,10 @@ export default function PawsistenceGame() {
       setGameState(prev => ({
         ...prev,
         currentBreed: {
-          breed: correctBreed as string,
-          imageUrl: selectedImage as string,
+          breed: correctBreed,
+          imageUrl: selectedImage,
         },
-        options: options as string[],
+        options: options,
         isLoading: false,
       }));
     } catch (error) {
@@ -265,16 +265,6 @@ export default function PawsistenceGame() {
       }));
     }
   }, [session, gameData]);
-
-  // Add this effect to check guest plays on mount
-  useEffect(() => {
-    if (!session?.user && typeof window !== 'undefined') {
-      const playsRemaining = getGuestPlaysRemaining();
-      if (playsRemaining <= 0) {
-        setShowNoPlaysDialog(true);
-      }
-    }
-  }, [session]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">

@@ -85,7 +85,6 @@ export const scoreRouter = createTRPCRouter({
   getTodayScore: publicProcedure
     .input(z.object({
       tempId: z.string().uuid().optional(),
-      timezone: z.number()
     }))
     .query(async ({ ctx, input }) => {
       const today = new Date().toISOString().split('T')[0];
@@ -121,23 +120,12 @@ export const scoreRouter = createTRPCRouter({
     .query(async ({ ctx }) => {
       const today = new Date().toISOString().split('T')[0];
 
-      // Get daily Barkle games count
-      const dailyGames = await ctx.db
+      const gamesCount = await ctx.db
         .select({ count: sql<number>`count(*)` })
         .from(scores)
-        .where(eq(scores.playDate, today!))
-        .then(result => result[0]?.count ?? 0);
+        .where(eq(scores.playDate, today!));
 
-      // Get total pawsistence plays for today
-      const pawsistencePlays = await ctx.db
-        .select({
-          total: sql<number>`COALESCE(SUM(${users.pawsistencePlaysToday}), 0)`
-        })
-        .from(users)
-        .then(result => Number(result[0]?.total ?? 0));
-
-      // Return combined total
-      return Number(dailyGames) + pawsistencePlays;
+      return gamesCount[0]?.count ?? 0;
     }),
 
   getDailyLeaderboard: publicProcedure

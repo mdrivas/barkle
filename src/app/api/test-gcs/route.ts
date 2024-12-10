@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
-import { bucket } from "~/lib/gcs-config";
+import { dogSubmissionsBucket, profilePicsBucket } from "~/lib/gcs-config";
 
 export async function GET() {
   try {
-    // Try to get bucket metadata
-    const [exists] = await bucket.exists();
+    // Try to get bucket metadata for both buckets
+    const [dogSubmissionsExists] = await dogSubmissionsBucket.exists();
+    const [profilePicsExists] = await profilePicsBucket.exists();
     
     return NextResponse.json({
       success: true,
-      message: exists ? "Successfully connected to GCS bucket" : "Bucket not found",
-      bucketName: bucket.name
+      dogSubmissions: {
+        message: dogSubmissionsExists ? "Successfully connected to dog submissions bucket" : "Bucket not found",
+        bucketName: dogSubmissionsBucket.name
+      },
+      profilePics: {
+        message: profilePicsExists ? "Successfully connected to profile pics bucket" : "Bucket not found",
+        bucketName: profilePicsBucket.name
+      }
     });
   } catch (error) {
     console.error("GCS Connection Error:", error);

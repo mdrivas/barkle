@@ -24,6 +24,7 @@ interface GameFinishedDialogProps {
   questionResults: boolean[];
   onClose?: () => void;
   isReturningFromAuth?: boolean;
+  tempId?: string;
 }
 
 export function GameFinishedDialog({ 
@@ -32,6 +33,7 @@ export function GameFinishedDialog({
   questionResults,
   onClose,
   isReturningFromAuth = false,
+  tempId,
 }: GameFinishedDialogProps) {
   // Hooks initialization
   const router = useRouter();
@@ -84,7 +86,6 @@ export function GameFinishedDialog({
           score,
           results: resultsString,
           tempId: tempIdToUse,
-          timezone: new Date().getTimezoneOffset(),
           currentGuessStreak: 0
         });
       }
@@ -120,10 +121,14 @@ export function GameFinishedDialog({
   };
 
   // Update the query to use the state
-  const todayScoreQuery = api.score.getTodayScore.useQuery({
-    tempId: !session?.user ? localTempId : undefined,
-    timezone: new Date().getTimezoneOffset()
-  });
+  const todayScoreQuery = api.score.getTodayScore.useQuery(
+    {
+      tempId: !session?.user ? tempId ?? localTempId ?? undefined : undefined,
+    },
+    {
+      enabled: !!localTempId || !!session?.user,
+    }
+  );
 
   // Use the actual score from props or query
   const displayScore = todayScoreQuery.data?.score ?? score;

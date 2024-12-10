@@ -83,10 +83,9 @@ export default function DailyGame() {
   const canPlayQuery = api.score.canPlayToday.useQuery(
     {
       tempId: !session?.user ? tempId ?? localTempId ?? undefined : undefined,
-      timezone: new Date().getTimezoneOffset(),
     },
     {
-      enabled: !!localTempId || !!session?.user, // Enable when we have either localTempId or session
+      enabled: !!localTempId || !!session?.user,
     }
   );
 
@@ -277,7 +276,6 @@ export default function DailyGame() {
             .map((r) => (r ? "1" : "0"))
             .join(","),
           tempId: !session?.user ? localTempId ?? undefined : undefined,
-          timezone: new Date().getTimezoneOffset(),
           currentGuessStreak: newGuessStreak,
         });
         setShowGameResults(true);
@@ -340,7 +338,6 @@ export default function DailyGame() {
         score: parseInt(urlScore),
         tempId,
         results: urlResults,
-        timezone: new Date().getTimezoneOffset(),
         currentGuessStreak: 0
       });
       
@@ -364,7 +361,6 @@ export default function DailyGame() {
   const todayScoreQuery = api.score.getTodayScore.useQuery(
     {
       tempId: !session?.user ? tempId ?? localTempId ?? undefined : undefined,
-      timezone: new Date().getTimezoneOffset(),
     },
     {
       enabled:

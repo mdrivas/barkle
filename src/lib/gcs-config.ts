@@ -8,16 +8,9 @@ const storage = new Storage({
   },
 });
 
-if (!process.env.GOOGLE_CLOUD_BUCKET_NAME) {
-  throw new Error("GOOGLE_CLOUD_BUCKET_NAME is not defined");
-}
-
-if (!process.env.GCS_PROFILE_PICS_BUCKET) {
-  throw new Error("GCS_PROFILE_PICS_BUCKET is not defined");
-}
-
-export const dogSubmissionsBucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET_NAME);
-export const profilePicsBucket = storage.bucket(process.env.GCS_PROFILE_PICS_BUCKET);
+// Export both buckets
+export const dogSubmissionsBucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET_NAME ?? '');
+export const profilePicsBucket = storage.bucket(process.env.GCS_PROFILE_PICS_BUCKET ?? '');
 
 // Log bucket names in development
 if (process.env.NODE_ENV === 'development') {
