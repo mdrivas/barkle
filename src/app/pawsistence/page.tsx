@@ -11,6 +11,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { api } from "~/trpc/react";
 import { PawsistenceFinishedDialog } from "./components/PawsistenceFinishedDialog";
+import { IncorrectGuessDialog } from "./components/IncorrectGuessDialog";
 
 
 interface DogBreed {
@@ -165,6 +166,8 @@ export default function PawsistenceGame() {
     }
   }, [gameState.currentStreak, gameData?.highestStreak, saveGameResult]);
 
+  const [showIncorrectDialog, setShowIncorrectDialog] = useState(false);
+
   const handleGuess = async (breed: string) => {
     if (gameState.isLoading || gameState.gameOver) return;
 
@@ -198,15 +201,21 @@ export default function PawsistenceGame() {
         void fetchNewRound();
       }, 1500);
     } else {
+      // Calculate remaining plays after this incorrect guess
+      const remainingPlays = session?.user 
+        ? (gameData?.playsRemaining ?? 3) - 1 
+        : getGuestPlaysRemaining() - 1;
+
       setGameState(prev => ({
         ...prev,
-        gameOver: true,
+        gameOver: remainingPlays <= 0,
+        playsRemaining: remainingPlays
       }));
       
       if (session?.user) {
         handleGameOver();
       } else {
-        incrementGuestPlays(); // Also count incorrect guesses
+        incrementGuestPlays();
         toast({
           title: "Sign in to save your streak!",
           description: "Create an account to track your progress and compete on the leaderboard.",
@@ -221,26 +230,25 @@ export default function PawsistenceGame() {
           ),
         });
       }
+
+      // Only show incorrect dialog if there are remaining tries
+      if (remainingPlays > 0) {
+        setShowIncorrectDialog(true);
+      } else {
+        // Show the finished dialog when no tries remain
+        setShowNoPlaysDialog(true);
+      }
     }
   };
 
-  // Modify play again handler
   const handlePlayAgain = () => {
-    // Check if non-logged in user has reached play limit
-    if (!session?.user && getGuestPlaysRemaining() <= 0) {
-      setShowNoPlaysDialog(true);
-      return;
-    }
-
-    setGameState({
-      currentBreed: null,
-      options: [],
-      isLoading: true,
-      currentStreak: 0,
+    setShowIncorrectDialog(false);
+    setGameState(prev => ({
+      ...prev,
       gameOver: false,
+      currentStreak: 0,
       playsRemaining: session?.user ? (gameData?.playsRemaining ?? 3) : getGuestPlaysRemaining(),
-      highestStreak: session?.user ? (gameData?.highestStreak ?? 0) : 0,
-    });
+    }));
     setAnsweredBreed(null);
     void fetchNewRound();
   };
@@ -313,11 +321,15 @@ export default function PawsistenceGame() {
             <Button
               key={breed}
               onClick={() => handleGuess(breed)}
-              disabled={gameState.gameOver || answeredBreed !== null}
+              disabled={
+                gameState.gameOver || 
+                answeredBreed !== null || 
+                gameState.playsRemaining <= 0
+              }
               className={cn(
                 "p-6 text-lg uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-zinc-800",
                 {
-                  "hover:border-emerald-500/50": !answeredBreed,
+                  "hover:border-emerald-500/50": !answeredBreed && gameState.playsRemaining > 0,
                   "border-green-500 text-green-500":
                     answeredBreed && breed === gameState.currentBreed?.breed,
                   "border-red-500 text-red-500":
@@ -333,25 +345,26 @@ export default function PawsistenceGame() {
           ))}
         </div>
 
-        {gameState.gameOver && (
-          <div className="mt-8 text-center">
-            <Button
-              onClick={handlePlayAgain}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              Play Again
-            </Button>
-          </div>
-        )}
+        <IncorrectGuessDialog 
+          isOpen={showIncorrectDialog}
+          onClose={() => setShowIncorrectDialog(false)}
+          playsRemaining={gameState.playsRemaining}
+          onPlayAgain={handlePlayAgain}
+        />
       </div>
 
       {/* Add this dialog for no plays remaining */}
       <PawsistenceFinishedDialog 
         isOpen={showNoPlaysDialog}
-        onClose={() => setShowNoPlaysDialog(false)}
-        currentStreak={0}
-        isHighScore={false}
-        playsRemaining={0}
+        onClose={() => {
+          // Only allow closing if there are plays remaining
+          if (gameState.playsRemaining > 0) {
+            setShowNoPlaysDialog(false);
+          }
+        }}
+        currentStreak={gameState.currentStreak}
+        isHighScore={gameState.currentStreak > (gameData?.highestStreak ?? 0)}
+        playsRemaining={gameState.playsRemaining}
         highestStreak={gameData?.highestStreak ?? 0}
       />
     </div>
