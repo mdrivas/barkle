@@ -322,27 +322,24 @@ export default function PawsistenceGame() {
       }));
     }
   }, [session, gameData]);
-
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 py-8 px-4">
       <div className="container max-w-4xl mx-auto">
-        <div className="text-center mb-8 space-y-4">
-          <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col items-center mb-6 space-y-2">
+          <div className="flex items-center justify-between w-full mb-2">
             <Link href="/">
               <Button variant="ghost" className="text-zinc-400 hover:text-zinc-200">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-1.5 h-5 w-5" />
                 Back
               </Button>
             </Link>
-            <h1 className="text-4xl font-bold tracking-tight text-[#F9F8E4]">
-              Pawsistence
-            </h1>
-            <div className="w-[100px]" /> {/* Spacer for centering */}
           </div>
-
+          <h1 className="text-4xl font-bold tracking-tight text-white-500 mt-0.5 drop-shadow-lg">
+            Pawsistence
+          </h1>
           {/* Streak Display */}
-          <div className="inline-flex items-center justify-center gap-2 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-3 border border-zinc-800">
-            <div className="text-xl font-bold text-zinc-400">
+          <div className="inline-flex items-center justify-center gap-2 rounded-xl p-2 mt-2 shadow-lg">
+            <div className="text-lg font-bold text-amber-400">
               Current Streak: {gameState.currentStreak}
             </div>
           </div>
@@ -350,11 +347,11 @@ export default function PawsistenceGame() {
 
         {/* Game Board */}
         {gameState.isLoading && !gameState.currentBreed ? (
-          <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+          <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
             <div className="w-full h-[400px] bg-zinc-800/50 animate-pulse" />
           </Card>
         ) : gameState.currentBreed ? (
-          <Card className="overflow-hidden mb-8 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
+          <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
             <Image
               src={gameState.currentBreed.imageUrl}
               alt="Mystery dog"
