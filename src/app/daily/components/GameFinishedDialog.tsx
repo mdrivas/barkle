@@ -16,6 +16,7 @@ import { api } from "~/trpc/react";
 import { ShareResultsDialog } from "~/app/components/ShareResultsDialog";
 import { useToast } from "~/hooks/use-toast";
 import { Share2 } from "lucide-react";
+import { getUserLocalDate } from "~/lib/dates";
 
 // Props interface for GameFinishedDialog component
 interface GameFinishedDialogProps {
@@ -24,7 +25,6 @@ interface GameFinishedDialogProps {
   questionResults: boolean[];
   onClose?: () => void;
   isReturningFromAuth?: boolean;
-  tempId?: string;
 }
 
 export function GameFinishedDialog({ 
@@ -33,7 +33,6 @@ export function GameFinishedDialog({
   questionResults,
   onClose,
   isReturningFromAuth = false,
-  tempId,
 }: GameFinishedDialogProps) {
   // Hooks initialization
   const router = useRouter();
@@ -45,7 +44,7 @@ export function GameFinishedDialog({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   // Add state for tempId
-  const [localTempId, setLocalTempId] = useState<string | undefined>();
+  const [tempId, setTempId] = useState<string | undefined>();
 
   // Add state to track if we've handled the auth return
   const [hasHandledAuthReturn, setHasHandledAuthReturn] = useState(false);
@@ -62,7 +61,7 @@ export function GameFinishedDialog({
 
   // Add useEffect to get localStorage value
   useEffect(() => {
-    setLocalTempId(localStorage.getItem('barkle_temp_id') ?? undefined);
+    setTempId(localStorage.getItem('barkle_temp_id') ?? undefined);
   }, []);
 
   // Define handleViewLeaderboard at the top level of the component
@@ -86,7 +85,8 @@ export function GameFinishedDialog({
           score,
           results: resultsString,
           tempId: tempIdToUse,
-          currentGuessStreak: 0
+          currentGuessStreak: 0,
+          playDate: getUserLocalDate(),
         });
       }
       
@@ -123,10 +123,10 @@ export function GameFinishedDialog({
   // Update the query to use the state
   const todayScoreQuery = api.score.getTodayScore.useQuery(
     {
-      tempId: !session?.user ? tempId ?? localTempId ?? undefined : undefined,
+      tempId: !session?.user ? tempId ?? undefined : undefined,
     },
     {
-      enabled: !!localTempId || !!session?.user,
+      enabled: !!tempId || !!session?.user,
     }
   );
 
@@ -140,18 +140,21 @@ export function GameFinishedDialog({
   const shareResults = (
     <Button 
       onClick={() => setIsShareDialogOpen(true)}
-      className="w-full bg-emerald-600 hover:bg-emerald-700 text-zinc-100 transition-all duration-200 py-3 text-base font-medium rounded-xl flex items-center justify-center gap-2"
+      className="w-full bg-emerald-600 hover:bg-emerald-700 text-zinc-100 transition-all duration-200 py-6 text-lg font-medium rounded-xl flex items-center justify-center gap-2"
     >
       Share Results
-      <Share2 className="h-4 w-4" />
+      <Share2 className="h-5 w-5" />
     </Button>
   );
 
   const leaderboardButton = (
     <Button
       onClick={handleViewLeaderboard}
-      className="w-full bg-amber-700 hover:bg-amber-800 text-zinc-50 border-none transition-all duration-200 
-        flex items-center justify-center gap-2 py-3 text-base font-medium rounded-xl"
+      className={`text-zinc-50 border-none transition-all duration-200 flex items-center justify-center gap-2 py-6 text-lg font-medium ${
+        session 
+          ? "bg-amber-500 hover:bg-amber-300 focus:bg-amber-300 shadow-lg shadow-amber-900/20"
+          : "bg-amber-600/50 hover:bg-amber-600/50 focus:bg-amber-600/50 focus:ring-0 active:bg-amber-600/50 cursor-pointer"
+      }`}
     >
       View Leaderboard 🏆
     </Button>
@@ -161,42 +164,26 @@ export function GameFinishedDialog({
   const yesterdaysGameButton = (
     <Button
       onClick={handleViewLeaderboard}
-      className="bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-50 border border-zinc-700 transition-all duration-200 flex items-center justify-center gap-2 py-4 text-sm font-medium"
+      className="bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-50 border border-zinc-700 transition-all duration-200 flex items-center justify-center gap-2 py-6 text-lg font-medium"
     >
       Play Yesterday's Game 
     </Button>
   );
 
   const SignInPrompt = () => (
-    <div className="space-y-2 text-center">
-      <h3 className="text-2xl font-bold text-zinc-50">Track Your Progress</h3>
-      <div className="flex items-center justify-center gap-4 my-1">
-        <span className="text-xl">📈</span>
-        <span className="text-xl">🏆</span>
-        <span className="text-xl">🔥</span>
-      </div>
-      <ul className="text-base text-zinc-300 space-y-1">
-        <li className="flex items-center justify-center gap-2">
-          <span className="text-emerald-500">✓</span> Save your daily scores
-        </li>
-        <li className="flex items-center justify-center gap-2">
-          <span className="text-emerald-500">✓</span> Build winning streaks
-        </li>
-        <li className="flex items-center justify-center gap-2">
-          <span className="text-emerald-500">✓</span> Compete on the leaderboard
-        </li>
-      </ul>
+    <div className="space-y-3 text-center">
+      <p className="text-gray-300">
+        Want to start tracking your stats and streaks?
+      </p>
     </div>
   );
 
   const GoogleSignInButton = () => (
     <button
       onClick={handleSignIn}
-      className="flex items-center justify-center gap-3 bg-white hover:bg-gray-50 active:bg-gray-100 
-        border border-gray-300 rounded-xl px-6 py-4 w-full transition-all duration-200 
-        text-gray-900 text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+      className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-6 py-2 hover:bg-gray-50 w-full transition-colors duration-200 text-gray-900"
     >
-      <GoogleLogo className="w-6 h-6" />
+      <GoogleLogo />
       Continue with Google
     </button>
   );
@@ -212,20 +199,11 @@ export function GameFinishedDialog({
   const unauthenticatedContent = (
     <>
       <SignInPrompt />
-      <div className="flex flex-col gap-4 w-full mt-2">
+      <div className="flex flex-col gap-4 w-full">
         <GoogleSignInButton />
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-zinc-700" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-zinc-950/95 px-2 text-zinc-500">or continue without signing in</span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-3 w-full">
-          {shareResults}
-          {leaderboardButton}
-        </div>
+        <div className="h-px bg-zinc-600/50 w-full my-2" />
+        {shareResults}
+        {leaderboardButton}
       </div>
     </>
   );

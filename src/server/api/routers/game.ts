@@ -51,7 +51,7 @@ export const gameRouter = createTRPCRouter({
       // Store in database with consistent date format
       const newDailyBreeds = await ctx.db.insert(dailyBreeds)
         .values({
-          date: today!,  // Assert today is not undefined
+          date: today,
           breeds: JSON.stringify(selectedBreeds)
         })
         .returning();
