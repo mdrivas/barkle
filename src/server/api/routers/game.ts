@@ -8,18 +8,21 @@ export const gameRouter = createTRPCRouter({
   getDailyBreeds: publicProcedure
     .input(z.object({ timezone: z.number() }))
     .query(async ({ ctx, input }) => {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      // Create date in user's timezone
+      const userDate = new Date();
+      userDate.setMinutes(userDate.getMinutes() - userDate.getTimezoneOffset());
+      const today = userDate.toISOString().split('T')[0]!;
 
       // Check if we already have breeds for today
       const existingBreeds = await ctx.db.query.dailyBreeds.findFirst({
-        where: (breeds) => eq(breeds.date, today!)
+        where: (breeds) => eq(breeds.date, today)
       });
 
       if (existingBreeds) {
         return existingBreeds;
       }
 
-      // If not, generate new breeds
+      // If not, generate new breeds using the local date as seed
       const rng = seedrandom(today);
       const breedsResponse = await fetch('https://dog.ceo/api/breeds/list/all');
       const breedsData = await breedsResponse.json();

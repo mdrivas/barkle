@@ -109,6 +109,16 @@ export default function AccountPage() {
     </Card>
   );
 
+  const { data: barkleStats, isLoading: isBarkleLoading } = api.score.getBarkleStats.useQuery(
+    { userId: session?.user?.id ?? '' },
+    { enabled: !!session?.user?.id }
+  );
+
+  const { data: pawsistenceStats, isLoading: isPawsistenceLoading } = api.score.getPawsistenceStats.useQuery(
+    { userId: session?.user?.id ?? '' },
+    { enabled: !!session?.user?.id }
+  );
+
   if (!session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#121213] p-4">
@@ -210,36 +220,49 @@ export default function AccountPage() {
           </div>
         </Card>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <StatCard
-            title="Games Played"
-            value={userData?.gamesPlayed ?? 0}
-            icon={GamepadIcon}
-            color="sky"
-            isLoading={isLoading}
-          />
-          <StatCard
-            title="Daily Streak"
-            value={userData?.currentDailyStreak ?? 0}
-            icon={Flame}
-            color="orange"
-            isLoading={isLoading}
-          />
-          <StatCard
-            title="Current Guess Streak"
-            value={userData?.currentGuessStreak ?? 0}
-            icon={Flame}
-            color="emerald"
-            isLoading={isLoading}
-          />
-          <StatCard
-            title="Best Guess Streak"
-            value={userData?.highestGuessStreak ?? 0}
-            icon={Trophy}
-            color="indigo"
-            isLoading={isLoading}
-          />
+        {/* Stats Sections */}
+        <div className="space-y-6">
+          {/* Daily Barkle Section */}
+          <div>
+            <h2 className="mb-4 text-xl font-semibold text-zinc-200">Daily Barkle</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <StatCard
+                title="Games Played"
+                value={barkleStats?.gamesPlayed ?? 0}
+                icon={GamepadIcon}
+                color="sky"
+                isLoading={isBarkleLoading}
+              />
+              <StatCard
+                title="Daily Streak"
+                value={barkleStats?.dailyStreak ?? 0}
+                icon={Flame}
+                color="orange"
+                isLoading={isBarkleLoading}
+              />
+            </div>
+          </div>
+
+          {/* Pawsistence Section */}
+          <div>
+            <h2 className="mb-4 text-xl font-semibold text-zinc-200">Pawsistence</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <StatCard
+                title="Current Streak"
+                value={pawsistenceStats?.currentStreak ?? 0}
+                icon={Flame}
+                color="emerald"
+                isLoading={isPawsistenceLoading}
+              />
+              <StatCard
+                title="Best Streak"
+                value={pawsistenceStats?.bestStreak ?? 0}
+                icon={Trophy}
+                color="indigo"
+                isLoading={isPawsistenceLoading}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
