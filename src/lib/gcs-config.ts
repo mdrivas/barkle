@@ -1,19 +1,27 @@
 import { Storage } from '@google-cloud/storage';
 
-const storage = new Storage({
-  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+// Validate environment variables
+const requiredEnvVars = {
+  GOOGLE_CLOUD_PROJECT_ID: process.env.GOOGLE_CLOUD_PROJECT_ID,
+  GOOGLE_CLOUD_CLIENT_EMAIL: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+  GOOGLE_CLOUD_PRIVATE_KEY: process.env.GOOGLE_CLOUD_PRIVATE_KEY,
+  GOOGLE_CLOUD_BUCKET_NAME: process.env.GOOGLE_CLOUD_BUCKET_NAME,
+  GCS_PROFILE_PICS_BUCKET: process.env.GCS_PROFILE_PICS_BUCKET,
+} as const;
+
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
+// Only initialize storage in server environment
+const storage = !isBrowser ? new Storage({
+  projectId: requiredEnvVars.GOOGLE_CLOUD_PROJECT_ID,
   credentials: {
-    client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-    private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    client_email: requiredEnvVars.GOOGLE_CLOUD_CLIENT_EMAIL,
+    private_key: requiredEnvVars.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   },
-});
+}) : null;
 
-// Export both buckets
-export const dogSubmissionsBucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET_NAME ?? '');
-export const profilePicsBucket = storage.bucket(process.env.GCS_PROFILE_PICS_BUCKET ?? '');
+// Export buckets with null fallback for client
+export const dogSubmissionsBucket = !isBrowser ? storage?.bucket(requiredEnvVars.GOOGLE_CLOUD_BUCKET_NAME!) : null;
+export const profilePicsBucket = !isBrowser ? storage?.bucket(requiredEnvVars.GCS_PROFILE_PICS_BUCKET!) : null;
 
-// Log bucket names in development
-if (process.env.NODE_ENV === 'development') {
-  console.log('Dog submissions bucket:', process.env.GOOGLE_CLOUD_BUCKET_NAME);
-  console.log('Profile pics bucket:', process.env.GCS_PROFILE_PICS_BUCKET);
-} 
