@@ -113,7 +113,7 @@ export default function Home() {
         {/* Games Counter */}
         <Card className="bg-[#C4A484] text-black px-6 py-2 rounded-full text-sm">
           <p className="font-medium">
-            🐾 {gamesCount ?? 0} Games Played Today 🐾
+            🐾 {gamesCount ?? 0} {(gamesCount ?? 0) === 1 ? 'Game' : 'Games'} Played Today 🐾
           </p>
         </Card>
 
