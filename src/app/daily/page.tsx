@@ -288,9 +288,9 @@ export default function DailyGame() {
       // Fetch next round after delay
       setTimeout(() => {
         setAnsweredBreed(null);
-        setGameState(prev => ({
+        setGameState((prev) => ({
           ...prev,
-          isLoading: true
+          isLoading: true,
         }));
         setCurrentRoundIndex((prev) => prev + 1);
       }, 1500);

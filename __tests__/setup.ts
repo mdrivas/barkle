@@ -1,21 +1,36 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
-// Mock tRPC mutations
+// Mock tRPC mutations and queries
 vi.mock('~/trpc/react', () => ({
   api: {
     score: {
-      attachScoreToUser: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          isSuccess: false,
-        }),
+      canPlayToday: {
+        useQuery: vi.fn(() => ({
+          data: { canPlay: true },
+          isLoading: false,
+        })),
+      },
+      getTodayScore: {
+        useQuery: vi.fn(() => ({
+          data: { score: 3, results: '1,1,1,0,0' },
+          
+          isLoading: false,
+        })),
       },
       saveScore: {
         useMutation: () => ({
           mutate: vi.fn(),
           isSuccess: false,
         }),
+      },
+    },
+    game: {
+      getDailyBreeds: {
+        useQuery: vi.fn(() => ({
+          data: { breeds: JSON.stringify([{ breed: 'labrador', imageUrl: 'url' }]), date: '2023-10-10' },
+          isLoading: false,
+        })),
       },
     },
     createClient: () => ({}),
