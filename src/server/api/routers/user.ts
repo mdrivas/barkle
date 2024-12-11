@@ -43,10 +43,10 @@ export const userRouter = createTRPCRouter({
           highestDailyStreak: true,
           currentGuessStreak: true,
           highestGuessStreak: true,
-          lastPlayedDate: true,
+          lastPlayedAt: true,
           highestPawsistenceStreak: true,
           pawsistencePlaysToday: true,
-          lastPawsistenceDate: true,
+          lastPawsistenceAt: true,
         },
       });
 
@@ -59,7 +59,7 @@ export const userRouter = createTRPCRouter({
       // Get latest score to verify streaks
       const latestScore = await ctx.db.query.scores.findFirst({
         where: eq(scores.userId, ctx.session.user.id),
-        orderBy: (scores, { desc }) => [desc(scores.playDate)],
+        orderBy: (scores, { desc }) => [desc(scores.playedAt)],
       });
 
       return {

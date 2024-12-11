@@ -14,7 +14,6 @@ import { DailyInstructions } from "./components/DailyInstructions";
 import { UsernameDialog } from "./components/UsernameDialog";
 import { useRouter, useSearchParams } from "next/navigation";
 import seedrandom from "seedrandom";
-import { getUserLocalDate } from "~/lib/dates";
 
 interface DogBreed {
   breed: string;
@@ -109,7 +108,7 @@ export default function DailyGame() {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
-        })} your local time`,
+        })} PST`,
         variant: "destructive",
         duration: 3000,
       });
@@ -123,6 +122,12 @@ export default function DailyGame() {
     hasShownToast,
   ]);
 
+  // Add the new query
+  const currentStreakQuery = api.score.getCurrentStreak.useQuery(undefined, {
+    enabled: !!session?.user,
+  });
+
+  // Update the initial game state
   const [gameState, setGameState] = useState<GameState>({
     currentBreed: null,
     options: [],
@@ -131,8 +136,18 @@ export default function DailyGame() {
     guessesRemaining: 5,
     gameOver: false,
     hasSavedScore: false,
-    currentGuessStreak: 0,
+    currentGuessStreak: currentStreakQuery.data ?? 0, // Initialize with the user's current streak
   });
+
+  // Add an effect to update the streak when the query loads
+  useEffect(() => {
+    if (currentStreakQuery.data !== undefined) {
+      setGameState(prev => ({
+        ...prev,
+        currentGuessStreak: currentStreakQuery.data,
+      }));
+    }
+  }, [currentStreakQuery.data]);
 
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
 
@@ -168,7 +183,7 @@ export default function DailyGame() {
     const breedsData: BreedsResponse = await breedsResponse.json();
 
     // Use round-specific seed for consistent randomization
-    const roundSeed = `${getUserLocalDate()}-${currentRoundIndex}`;
+    const roundSeed = `${currentRoundIndex}`;
     const roundRng = generateDailySeededRandom(roundSeed);
 
     // First, get all images for this breed
@@ -229,7 +244,7 @@ export default function DailyGame() {
     const newGuessesRemaining = gameState.guessesRemaining - 1;
     const newGameOver = newGuessesRemaining === 0;
 
-    // Update guess streak
+    // Update guess streak - increment if correct, reset if wrong
     const newGuessStreak = isCorrect
       ? gameState.currentGuessStreak + 1
       : 0;
@@ -273,8 +288,12 @@ export default function DailyGame() {
             .join(","),
           tempId: !session?.user ? localTempId ?? undefined : undefined,
           currentGuessStreak: newGuessStreak,
-          playDate: getUserLocalDate(),
         });
+        
+        // Invalidate the queries to force a refresh
+        void todayScoreQuery.refetch();
+        void canPlayQuery.refetch();
+        
         setShowGameResults(true);
       } catch (error) {
         console.error("Failed to save score:", error);
@@ -335,7 +354,6 @@ export default function DailyGame() {
         tempId,
         results: urlResults,
         currentGuessStreak: 0,
-        playDate: getUserLocalDate(),
       });
       
       // Clean up URL and localStorage
@@ -360,8 +378,7 @@ export default function DailyGame() {
       tempId: !session?.user ? tempId ?? localTempId ?? undefined : undefined,
     },
     {
-      enabled:
-        !canPlayQuery.data?.canPlay && (!!localTempId || !!session?.user),
+      enabled: (!canPlayQuery.data?.canPlay && (!!localTempId || !!session?.user)) || gameState.gameOver,
     }
   );
 
@@ -417,7 +434,7 @@ export default function DailyGame() {
             </div>
           </div>
 
-          <div className="outline outline-2 outline-offset-2 outline-gray-600 rounded-xl p-4">
+          <div className="space-y-4">
             {gameState.isLoading && !gameState.currentBreed ? (
               <Card className="overflow-hidden mb-8 border border-gray-500 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
                 <div className="w-full h-[300px] bg-zinc-800/50 animate-pulse rounded-xl" />
@@ -437,24 +454,27 @@ export default function DailyGame() {
             <div className="grid grid-cols-2 gap-4">
               {gameState.options.map((breed) => (
                 <Button
-                  key={breed}
+                  key={`${breed}-${currentRoundIndex}`}
                   onClick={() => handleGuess(breed)}
                   disabled={gameState.gameOver || answeredBreed !== null}
                   className={cn(
-                    // Base styles that apply to all states
-                    "p-4 text-md uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10 disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-gray-500",
+                    // Base styles
+                    "p-4 text-md uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10",
+                    "disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-gray-500",
+                    // Hover state only when not answered
                     {
-                      // Default state - only add hover effect
                       "hover:border-emerald-500/50": !answeredBreed,
                       // Correct answer
-                      "border-green-500 text-green-500":
+                      "bg-green-500/10 border-green-500 text-green-500":
                         answeredBreed && breed === gameState.currentBreed?.breed,
                       // Wrong answer selected
-                      "border-red-500 text-red-500 !text-red-500":
+                      "bg-red-500/10 border-red-500 text-red-500":
                         answeredBreed === breed && breed !== gameState.currentBreed?.breed,
                       // Other options when answer is selected
                       "opacity-0":
-                        answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
+                        answeredBreed && 
+                        answeredBreed !== breed && 
+                        breed !== gameState.currentBreed?.breed,
                     }
                   )}
                   variant="outline"
@@ -469,11 +489,11 @@ export default function DailyGame() {
         <>
           <GameFinishedDialog
             isOpen={true}
-            score={todayScoreQuery.data?.score ?? 0}
+            score={todayScoreQuery.data?.score ?? gameState.score}
             questionResults={
               todayScoreQuery.data?.results
                 ? todayScoreQuery.data.results.split(",").map((r) => r === "1")
-                : []
+                : questionResults
             }
             onClose={() => router.push("/")}
           />
@@ -482,7 +502,7 @@ export default function DailyGame() {
       )}
 
       <GameFinishedDialog
-        isOpen={showGameResults || (!canPlayQuery.data?.canPlay && !!todayScoreQuery.data)}
+        isOpen={showGameResults}
         score={gameState.score}
         questionResults={questionResults}
         onClose={() => {

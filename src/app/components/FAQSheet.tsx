@@ -22,7 +22,7 @@ const faqs = [
   },
   {
     question: "When do new puzzles come out?",
-    answer: "New dog breeds are available every day at midnight in your local time."
+    answer: "New dog breeds are available every day at midnight PST."
   },
   {
     question: "How are scores calculated?",

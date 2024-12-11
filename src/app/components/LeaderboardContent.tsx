@@ -19,7 +19,6 @@ type DailyScore = {
 type PawsistenceScore = {
   username: string | null;
   highestStreak: number | null;
-  pawsistencePlaysToday: number | null;
 };
 
 const isPawsistenceScore = (score: DailyScore | PawsistenceScore): score is PawsistenceScore => 
@@ -29,10 +28,7 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
   const { data: session } = useSession();
   const isPawsistence = mode === "pawsistence";
   
-  const dailyLeaderboard = api.score.getDailyLeaderboard.useQuery({
-    timezone: new Date().getTimezoneOffset(),
-  });
-
+  const dailyLeaderboard = api.score.getDailyLeaderboard.useQuery();
   const pawsistenceLeaderboard = api.score.getPawsistenceLeaderboard.useQuery();
 
   const data = mode === "daily" ? dailyLeaderboard.data : pawsistenceLeaderboard.data;
@@ -60,10 +56,10 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
       {userScore && (
         <div className="bg-green-900/20 rounded-lg p-3 border border-green-900/30">
           <div className="text-green-500 text-xs font-medium mb-2">
-            {isPawsistence ? "Your Best" : "Your Score Today"}
+            {isPawsistence ? "Your Best Streak" : "Your Score Today"}
           </div>
           <div className={cn("grid gap-2 text-xs items-center", 
-            isPawsistence ? "grid-cols-3" : "grid-cols-5"
+            isPawsistence ? "grid-cols-2" : "grid-cols-5"
           )}>
             <div className="text-green-500">
               #{data.findIndex(entry => entry.username === userScore.username) + 1}
@@ -103,9 +99,7 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
       <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
         {data.map((entry, i) => (
           <div 
-            key={isPawsistenceScore(entry) 
-              ? `${entry.username}-${entry.highestStreak}-${i}` 
-              : `${entry.username}-${entry.score}-${entry.userId}-${i}`}
+            key={entry.username}
             className={cn(
               "grid gap-2 text-xs p-2 rounded-lg border items-center shadow-lg",
               isPawsistence ? "grid-cols-3" : "grid-cols-5",

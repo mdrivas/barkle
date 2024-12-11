@@ -32,9 +32,7 @@ export default function Home() {
     }
   }, [searchParams]);
 
-  const { data: gamesCount } = api.score.getTodayGames.useQuery({
-    timezone: new Date().getTimezoneOffset()
-  });
+  const { data: gamesCount } = api.score.getTodayGames.useQuery();
 
   return (
     <main className={`flex min-h-screen flex-col items-center bg-[#121213] text-zinc-50 font-sans ${roboto.variable}`}>

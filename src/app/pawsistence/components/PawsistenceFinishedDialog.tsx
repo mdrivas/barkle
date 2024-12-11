@@ -22,6 +22,7 @@ interface PawsistenceFinishedDialogProps {
   isHighScore: boolean;
   playsRemaining: number;
   highestStreak: number;
+  nextGameTime: Date | null;
 }
 
 export function PawsistenceFinishedDialog({
@@ -31,6 +32,7 @@ export function PawsistenceFinishedDialog({
   isHighScore,
   playsRemaining,
   highestStreak,
+  nextGameTime,
 }: PawsistenceFinishedDialogProps) {
   const { data: session } = useSession();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -42,12 +44,25 @@ export function PawsistenceFinishedDialog({
     router.push('/?showLeaderboard=true');
   };
 
+  const formatNextGameTime = () => {
+    if (!nextGameTime) return '';
+    return new Date(nextGameTime).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+      timeZone: 'America/Los_Angeles',
+    });
+  };
+
   return (
     <>
       <Dialog 
         open={isOpen} 
-        onOpenChange={onClose}
-        modal={playsRemaining === 0}
+        onOpenChange={(open) => {
+            if (playsRemaining > 0) {
+                onClose?.();
+            }
+        }}
+        modal={true}
       >
         <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
           <DialogHeader>
@@ -59,7 +74,7 @@ export function PawsistenceFinishedDialog({
           <div className="flex flex-col gap-4 items-center mt-4">
             <div className="text-center">
               <p className="text-gray-300 text-sm sm:text-base">
-                You've used all your plays for today. Come back tomorrow for more attempts!
+                You've used all your plays for today. Come back at {formatNextGameTime()} PST for more attempts!
               </p>
               <p className="text-emerald-500 text-sm mt-2">
                 Daily limit: 3 games

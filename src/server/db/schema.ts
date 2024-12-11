@@ -63,11 +63,11 @@ export const users = createTable("user", {
   highestDailyStreak: integer("highest_daily_streak").default(0),
   currentGuessStreak: integer("current_guess_streak").default(0),
   highestGuessStreak: integer("highest_guess_streak").default(0),
-  lastPlayedDate: varchar("last_played_date", { length: 10 })
-    .default(sql`to_char(CURRENT_TIMESTAMP AT TIME ZONE CURRENT_SETTING('TIMEZONE'), 'YYYY-MM-DD')`),
+
+  lastPlayedAt: timestamp("last_played_at", { withTimezone: true }),
   highestPawsistenceStreak: integer("highest_pawsistence_streak").default(0),
   pawsistencePlaysToday: integer("pawsistence_plays_today").default(0),
-  lastPawsistenceDate: varchar("last_pawsistence_date", { length: 10 }),
+  lastPawsistenceAt: timestamp("last_pawsistence_at", { withTimezone: true }),
 });
 
 export type User = InferSelectModel<typeof users>;
@@ -154,9 +154,7 @@ export const scores = createTable("scores", {
   results: text("results"),
   userId: varchar("user_id", { length: 255 }).references(() => users.id),
   tempId: varchar("temp_id", { length: 255 }),
-  playDate: varchar("play_date", { length: 10 })
-    .notNull()
-    .default(sql`to_char(CURRENT_TIMESTAMP AT TIME ZONE CURRENT_SETTING('TIMEZONE'), 'YYYY-MM-DD')`),
+  playedAt: timestamp("played_at", { withTimezone: true }),
 });
 
 export const dailyBreeds = createTable("daily_breeds", {

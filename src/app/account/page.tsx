@@ -15,9 +15,12 @@ import {
   GamepadIcon, 
   Camera, 
   ArrowLeft, 
-  LogOut 
+  LogOut, 
+  Share2, 
+  Check 
 } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { useToast } from "~/hooks/use-toast";
 
 export default function AccountPage() {
   const { data: session } = useSession();
@@ -118,6 +121,41 @@ export default function AccountPage() {
     { userId: session?.user?.id ?? '' },
     { enabled: !!session?.user?.id }
   );
+
+  const { toast } = useToast();
+
+  const handleShare = async () => {
+    const statsText = `🐕 My Barkle Stats 🦮
+
+🎮 Daily Barkle
+Games Played: ${barkleStats?.gamesPlayed ?? 0}
+🔥 Daily Streak: ${barkleStats?.dailyStreak ?? 0}
+Current Guess Streak: ${userData?.currentGuessStreak ?? 0}
+🏆 Best Guess Streak: ${userData?.highestGuessStreak ?? 0}
+
+🐾 Pawsistence
+Today's Plays: ${userData?.pawsistencePlaysToday ?? 0}
+🏆 Best Streak: ${userData?.highestPawsistenceStreak ?? 0}
+
+Play Barkle: https://barkle.vercel.app`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          text: statsText,
+        });
+      } else {
+        await navigator.clipboard.writeText(statsText);
+        toast({
+          title: "Stats copied!",
+          description: "Share your Barkle progress with friends!",
+          duration: 2000,
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
 
   if (!session) {
     return (
@@ -225,7 +263,7 @@ export default function AccountPage() {
           {/* Daily Barkle Section */}
           <div>
             <h2 className="mb-4 text-xl font-semibold text-zinc-200">Daily Barkle</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <StatCard
                 title="Games Played"
                 value={barkleStats?.gamesPlayed ?? 0}
@@ -241,6 +279,22 @@ export default function AccountPage() {
                 isLoading={isBarkleLoading}
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <StatCard
+                title="Current Guess Streak"
+                value={userData?.currentGuessStreak ?? 0}
+                icon={Flame}
+                color="emerald"
+                isLoading={isLoading}
+              />
+              <StatCard
+                title="Best Guess Streak"
+                value={userData?.highestGuessStreak ?? 0}
+                icon={Trophy}
+                color="indigo"
+                isLoading={isLoading}
+              />
+            </div>
           </div>
 
           {/* Pawsistence Section */}
@@ -248,21 +302,32 @@ export default function AccountPage() {
             <h2 className="mb-4 text-xl font-semibold text-zinc-200">Pawsistence</h2>
             <div className="grid grid-cols-2 gap-4">
               <StatCard
-                title="Current Streak"
-                value={pawsistenceStats?.currentStreak ?? 0}
-                icon={Flame}
+                title="Plays Today"
+                value={userData?.pawsistencePlaysToday ?? 0}
+                icon={GamepadIcon}
                 color="emerald"
-                isLoading={isPawsistenceLoading}
+                isLoading={isLoading}
               />
               <StatCard
                 title="Best Streak"
-                value={pawsistenceStats?.bestStreak ?? 0}
+                value={userData?.highestPawsistenceStreak ?? 0}
                 icon={Trophy}
                 color="indigo"
-                isLoading={isPawsistenceLoading}
+                isLoading={isLoading}
               />
             </div>
           </div>
+        </div>
+
+        <div className="mt-8">
+          <Button
+            onClick={handleShare}
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg shadow-emerald-700/20 transition-all duration-200 hover:shadow-emerald-700/40"
+            size="lg"
+          >
+            <Share2 className="mr-2 h-5 w-5" />
+            Share Stats
+          </Button>
         </div>
       </div>
     </div>

@@ -16,7 +16,6 @@ import { api } from "~/trpc/react";
 import { ShareResultsDialog } from "~/app/components/ShareResultsDialog";
 import { useToast } from "~/hooks/use-toast";
 import { Share2 } from "lucide-react";
-import { getUserLocalDate } from "~/lib/dates";
 
 // Props interface for GameFinishedDialog component
 interface GameFinishedDialogProps {
@@ -86,7 +85,6 @@ export function GameFinishedDialog({
           results: resultsString,
           tempId: tempIdToUse,
           currentGuessStreak: 0,
-          playDate: getUserLocalDate(),
         });
       }
       
