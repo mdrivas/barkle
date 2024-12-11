@@ -18,6 +18,8 @@ import seedrandom from "seedrandom";
 interface DogBreed {
   breed: string;
   imageUrl: string;
+  type: 'api' | 'community';
+  submittedBy?: string;
 }
 
 interface GameState {
@@ -164,7 +166,9 @@ export default function DailyGame() {
 
   // Add this query to fetch daily breeds
   const dailyBreedsQuery = api.game.getDailyBreeds.useQuery(
-    { timezone: new Date().getTimezoneOffset() },
+    { 
+      timezone: new Date().getTimezoneOffset()
+    },
     { enabled: canPlayQuery.data?.canPlay }
   );
 
@@ -186,18 +190,22 @@ export default function DailyGame() {
     const roundSeed = `${currentRoundIndex}`;
     const roundRng = generateDailySeededRandom(roundSeed);
 
-    // First, get all images for this breed
-    const breedImagesResponse = await fetch(
-      `https://dog.ceo/api/breed/${currentBreed.breed}/images`
-    );
-    const breedImagesData = await breedImagesResponse.json();
-    const images = breedImagesData.message as string[];
+    // Use the stored image URL directly for community dogs
+    let selectedImage = currentBreed.imageUrl;
+    
+    // Only fetch new image from API if it's not a community dog
+    if (currentBreed.type === 'api') {
+      const breedImagesResponse = await fetch(
+        `https://dog.ceo/api/breed/${currentBreed.breed}/images`
+      );
+      const breedImagesData = await breedImagesResponse.json();
+      const images = breedImagesData.message as string[];
 
-    // Use seeded random to select consistent image
-    const imageIndex = Math.floor(roundRng() * images.length);
-    const selectedImage = images[imageIndex] ?? images[0] ?? "https://dog.ceo/api/breeds/image/random";
+      const imageIndex = Math.floor(roundRng() * images.length);
+      selectedImage = images[imageIndex] ?? images[0] ?? "https://dog.ceo/api/breeds/image/random";
+    }
 
-    // Rest of the function (wrong answers, options, etc.)
+    // Rest of the function remains the same...
     const dailyBreedNames = parsedBreeds.map((b) => b.breed);
     const possibleWrongBreeds = Object.keys(breedsData.message).filter(
       (breed) => !dailyBreedNames.includes(breed)
@@ -217,6 +225,8 @@ export default function DailyGame() {
       currentBreed: {
         breed: currentBreed.breed,
         imageUrl: selectedImage,
+        type: currentBreed.type,
+        submittedBy: currentBreed.submittedBy
       },
       options,
       isLoading: false,
@@ -451,9 +461,25 @@ export default function DailyGame() {
                     priority
                     quality={90}
                   />
+                  {/* Show community badge immediately if it's a community submission */}
+                  {gameState.currentBreed.type === 'community' && (
+                    <div className="absolute top-4 right-4 bg-emerald-500/80 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                      Community Pup
+                    </div>
+                  )}
                 </div>
               </Card>
             ) : null}
+
+            {/* Show submitter after answering if it's the community dog */}
+            {answeredBreed && 
+              currentRoundIndex === 4 && 
+              gameState.currentBreed?.type === 'community' && 
+              gameState.currentBreed.submittedBy && (
+                <p className="text-sm text-emerald-500 text-center mt-2">
+                  Submitted by: @{gameState.currentBreed.submittedBy}
+                </p>
+            )}
 
             <div className="grid grid-cols-2 gap-4" key={currentRoundIndex}>
               {gameState.options.map((breed) => (

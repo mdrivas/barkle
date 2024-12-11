@@ -54,6 +54,14 @@ export default function Home() {
     }
   }, [usernameCheck]);
 
+  // Generic sign-in function you can use throughout your app
+  const handleSignIn = () => {
+    void signIn("google", {
+      prompt: "select_account",
+      callbackUrl: window.location.href
+    });
+  };
+
   return (
     <main className={`flex min-h-screen flex-col items-center bg-[#121213] text-zinc-50 font-sans ${roboto.variable}`}>
       <NavigationBar />
@@ -94,7 +102,7 @@ export default function Home() {
         <div className="w-full max-w-4xl mx-auto px-4 py-2">
           <div className="flex justify-end">
             <Button
-              onClick={() => void signIn("google")}
+              onClick={handleSignIn}
               variant="ghost"
               className="text-lg font-medium text-zinc-400 hover:text-zinc-200"
             >

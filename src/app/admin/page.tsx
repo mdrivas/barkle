@@ -144,8 +144,9 @@ export default function AdminPage() {
                       {decisions.some(d => d.filename === currentImage.name && d.action === 'approve') ? "Approving..." : "Approve"}
                     </Button>
                   </div>
-                  <div className="text-sm text-zinc-400 mt-2">
-                    <p>Filename: {currentImage.name.split('/').pop()}</p>
+                  <div className="text-sm text-zinc-400 mt-2 space-y-1">
+                    <p className="font-medium">Breed: {currentImage.breed}</p>
+                    <p className="text-xs">Submitted by: {currentImage.submittedBy}</p>
                   </div>
                 </div>
               ) : (
@@ -159,9 +160,9 @@ export default function AdminPage() {
               {pendingImages?.map((image, index) => (
                 <Card
                   key={image.name}
-                  className="p-4 bg-[#121213] border-green-900/30 space-y-4"
+                  className="p-3 bg-[#121213] border-green-900/30 flex flex-col"
                 >
-                  <div className="relative h-48 rounded-lg overflow-hidden">
+                  <div className="relative h-36 rounded-lg overflow-hidden mb-2">
                     <Image
                       src={image.url}
                       alt="Dog submission"
@@ -169,23 +170,27 @@ export default function AdminPage() {
                       className="object-cover"
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="text-sm text-zinc-400 mb-2">
+                    <p className="font-medium truncate">Breed: {image.breed}</p>
+                    <p className="text-xs truncate">By: {image.submittedBy}</p>
+                  </div>
+                  <div className="flex gap-1 mt-auto">
                     <Button
                       onClick={() => handleImageDecision(image.name, 'reject')}
                       variant="destructive"
-                      className="w-full"
                       size="sm"
+                      className="flex-1 h-6 text-[10px] px-1"
                       disabled={decisions.some(d => d.filename === image.name && d.action === 'reject')}
                     >
-                      Reject
+                      ✕
                     </Button>
                     <Button
                       onClick={() => handleImageDecision(image.name, 'approve')}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
                       size="sm"
+                      className="flex-1 h-6 text-[10px] px-1 bg-blue-600 hover:bg-blue-700"
                       disabled={decisions.some(d => d.filename === image.name && d.action === 'approve')}
                     >
-                      Approve
+                      ✓
                     </Button>
                   </div>
                 </Card>
@@ -193,9 +198,9 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Add submit changes button */}
+          {/* Fixed Submit Changes Button */}
           {decisions.length > 0 && (
-            <div className="fixed bottom-8 right-8">
+            <div className="fixed bottom-8 right-8 z-10">
               <Button 
                 onClick={handleSubmitChanges}
                 className="bg-green-600 hover:bg-green-700"

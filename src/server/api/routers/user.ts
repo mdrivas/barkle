@@ -94,9 +94,14 @@ export const userRouter = createTRPCRouter({
       return { success: true, imageUrl: input.imageUrl };
     }),
   isAdmin: protectedProcedure
-    .query(({ ctx }) => {
-      const adminEmails = env.ADMIN_EMAILS.split(",");
-      return adminEmails.includes(ctx.session.user.email ?? "");
+    .query(async ({ ctx }) => {
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.session.user.id),
+        columns: {
+          isAdmin: true,
+        },
+      });
+      return user?.isAdmin ?? false;
     }),
  
   needsUsername: protectedProcedure

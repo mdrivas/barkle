@@ -21,6 +21,9 @@ interface DogSubmissionModalProps {
   variant?: "default" | "link";
 }
 
+// Add this type for submission status
+type SubmissionStatus = 'pending' | 'verified' | 'rejected';
+
 export function DogSubmissionModal({ className, variant }: DogSubmissionModalProps) {
   const [open, setOpen] = useState(false);
   const [showSubmission, setShowSubmission] = useState(false);
@@ -70,20 +73,35 @@ export function DogSubmissionModal({ className, variant }: DogSubmissionModalPro
     onSuccess: () => {
       toast({
         title: "Success!",
-        description: "Your dog photo has been submitted for review.",
+        description: "Your dog photo has been submitted for review. We'll notify you when it's approved!",
       });
-      setOpen(false);
-      setImageUrl("");
-      setBreed("");
+      handleClose(); // Use the existing handleClose to reset the form
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to submit dog photo",
         variant: "destructive",
       });
     },
   });
+
+  // Update the submit handler to include all required fields
+  const handleSubmit = () => {
+    if (!session?.user?.id || !imageUrl || !breed.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    submitMutation.mutate({
+      imageUrl,
+      breed: breed.trim(),
+    });
+  };
 
   const handleFileUpload = async (file: File) => {
     try {
@@ -269,7 +287,7 @@ export function DogSubmissionModal({ className, variant }: DogSubmissionModalPro
                 type="button"
                 className="w-full bg-emerald-600 hover:bg-emerald-700"
                 disabled={submitMutation.isPending || !imageUrl || !breed.trim()}
-                onClick={() => submitMutation.mutate({ imageUrl, breed: breed.trim() })}
+                onClick={handleSubmit}  // Use the new handleSubmit
               >
                 {submitMutation.isPending ? "Submitting..." : "Submit Photo"}
               </Button>
