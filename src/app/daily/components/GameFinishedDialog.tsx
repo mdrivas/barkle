@@ -199,7 +199,7 @@ export function GameFinishedDialog({
   return (
     <>
       <Dialog open={isOpen && shouldShowResults} onOpenChange={(open) => !open && onClose?.()}>
-        <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
+        <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl [&>button]:hidden">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
               {displayScore > 0 ? "Congratulations! 🎉" : "Game Over"}
