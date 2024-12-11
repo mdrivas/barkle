@@ -13,6 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DogSubmissionModal } from "./components/DogSubmissionModal";
 import { api } from "~/trpc/react";
+import { NewUserDialog } from "./components/NewUserDialog";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -21,9 +22,10 @@ const roboto = Roboto({
 });
 
 export default function Home() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const searchParams = useSearchParams();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showNewUserDialog, setShowNewUserDialog] = useState(false);
   
   useEffect(() => {
     if (searchParams.get('showLeaderboard') === 'true') {
@@ -33,6 +35,24 @@ export default function Home() {
   }, [searchParams]);
 
   const { data: gamesCount } = api.score.getTodayGames.useQuery();
+  const { data: profile, isLoading: isProfileLoading } = api.user.getProfile.useQuery(
+    undefined, 
+    { 
+      enabled: !!session?.user,
+      retry: false,
+      staleTime: 0,
+    }
+  );
+
+  const { data: usernameCheck } = api.user.needsUsername.useQuery(undefined, {
+    enabled: !!session?.user,
+  });
+
+  useEffect(() => {
+    if (usernameCheck?.needsUsername && usernameCheck?.isNewUser) {
+      setShowNewUserDialog(true);
+    }
+  }, [usernameCheck]);
 
   return (
     <main className={`flex min-h-screen flex-col items-center bg-[#121213] text-zinc-50 font-sans ${roboto.variable}`}>
@@ -45,23 +65,23 @@ export default function Home() {
             <Link href="/account">
               <Button 
                 variant="ghost" 
-                className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200"
+                className="flex items-center gap-2 text-base text-zinc-400 hover:text-zinc-200"
               >
                 <div className="flex flex-col items-end">
-                  <span className="font-medium">{session.user.name}</span>
-                  <span className="text-xs text-zinc-500">{session.user.email}</span>
+                  <span className="font-medium text-base">{session.user.name}</span>
+                  <span className="text-sm text-zinc-500">{session.user.email}</span>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
                   {session.user.image ? (
                     <Image
                       src={session.user.image}
                       alt="Profile"
-                      width={32}
-                      height={32}
+                      width={40}
+                      height={40}
                       className="rounded-full"
                     />
                   ) : (
-                    <span className="text-sm">
+                    <span className="text-base">
                       {session.user.name?.[0]?.toUpperCase() ?? "?"}
                     </span>
                   )}
@@ -76,7 +96,7 @@ export default function Home() {
             <Button
               onClick={() => void signIn("google")}
               variant="ghost"
-              className="text-zinc-400 hover:text-zinc-200"
+              className="text-lg font-medium text-zinc-400 hover:text-zinc-200"
             >
               Sign In
             </Button>
@@ -111,7 +131,7 @@ export default function Home() {
         {/* Games Counter */}
         <Card className="bg-[#C4A484] text-black px-6 py-2 rounded-full text-sm mt-8">
           <p className="font-medium">
-            🐾 {gamesCount ?? 0} {(gamesCount ?? 0) === 1 ? 'Game' : 'Games'} Played Today 🐾
+            🐾 {gamesCount === undefined ? "..." : `${gamesCount} ${gamesCount === 1 ? 'Game' : 'Games'}`} Played Today 🐾
           </p>
         </Card>
 
@@ -136,6 +156,11 @@ export default function Home() {
           />
         </div>
       </div>
+
+      <NewUserDialog 
+        isOpen={showNewUserDialog} 
+        onClose={() => setShowNewUserDialog(false)}
+      />
     </main>
   );
 }

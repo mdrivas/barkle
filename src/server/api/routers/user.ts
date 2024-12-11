@@ -98,4 +98,20 @@ export const userRouter = createTRPCRouter({
       const adminEmails = env.ADMIN_EMAILS.split(",");
       return adminEmails.includes(ctx.session.user.email ?? "");
     }),
+ 
+  needsUsername: protectedProcedure
+    .query(async ({ ctx }) => {
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.session.user.id),
+        columns: {
+          username: true,
+          lastPlayedAt: true,
+        },
+      });
+      
+      return {
+        needsUsername: !user?.username,
+        isNewUser: !user?.lastPlayedAt
+      };
+    }),
 }); 
