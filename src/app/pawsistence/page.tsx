@@ -432,18 +432,21 @@ export default function PawsistenceGame() {
         <div className="rounded-xl p-4">
           {gameState.isLoading && !gameState.currentBreed ? (
             <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl">
-              <div className="w-full h-[300px] bg-zinc-800/50 animate-pulse" />
+              <div className="w-full h-[300px] md:h-[350px] lg:h-[400px] bg-zinc-800/50 animate-pulse" />
             </Card>
           ) : gameState.currentBreed ? (
             <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl">
-              <Image
-                src={gameState.currentBreed.imageUrl}
-                alt="Mystery dog"
-                width={600}
-                height={300}
-                className="w-full h-[300px] object-cover hover:scale-105 transition-transform duration-500"
-                priority
-              />
+              <div className="relative w-full h-[300px] md:h-[350px] lg:h-[400px]">
+                <Image
+                  src={gameState.currentBreed.imageUrl}
+                  alt="Mystery dog"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover hover:scale-105 transition-transform duration-500"
+                  priority
+                  quality={90}
+                />
+              </div>
             </Card>
           ) : null}
 

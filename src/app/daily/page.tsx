@@ -437,24 +437,28 @@ export default function DailyGame() {
           <div className="space-y-4">
             {gameState.isLoading && !gameState.currentBreed ? (
               <Card className="overflow-hidden mb-8 border border-gray-500 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
-                <div className="w-full h-[300px] bg-zinc-800/50 animate-pulse rounded-xl" />
+                <div className="w-full h-[300px] md:h-[350px] lg:h-[400px] bg-zinc-800/50 animate-pulse rounded-xl" />
               </Card>
             ) : gameState.currentBreed ? (
               <Card className="overflow-hidden mb-8 border border-gray-500 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
-                <Image
-                  src={gameState.currentBreed.imageUrl}
-                  alt="Mystery dog"
-                  width={600}
-                  height={300}
-                  className="w-full h-[250px] object-cover hover:scale-105 transition-transform duration-500 rounded-xl"
-                />
+                <div className="relative w-full h-[300px] md:h-[350px] lg:h-[400px]">
+                  <Image
+                    src={gameState.currentBreed.imageUrl}
+                    alt="Mystery dog"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover hover:scale-105 transition-transform duration-500 rounded-xl bg-zinc-900/50"
+                    priority
+                    quality={90}
+                  />
+                </div>
               </Card>
             ) : null}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4" key={currentRoundIndex}>
               {gameState.options.map((breed) => (
                 <Button
-                  key={`${breed}-${currentRoundIndex}`}
+                  key={breed}
                   onClick={() => handleGuess(breed)}
                   disabled={gameState.gameOver || answeredBreed !== null}
                   className={cn(
