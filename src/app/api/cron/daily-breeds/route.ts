@@ -12,6 +12,16 @@ interface DogBreed {
   submittedBy?: string;
 }
 
+interface DogAPIResponse {
+  message: string[];
+  status: string;
+}
+
+interface DogImageResponse {
+  message: string;
+  status: string;
+}
+
 async function generateDailyBreeds() {
   const pstDate = new Date(
     new Date().toLocaleString("en-US", { 
@@ -62,7 +72,7 @@ async function generateDailyBreeds() {
   // Generate breeds using the date as seed
   const rng = seedrandom(today);
   const breedsResponse = await fetch("https://dog.ceo/api/breeds/list/all");
-  const breedsData = await breedsResponse.json();
+  const breedsData = (await breedsResponse.json()) as DogAPIResponse;
   const allBreeds = Object.keys(breedsData.message);
 
   const selectedBreeds: DogBreed[] = [];
@@ -73,11 +83,11 @@ async function generateDailyBreeds() {
     const breedIndex = Math.floor(rng() * allBreeds.length);
     const breed = allBreeds[breedIndex] as string;
 
-    if (!usedBreeds.has(breed) && breed) {
+    if (!usedBreeds.has(breed!) && breed) {
       const imageResponse = await fetch(
-        `https://dog.ceo/api/breed/${breed as string}/images/random`
+        `https://dog.ceo/api/breed/${breed}/images/random`
       );
-      const imageData = await imageResponse.json();
+      const imageData = (await imageResponse.json()) as DogImageResponse;
 
       selectedBreeds.push({
         breed,
@@ -111,11 +121,11 @@ async function generateDailyBreeds() {
       const breedIndex = Math.floor(rng() * allBreeds.length);
       const breed = allBreeds[breedIndex] as string;
 
-      if (!usedBreeds.has(breed) && breed) {
+      if (!usedBreeds.has(breed!) && breed) {
         const imageResponse = await fetch(
-          `https://dog.ceo/api/breed/${breed as string}/images/random`
+          `https://dog.ceo/api/breed/${breed}/images/random`
         );
-        const imageData = await imageResponse.json();
+        const imageData = (await imageResponse.json()) as DogImageResponse;
 
         selectedBreeds.push({
           breed,
@@ -166,7 +176,7 @@ async function previewTomorrowBreeds() {
 
   const rng = seedrandom(tomorrowString);
   const breedsResponse = await fetch("https://dog.ceo/api/breeds/list/all");
-  const breedsData = await breedsResponse.json();
+  const breedsData = (await breedsResponse.json()) as DogAPIResponse;
   const allBreeds = Object.keys(breedsData.message);
 
   const selectedBreeds: DogBreed[] = [];
@@ -177,11 +187,11 @@ async function previewTomorrowBreeds() {
     const breedIndex = Math.floor(rng() * allBreeds.length);
     const breed = allBreeds[breedIndex] as string;
 
-    if (!usedBreeds.has(breed) && breed) {
+    if (!usedBreeds.has(breed!) && breed) {
       const imageResponse = await fetch(
-        `https://dog.ceo/api/breed/${breed as string}/images/random`
+        `https://dog.ceo/api/breed/${breed}/images/random`
       );
-      const imageData = await imageResponse.json();
+      const imageData = (await imageResponse.json()) as DogImageResponse;
 
       selectedBreeds.push({
         breed,
@@ -211,11 +221,11 @@ async function previewTomorrowBreeds() {
       const breedIndex = Math.floor(rng() * allBreeds.length);
       const breed = allBreeds[breedIndex] as string;
 
-      if (!usedBreeds.has(breed) && breed) {
+      if (!usedBreeds.has(breed!) && breed) {
         const imageResponse = await fetch(
-          `https://dog.ceo/api/breed/${breed as string}/images/random`
+          `https://dog.ceo/api/breed/${breed}/images/random`
         );
-        const imageData = await imageResponse.json();
+        const imageData = (await imageResponse.json()) as DogImageResponse;
 
         selectedBreeds.push({
           breed,
@@ -295,7 +305,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(_request: Request) {
   try {
     if (process.env.NODE_ENV !== 'development') {
       return new NextResponse("Preview not available in production", { status: 403 });

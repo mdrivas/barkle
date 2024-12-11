@@ -2,11 +2,17 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { dogSubmissionsBucket } from "~/lib/gcs-config";
 import { TRPCError } from "@trpc/server";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { users, dogSubmissions } from "~/server/db/schema";
+import { db } from "~/server/db";
+
+interface AdminCheckContext {
+  db: typeof db;
+  session: { user: { id: string } };
+}
 
 // Helper function to check admin status from database
-const checkAdminDB = async (ctx: { db: any; session: { user: { id: string; }; }; }) => {
+const checkAdminDB = async (ctx: AdminCheckContext) => {
   const user = await ctx.db.query.users.findFirst({
     where: eq(users.id, ctx.session.user.id),
     columns: {

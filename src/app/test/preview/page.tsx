@@ -7,6 +7,19 @@ import { Card } from "~/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 
+// Add these interfaces above the component
+interface Breed {
+  imageUrl: string;
+  breed: string;
+  type?: 'community';
+  submittedBy?: string;
+}
+
+interface BreedsResponse {
+  date: string;
+  breeds: Breed[];
+}
+
 // Add loading state component
 const LoadingSpinner = () => (
   <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-emerald-500" />
@@ -14,7 +27,7 @@ const LoadingSpinner = () => (
 
 export default function PreviewPage() {
   const { data: session, status } = useSession();
-  const [breeds, setBreeds] = useState<null | any>(null);
+  const [breeds, setBreeds] = useState<BreedsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,7 +94,7 @@ export default function PreviewPage() {
         {breeds && (
           <div className="space-y-8">
             <p className="text-center text-xl">Date: {breeds.date}</p>
-            {breeds.breeds.map((breed: any, index: number) => (
+            {breeds.breeds.map((breed: Breed, index: number) => (
               <Card key={index} className="overflow-hidden border border-gray-500 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
                 <div className="relative w-full h-[300px] md:h-[350px] lg:h-[400px]">
                   <Image

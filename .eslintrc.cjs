@@ -65,7 +65,10 @@ const config = {
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/await-thenable": "warn",
     "react/no-unescaped-entities": "warn",
-    "@typescript-eslint/prefer-nullish-coalescing": "warn"
+    "@typescript-eslint/prefer-nullish-coalescing": "warn",
+    // Adding the new rules
+    "@typescript-eslint/non-nullable-type-assertion-style": "off",
+    "@typescript-eslint/no-unnecessary-type-assertion": "off"
   }
 }
 module.exports = config;
