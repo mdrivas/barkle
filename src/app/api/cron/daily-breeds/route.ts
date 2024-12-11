@@ -4,11 +4,7 @@ import { dailyBreeds } from "~/server/db/schema";
 import seedrandom from "seedrandom";
 import { eq } from "drizzle-orm";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
-
 async function generateDailyBreeds() {
-  // Explicitly use PST/PDT timezone
   const pstDate = new Date(
     new Date().toLocaleString("en-US", { 
       timeZone: "America/Los_Angeles",
@@ -18,7 +14,6 @@ async function generateDailyBreeds() {
     })
   );
   
-  // Format date as YYYY-MM-DD
   const today = pstDate.toISOString().split('T')[0];
 
   if (!today) {
@@ -27,7 +22,7 @@ async function generateDailyBreeds() {
 
   // Check if breeds already exist for today
   const existingBreeds = await db.query.dailyBreeds.findFirst({
-    where: today ? (breeds) => eq(breeds.date, today) : undefined,
+    where: (breeds) => eq(breeds.date, today),
   });
 
   if (existingBreeds) {
@@ -70,16 +65,15 @@ async function generateDailyBreeds() {
 
 export async function GET(request: Request) {
   try {
-    // Verify the request is from our CRON job
-    const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET_KEY}`) {
+    // Match Vercel's exact authorization check
+    if (request.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     await generateDailyBreeds();
-    return new NextResponse("Daily breeds generated successfully", { status: 200 });
+    return new NextResponse("Success", { status: 200 });
   } catch (error) {
-    console.error("Failed to generate daily breeds:", error);
-    return new NextResponse("Failed to generate daily breeds", { status: 500 });
+    console.error("CRON job failed:", error);
+    return new NextResponse("Failed", { status: 500 });
   }
 } 
