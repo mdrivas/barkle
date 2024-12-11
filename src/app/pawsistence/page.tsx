@@ -464,15 +464,15 @@ export default function PawsistenceGame() {
                   // Base styles
                   "p-4 text-md uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10",
                   "disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-gray-500",
-                  "active:bg-transparent touch-none", // Add these mobile-specific classes
-                  // Hover state only when not answered
+                  "touch-none select-none",
+                  // Hover state only on devices that support hover
                   {
-                    "hover:border-emerald-500/50": !answeredBreed && gameState.playsRemaining > 0,
+                    "[@media(hover:hover)]:hover:border-emerald-500/50": !answeredBreed && gameState.playsRemaining > 0,
                     // Correct answer
-                    "bg-green-500/10 border-green-500 text-green-500 active:bg-green-500/10":
+                    "!bg-green-500/10 !border-green-500 !text-green-500":
                       answeredBreed && breed === gameState.currentBreed?.breed,
                     // Wrong answer selected
-                    "bg-red-500/10 border-red-500 text-red-500 active:bg-red-500/10":
+                    "!bg-red-500/10 !border-red-500 !text-red-500":
                       answeredBreed === breed && breed !== gameState.currentBreed?.breed,
                     // Other options when answer is selected
                     "opacity-0 pointer-events-none":
