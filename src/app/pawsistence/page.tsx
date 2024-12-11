@@ -461,17 +461,24 @@ export default function PawsistenceGame() {
                   gameState.playsRemaining <= 0
                 }
                 className={cn(
-                  "p-4 text-md uppercase transition-all duration-300 rounded-xl shadow-lg",
-                  "bg-zinc-900/50 backdrop-blur-sm hover:bg-zinc-800/50",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  // Base styles
+                  "p-4 text-md uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10",
+                  "disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-gray-500",
+                  "active:bg-transparent touch-none", // Add these mobile-specific classes
+                  // Hover state only when not answered
                   {
-                    "hover:scale-105": !answeredBreed && gameState.playsRemaining > 0,
-                    "border-2 border-green-500/50 text-green-400 bg-green-950/20":
+                    "hover:border-emerald-500/50": !answeredBreed && gameState.playsRemaining > 0,
+                    // Correct answer
+                    "bg-green-500/10 border-green-500 text-green-500 active:bg-green-500/10":
                       answeredBreed && breed === gameState.currentBreed?.breed,
-                    "border-2 border-red-500/50 text-red-400 bg-red-950/20":
+                    // Wrong answer selected
+                    "bg-red-500/10 border-red-500 text-red-500 active:bg-red-500/10":
                       answeredBreed === breed && breed !== gameState.currentBreed?.breed,
+                    // Other options when answer is selected
                     "opacity-0 pointer-events-none":
-                      answeredBreed && answeredBreed !== breed && breed !== gameState.currentBreed?.breed,
+                      answeredBreed && 
+                      answeredBreed !== breed && 
+                      breed !== gameState.currentBreed?.breed,
                   }
                 )}
                 variant="outline"
