@@ -1,11 +1,21 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { httpBatchLink } from '@trpc/client';
+import { createTRPCReact, httpBatchLink } from '@trpc/react-query';
 import { useState } from 'react';
-import { api } from '~/trpc/react';
 import superjson from 'superjson';
+import { type AppRouter } from '~/server/api/root';
+
+// Create a new tRPC client specifically for testing
+export const api = createTRPCReact<AppRouter>();
 
 export function TestWrapper({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  }));
+
   const [trpcClient] = useState(() =>
     api.createClient({
       links: [

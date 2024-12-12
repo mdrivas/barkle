@@ -43,7 +43,65 @@ export const scoreRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.transaction(async (tx) => {
-        // Insert the score
+        // If user is logged in and tempId exists, try to update existing score
+        if (ctx.session?.user?.id && input.tempId) {
+          // First try to find and update existing score with tempId
+          const existingScore = await tx
+            .update(scores)
+            .set({
+              userId: ctx.session.user.id,
+              tempId: null, // Clear the tempId since we now have a userId
+            })
+            .where(
+              and(
+                eq(scores.tempId, input.tempId),
+                sql`date_trunc('day', ${scores.playedAt} AT TIME ZONE 'America/Los_Angeles') = 
+                    date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`
+              )
+            )
+            .returning();
+
+          // If we found and updated a score, update user stats
+          if (existingScore.length > 0) {
+            const user = await tx.query.users.findFirst({
+              where: eq(users.id, ctx.session.user.id),
+              columns: {
+                lastPlayedAt: true,
+                currentDailyStreak: true,
+                highestDailyStreak: true,
+                currentGuessStreak: true,
+                highestGuessStreak: true,
+              },
+            });
+
+            const now = new Date();
+            const lastPlayed = user?.lastPlayedAt;
+            
+            const isConsecutiveDay = lastPlayed ? (
+              new Date(lastPlayed).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }) ===
+              new Date(now.getTime() - 86400000).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' })
+            ) : false;
+
+            const newDailyStreak = isConsecutiveDay ? (user?.currentDailyStreak ?? 0) + 1 : 1;
+            const newHighestDailyStreak = Math.max(newDailyStreak, user?.highestDailyStreak ?? 0);
+            const newHighestGuessStreak = Math.max(input.currentGuessStreak, user?.highestGuessStreak ?? 0);
+
+            await tx
+              .update(users)
+              .set({
+                lastPlayedAt: now,
+                currentDailyStreak: newDailyStreak,
+                highestDailyStreak: newHighestDailyStreak,
+                currentGuessStreak: input.currentGuessStreak,
+                highestGuessStreak: newHighestGuessStreak,
+              })
+              .where(eq(users.id, ctx.session.user.id));
+
+            return; // Exit early since we've handled everything
+          }
+        }
+
+        // If no existing score was updated (or user isn't logged in), insert new score
         await tx.insert(scores).values({
           score: input.score,
           userId: ctx.session?.user?.id ?? null,
@@ -52,7 +110,7 @@ export const scoreRouter = createTRPCRouter({
           playedAt: new Date(),
         });
 
-        // Update user's streaks if they're logged in
+        // Update user stats for new scores (only if logged in)
         if (ctx.session?.user?.id) {
           const user = await tx.query.users.findFirst({
             where: eq(users.id, ctx.session.user.id),
