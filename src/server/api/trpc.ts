@@ -8,11 +8,13 @@
  */
 
 import { initTRPC, TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
+import { users } from "../db/schema";
 
 /**
  * 1. CONTEXT
@@ -131,3 +133,34 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+// Add this after the protectedProcedure definition
+
+/**
+ * Admin procedure
+ *
+ * This procedure extends the protectedProcedure and ensures the user is an admin.
+ * It will throw an UNAUTHORIZED error if the user is not an admin.
+ */
+export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const user = await ctx.db.query.users.findFirst({
+    where: eq(users.id, ctx.session.user.id),
+    columns: {
+      isAdmin: true,
+    },
+  });
+
+  if (!user?.isAdmin) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "This action requires admin privileges",
+    });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      // You could add additional admin-specific context here if needed
+    },
+  });
+});

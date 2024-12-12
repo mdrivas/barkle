@@ -34,7 +34,7 @@ export const posts = createTable(
       .notNull()
       .references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true })
-      .default(sql`CURRENT_TIMESTAMP`)
+      .defaultNow()
       .notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
       () => new Date(),
@@ -57,8 +57,10 @@ export const users = createTable("user", {
   name: varchar("name", { length: 255 }),
   username: varchar("username", { length: 30 }).unique(),
   email: varchar("email", { length: 255 }).notNull(),
-  emailVerified: timestamp("email_verified", { mode: "date", withTimezone: true })
-    .default(sql`CURRENT_TIMESTAMP`),
+  emailVerified: timestamp("email_verified", {
+    mode: "date",
+    withTimezone: true,
+  }).defaultNow(),
   image: varchar("image", { length: 255 }),
   isAdmin: boolean("is_admin").default(false).notNull(),
   currentDailyStreak: integer("current_daily_streak").default(0),
@@ -164,7 +166,7 @@ export const dailyBreeds = createTable("daily_breeds", {
   date: varchar("date", { length: 10 }).notNull().unique(),
   breeds: text("breeds").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
-    .default(sql`CURRENT_TIMESTAMP`)
+    .defaultNow()
     .notNull(),
 });
 
@@ -179,19 +181,24 @@ export const dogSubmissions = createTable("dog_submission", {
   breed: varchar("breed", { length: 100 }).notNull(),
   status: varchar("status", { length: 20 })
     .notNull()
-    .default('pending'),  // 'pending' | 'verified' | 'rejected'
+    .$type<"pending" | "verified" | "rejected">()
+    .default("pending"),
   imagePath: varchar("image_path", { length: 255 }).notNull(), // Store just the path/filename
   createdAt: timestamp("created_at", { withTimezone: true })
-    .default(sql`CURRENT_TIMESTAMP`)
+    .defaultNow()
     .notNull(),
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
-  verifiedBy: varchar("verified_by", { length: 255 })
-    .references(() => users.id),
-  lastFeaturedAt: timestamp('last_featured_at'),
+  verifiedBy: varchar("verified_by", { length: 255 }).references(
+    () => users.id,
+  ),
+  lastFeaturedAt: timestamp("last_featured_at"),
 });
 
 // Add relations
 export const dogSubmissionsRelations = relations(dogSubmissions, ({ one }) => ({
   user: one(users, { fields: [dogSubmissions.userId], references: [users.id] }),
-  verifier: one(users, { fields: [dogSubmissions.verifiedBy], references: [users.id] }),
+  verifier: one(users, {
+    fields: [dogSubmissions.verifiedBy],
+    references: [users.id],
+  }),
 }));

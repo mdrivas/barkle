@@ -1,78 +1,50 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, adminProcedure } from "../trpc";
 import { dogSubmissionsBucket } from "~/lib/gcs-config";
-import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
-import { users, dogSubmissions } from "~/server/db/schema";
-import { db } from "~/server/db";
-
-interface AdminCheckContext {
-  db: typeof db;
-  session: { user: { id: string } };
-}
-
-// Helper function to check admin status from database
-const checkAdminDB = async (ctx: AdminCheckContext) => {
-  const user = await ctx.db.query.users.findFirst({
-    where: eq(users.id, ctx.session.user.id),
-    columns: {
-      isAdmin: true,
-    },
-  });
-  return user?.isAdmin ?? false;
-};
+import { dogSubmissions } from "~/server/db/schema";
 
 export const adminRouter = createTRPCRouter({
-  getPendingImages: protectedProcedure
-    .query(async ({ ctx }) => {
-      const isAdmin = await checkAdminDB(ctx);
-      if (!isAdmin) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
-      const pendingSubmissions = await ctx.db.query.dogSubmissions.findMany({
-        where: eq(dogSubmissions.status, 'pending'),
-        with: {
-          user: {
-            columns: {
-              name: true,
-              email: true,
-            }
-          }
+  getPendingImages: adminProcedure.query(async ({ ctx }) => {
+    const pendingSubmissions = await ctx.db.query.dogSubmissions.findMany({
+      where: eq(dogSubmissions.status, "pending"),
+      with: {
+        user: {
+          columns: {
+            name: true,
+            email: true,
+          },
         },
-      });
+      },
+    });
 
-      return pendingSubmissions.map(submission => ({
-        name: submission.imagePath,
-        url: `https://storage.googleapis.com/${dogSubmissionsBucket.name}/${submission.imagePath}`,
-        breed: submission.breed,
-        submittedBy: submission.user.name ?? 'Anonymous',
-        submittedAt: submission.createdAt,
-      }));
-    }),
+    return pendingSubmissions.map((submission) => ({
+      name: submission.imagePath,
+      url: `https://storage.googleapis.com/${dogSubmissionsBucket.name}/${submission.imagePath}`,
+      breed: submission.breed,
+      submittedBy: submission.user.name ?? "Anonymous",
+      submittedAt: submission.createdAt,
+    }));
+  }),
 
-  approveImage: protectedProcedure
-    .input(z.object({ 
-      submissionId: z.number(),
-      filename: z.string() 
-    }))
+  approveImage: adminProcedure
+    .input(
+      z.object({
+        submissionId: z.number(),
+        filename: z.string(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const isAdmin = await checkAdminDB(ctx);
-      if (!isAdmin) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
-      // Move file in GCS
       const file = dogSubmissionsBucket.file(input.filename);
       const newFile = dogSubmissionsBucket.file(
-        input.filename.replace("pending/", "verified/")
+        input.filename.replace("pending/", "verified/"),
       );
       await file.move(newFile);
 
-      // Update database
-      await ctx.db.update(dogSubmissions)
+      await ctx.db
+        .update(dogSubmissions)
         .set({
-          status: 'verified',
+          status: "verified",
           verifiedAt: new Date(),
           verifiedBy: ctx.session.user.id,
           imagePath: input.filename.replace("pending/", "verified/"),
@@ -82,88 +54,76 @@ export const adminRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  rejectImage: protectedProcedure
+  rejectImage: adminProcedure
     .input(z.object({ filename: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const isAdmin = await checkAdminDB(ctx);
-      if (!isAdmin) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
       const file = dogSubmissionsBucket.file(input.filename);
       await file.delete();
       return { success: true };
     }),
 
-  getStats: protectedProcedure
-    .query(async ({ ctx }) => {
-      const isAdmin = await checkAdminDB(ctx);
-      if (!isAdmin) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
+  getStats: adminProcedure.query(async () => {
+    const [pendingFiles] = await dogSubmissionsBucket.getFiles({
+      prefix: "pending/",
+    });
 
-      const [pendingFiles] = await dogSubmissionsBucket.getFiles({
-        prefix: "pending/",
-      });
+    const [verifiedFiles] = await dogSubmissionsBucket.getFiles({
+      prefix: "verified/",
+    });
 
-      const [verifiedFiles] = await dogSubmissionsBucket.getFiles({
-        prefix: "verified/",
-      });
+    return {
+      pending: pendingFiles.length,
+      verified: verifiedFiles.length,
+      total: pendingFiles.length + verifiedFiles.length,
+    };
+  }),
 
-      return {
-        pending: pendingFiles.length,
-        verified: verifiedFiles.length,
-        total: pendingFiles.length + verifiedFiles.length,
-      };
-    }),
-
-  batchProcessImages: protectedProcedure
-    .input(z.object({
-      decisions: z.array(z.object({
-        filename: z.string(),
-        action: z.enum(['approve', 'reject'])
-      }))
-    }))
+  batchProcessImages: adminProcedure
+    .input(
+      z.object({
+        decisions: z.array(
+          z.object({
+            filename: z.string(),
+            action: z.enum(["approve", "reject"]),
+          }),
+        ),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const isAdmin = await checkAdminDB(ctx);
-      if (!isAdmin) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
+      await Promise.all(
+        input.decisions.map(async ({ filename, action }) => {
+          const file = dogSubmissionsBucket.file(filename);
 
-      await Promise.all(input.decisions.map(async ({ filename, action }) => {
-        const file = dogSubmissionsBucket.file(filename);
-        
-        if (action === 'approve') {
-          // Move file in GCS
-          const newFile = dogSubmissionsBucket.file(
-            filename.replace("pending/", "verified/")
-          );
-          await file.move(newFile);
+          if (action === "approve") {
+            const newFile = dogSubmissionsBucket.file(
+              filename.replace("pending/", "verified/"),
+            );
+            await file.move(newFile);
 
-          // Update database
-          await ctx.db.update(dogSubmissions)
-            .set({
-              status: 'verified',
-              verifiedAt: new Date(),
-              verifiedBy: ctx.session.user.id,
-              imagePath: filename.replace("pending/", "verified/"),
-            })
-            .where(eq(dogSubmissions.imagePath, filename));
-        } else {
-          // Delete file from GCS
-          await file.delete();
+            await ctx.db
+              .update(dogSubmissions)
+              .set({
+                status: "verified",
+                verifiedAt: new Date(),
+                verifiedBy: ctx.session.user.id,
+                imagePath: filename.replace("pending/", "verified/"),
+              })
+              .where(eq(dogSubmissions.imagePath, filename));
+          } else {
+            await file.delete();
 
-          // Update database to mark as rejected
-          await ctx.db.update(dogSubmissions)
-            .set({
-              status: 'rejected',
-              verifiedAt: new Date(),
-              verifiedBy: ctx.session.user.id,
-            })
-            .where(eq(dogSubmissions.imagePath, filename));
-        }
-      }));
+            await ctx.db
+              .update(dogSubmissions)
+              .set({
+                status: "rejected",
+                verifiedAt: new Date(),
+                verifiedBy: ctx.session.user.id,
+              })
+              .where(eq(dogSubmissions.imagePath, filename));
+          }
+        }),
+      );
 
       return { success: true };
     }),
-}); 
+});

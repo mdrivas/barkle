@@ -1,16 +1,16 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { scores } from "~/server/db/schema";
-import { eq, and, gte, sql, isNotNull, desc, asc } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, and, sql, isNotNull, desc } from "drizzle-orm";
 import { users } from "~/server/db/schema";
-import { canPlayToday, getNextGameTime } from "~/lib/dates";
 
 export const scoreRouter = createTRPCRouter({
   canPlayToday: publicProcedure
-    .input(z.object({ 
-      tempId: z.string().uuid().optional(),
-    }))
+    .input(
+      z.object({
+        tempId: z.string().uuid().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const score = await ctx.db
         .select({
@@ -21,26 +21,30 @@ export const scoreRouter = createTRPCRouter({
           and(
             ctx.session?.user?.id
               ? eq(scores.userId, ctx.session.user.id)
-              : eq(scores.tempId, input.tempId ?? ''),
+              : eq(scores.tempId, input.tempId ?? ""),
             sql`date_trunc('day', ${scores.playedAt} AT TIME ZONE 'America/Los_Angeles') = 
-                date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`
-          )
+                date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`,
+          ),
         )
         .limit(1);
 
       return {
         canPlay: !score.length,
-        nextGameTime: !score.length ? null : new Date(new Date().setHours(24, 0, 0, 0)),
+        nextGameTime: !score.length
+          ? null
+          : new Date(new Date().setHours(24, 0, 0, 0)),
       };
     }),
 
   saveScore: publicProcedure
-    .input(z.object({
-      score: z.number(),
-      tempId: z.string().uuid().optional(),
-      results: z.string(),
-      currentGuessStreak: z.number(),
-    }))
+    .input(
+      z.object({
+        score: z.number(),
+        tempId: z.string().uuid().optional(),
+        results: z.string(),
+        currentGuessStreak: z.number(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       await ctx.db.transaction(async (tx) => {
         // Insert the score
@@ -67,19 +71,31 @@ export const scoreRouter = createTRPCRouter({
 
           const now = new Date();
           const lastPlayed = user?.lastPlayedAt;
-          
+
           // Check if last played was yesterday in PST
-          const isConsecutiveDay = lastPlayed ? (
-            new Date(lastPlayed).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }) ===
-            new Date(now.getTime() - 86400000).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' })
-          ) : false;
+          const isConsecutiveDay = lastPlayed
+            ? new Date(lastPlayed).toLocaleDateString("en-US", {
+                timeZone: "America/Los_Angeles",
+              }) ===
+              new Date(now.getTime() - 86400000).toLocaleDateString("en-US", {
+                timeZone: "America/Los_Angeles",
+              })
+            : false;
 
           // Calculate new daily streak
-          const newDailyStreak = isConsecutiveDay ? (user?.currentDailyStreak ?? 0) + 1 : 1;
-          const newHighestDailyStreak = Math.max(newDailyStreak, user?.highestDailyStreak ?? 0);
+          const newDailyStreak = isConsecutiveDay
+            ? (user?.currentDailyStreak ?? 0) + 1
+            : 1;
+          const newHighestDailyStreak = Math.max(
+            newDailyStreak,
+            user?.highestDailyStreak ?? 0,
+          );
 
           // Update guess streak
-          const newHighestGuessStreak = Math.max(input.currentGuessStreak, user?.highestGuessStreak ?? 0);
+          const newHighestGuessStreak = Math.max(
+            input.currentGuessStreak,
+            user?.highestGuessStreak ?? 0,
+          );
 
           // Update user
           await tx
@@ -97,9 +113,11 @@ export const scoreRouter = createTRPCRouter({
     }),
 
   getTodayScore: publicProcedure
-    .input(z.object({
-      tempId: z.string().uuid().optional(),
-    }))
+    .input(
+      z.object({
+        tempId: z.string().uuid().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const score = await ctx.db
         .select({
@@ -111,10 +129,10 @@ export const scoreRouter = createTRPCRouter({
           and(
             ctx.session?.user?.id
               ? eq(scores.userId, ctx.session.user.id)
-              : eq(scores.tempId, input.tempId ?? ''),
+              : eq(scores.tempId, input.tempId ?? ""),
             sql`date_trunc('day', ${scores.playedAt} AT TIME ZONE 'America/Los_Angeles') = 
-                date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`
-          )
+                date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`,
+          ),
         )
         .limit(1);
 
@@ -122,7 +140,7 @@ export const scoreRouter = createTRPCRouter({
 
       return {
         score: score[0]?.score ?? 0,
-        results: score[0]?.results ?? ''
+        results: score[0]?.results ?? "",
       };
     }),
 
@@ -143,7 +161,7 @@ export const scoreRouter = createTRPCRouter({
             WHERE date_trunc('day', last_pawsistence_at AT TIME ZONE 'America/Los_Angeles') = 
                   date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')
           )
-        `
+        `,
       })
       .from(scores);
 
@@ -165,13 +183,13 @@ export const scoreRouter = createTRPCRouter({
         and(
           sql`date_trunc('day', ${scores.playedAt} AT TIME ZONE 'America/Los_Angeles') = 
               date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`,
-          isNotNull(scores.userId)
-        )
+          isNotNull(scores.userId),
+        ),
       )
       .orderBy(
         desc(scores.score),
         desc(users.currentGuessStreak),
-        desc(users.currentDailyStreak)
+        desc(users.currentDailyStreak),
       )
       .limit(100);
   }),
@@ -187,17 +205,19 @@ export const scoreRouter = createTRPCRouter({
         and(
           isNotNull(users.username),
           isNotNull(users.highestPawsistenceStreak),
-          sql`${users.highestPawsistenceStreak} > 0`
-        )
+          sql`${users.highestPawsistenceStreak} > 0`,
+        ),
       )
       .orderBy(desc(users.highestPawsistenceStreak))
       .limit(100);
   }),
 
   getBarkleStats: publicProcedure
-    .input(z.object({
-      userId: z.string(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       // Count all Barkle games played by this user
       const barkleGames = await ctx.db
@@ -220,9 +240,11 @@ export const scoreRouter = createTRPCRouter({
     }),
 
   getPawsistenceStats: publicProcedure
-    .input(z.object({
-      userId: z.string(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       // Get user's Pawsistence stats
       const user = await ctx.db.query.users.findFirst({
@@ -253,4 +275,4 @@ export const scoreRouter = createTRPCRouter({
 
     return user?.currentGuessStreak ?? 0;
   }),
-}); 
+});
