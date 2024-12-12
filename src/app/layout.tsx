@@ -9,6 +9,7 @@ import { Toaster } from "~/components/ui/toaster";
 import { AuthProvider } from "./components/AuthProvider";
 import { Suspense } from "react";
 import { TooltipProvider } from "~/components/ui/tooltip"
+import { GoogleAnalytics } from "~/components/GoogleAnalytics"; // Add this import
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -57,10 +58,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${poppins.variable}`}>
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-      </head>
+      {/* Remove the head tag as Next.js handles this automatically */}
       <body>
+        {/* Add Google Analytics at the start of body */}
+        {process.env.NODE_ENV === 'production' && <GoogleAnalytics />}
         <TooltipProvider>
           <AuthProvider>
             <Toaster />
