@@ -1,4 +1,5 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { eq } from "drizzle-orm";
 import {
   getServerSession,
   type DefaultSession,
@@ -46,6 +47,31 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
+    signIn: async ({ user, account }) => {
+      if (account && user) {
+        try {
+          const tempId = account.tempId as string | undefined;
+
+          if (tempId) {
+            await db
+              .update(users)
+              .set({
+                name: user.name,
+                email: user.email,
+                image: user.image,
+                emailVerified: new Date(),
+              })
+              .where(eq(users.id, tempId));
+
+            user.id = tempId;
+          }
+        } catch (error) {
+          console.error("Error syncing temp user:", error);
+        }
+      }
+      return true;
+    },
+
     session: ({ session, token, user }) => ({
       ...session,
       user: {

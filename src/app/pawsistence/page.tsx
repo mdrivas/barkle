@@ -13,7 +13,6 @@ import { api } from "~/trpc/react";
 import { PawsistenceFinishedDialog } from "./components/PawsistenceFinishedDialog";
 import { IncorrectGuessDialog } from "./components/IncorrectGuessDialog";
 
-
 interface DogBreed {
   breed: string;
   imageUrl: string;
@@ -34,26 +33,29 @@ interface BreedsResponse {
   status: string;
 }
 
-const STORAGE_KEY = 'pawsistence_guest_plays';
-const STORAGE_LAST_PLAYED_KEY = 'pawsistence_last_played';
+const STORAGE_KEY = "pawsistence_guest_plays";
+const STORAGE_LAST_PLAYED_KEY = "pawsistence_last_played";
 
 const getGuestPlaysRemaining = () => {
-  if (typeof window === 'undefined') return 3;
-  
+  if (typeof window === "undefined") return 3;
+
   const lastPlayedStr = localStorage.getItem(STORAGE_LAST_PLAYED_KEY);
   const lastPlayed = lastPlayedStr ? new Date(lastPlayedStr) : null;
-  
+
   // Check if it's a new day in PST
   const now = new Date();
-  const isNewDay = !lastPlayed || 
-    now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }) !== 
-    new Date(lastPlayed).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' });
+  const isNewDay =
+    !lastPlayed ||
+    now.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" }) !==
+      new Date(lastPlayed).toLocaleDateString("en-US", {
+        timeZone: "America/Los_Angeles",
+      });
 
   if (isNewDay) {
-    localStorage.setItem(STORAGE_KEY, '0');
+    localStorage.setItem(STORAGE_KEY, "0");
     return 3;
   }
-  
+
   const plays = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
   return Math.max(0, 3 - plays);
 };
@@ -70,12 +72,12 @@ export default function PawsistenceGame() {
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
 
   const { data: gameData } = api.pawsistence.getInitialState.useQuery(
-    undefined, 
+    undefined,
     {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       enabled: !!session?.user,
-    }
+    },
   );
 
   const utils = api.useUtils();
@@ -86,28 +88,30 @@ export default function PawsistenceGame() {
     },
   });
 
-  const { mutate: incrementPlays } = api.pawsistence.incrementPlays.useMutation({
-    onSuccess: (data) => {
-      setGameState(prev => ({
-        ...prev,
-        playsRemaining: data.playsRemaining ?? 0,
-        gameOver: (data.playsRemaining ?? 0) <= 0,
-      }));
-      
-      if ((data.playsRemaining ?? 0) <= 0) {
-        setShowNoPlaysDialog(true);
-      } else {
-        setShowIncorrectDialog(true);
-      }
+  const { mutate: incrementPlays } = api.pawsistence.incrementPlays.useMutation(
+    {
+      onSuccess: (data) => {
+        setGameState((prev) => ({
+          ...prev,
+          playsRemaining: data.playsRemaining ?? 0,
+          gameOver: (data.playsRemaining ?? 0) <= 0,
+        }));
+
+        if ((data.playsRemaining ?? 0) <= 0) {
+          setShowNoPlaysDialog(true);
+        } else {
+          setShowIncorrectDialog(true);
+        }
+      },
+      onError: (error) => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  );
 
   const [gameState, setGameState] = useState<GameState>({
     currentBreed: null,
@@ -115,8 +119,8 @@ export default function PawsistenceGame() {
     isLoading: true,
     currentStreak: 0,
     gameOver: false,
-    playsRemaining: session?.user 
-      ? (gameData?.playsRemaining ?? 3) 
+    playsRemaining: session?.user
+      ? (gameData?.playsRemaining ?? 3)
       : getGuestPlaysRemaining(),
     highestStreak: session?.user ? (gameData?.highestStreak ?? 0) : 0,
   });
@@ -130,7 +134,7 @@ export default function PawsistenceGame() {
   }, []);
 
   const fetchNewRound = useCallback(async () => {
-    setGameState(prev => ({ ...prev, isLoading: true }));
+    setGameState((prev) => ({ ...prev, isLoading: true }));
 
     try {
       // Get all possible breeds
@@ -139,11 +143,12 @@ export default function PawsistenceGame() {
       const allBreeds = Object.keys(breedsData.message);
 
       // Get random breed
-      const correctBreed = allBreeds[Math.floor(Math.random() * allBreeds.length)]!;
+      const correctBreed =
+        allBreeds[Math.floor(Math.random() * allBreeds.length)]!;
 
       // Get random image for the breed
       const breedImagesResponse = await fetch(
-        `https://dog.ceo/api/breed/${correctBreed}/images`
+        `https://dog.ceo/api/breed/${correctBreed}/images`,
       );
       const breedImagesData = await breedImagesResponse.json();
       const images = breedImagesData.message as string[];
@@ -151,14 +156,16 @@ export default function PawsistenceGame() {
 
       // Get wrong options
       const wrongOptions = allBreeds
-        .filter(breed => breed !== correctBreed)
+        .filter((breed) => breed !== correctBreed)
         .sort(() => Math.random() - 0.5)
         .slice(0, 3);
 
       // Combine and shuffle options
-      const options = [correctBreed, ...wrongOptions].sort(() => Math.random() - 0.5);
+      const options = [correctBreed, ...wrongOptions].sort(
+        () => Math.random() - 0.5,
+      );
 
-      setGameState(prev => ({
+      setGameState((prev) => ({
         ...prev,
         currentBreed: {
           breed: correctBreed,
@@ -204,6 +211,20 @@ export default function PawsistenceGame() {
 
   const [showIncorrectDialog, setShowIncorrectDialog] = useState(false);
 
+  const handleSignIn = async () => {
+    let tempId = localStorage.getItem("barkle_temp_id");
+
+    if (!tempId) {
+      tempId = crypto.randomUUID();
+      localStorage.setItem("barkle_temp_id", tempId);
+    }
+
+    await signIn("google", {
+      callbackUrl: `${window.location.pathname}?tempId=${tempId}`,
+      tempId: tempId,
+    });
+  };
+
   const handleGuess = async (breed: string) => {
     // Check for no plays remaining first
     if (gameState.playsRemaining <= 0) {
@@ -225,7 +246,7 @@ export default function PawsistenceGame() {
     if (isCorrect) {
       void happyBarkRef.current?.play();
       const newStreak = gameState.currentStreak + 1;
-      
+
       // If user is logged in, check and save new high score
       if (session?.user) {
         const isNewHighScore = newStreak > (gameData?.highestStreak ?? 0);
@@ -237,7 +258,7 @@ export default function PawsistenceGame() {
 
       setTimeout(() => {
         setAnsweredBreed(null);
-        setGameState(prev => ({
+        setGameState((prev) => ({
           ...prev,
           currentStreak: newStreak,
         }));
@@ -245,7 +266,7 @@ export default function PawsistenceGame() {
       }, 1500);
     } else {
       void angryBarkRef.current?.play();
-      
+
       if (session?.user) {
         // Let the mutation's onSuccess handle all state updates
         incrementPlays();
@@ -255,11 +276,11 @@ export default function PawsistenceGame() {
         // Only increment guest plays on incorrect answers
         incrementGuestPlays();
         const remainingPlays = getGuestPlaysRemaining();
-        
-        setGameState(prev => ({
+
+        setGameState((prev) => ({
           ...prev,
           gameOver: remainingPlays <= 0,
-          playsRemaining: remainingPlays
+          playsRemaining: remainingPlays,
         }));
 
         if (remainingPlays <= 0) {
@@ -271,11 +292,12 @@ export default function PawsistenceGame() {
         // Toast remains the same
         toast({
           title: "Sign in to save your streak!",
-          description: "Create an account to track your progress and compete on the leaderboard.",
+          description:
+            "Create an account to track your progress and compete on the leaderboard.",
           action: (
-            <Button 
-              onClick={() => void signIn("google")}
-              variant="outline" 
+            <Button
+              onClick={handleSignIn}
+              variant="outline"
               className="bg-white text-black hover:bg-gray-100"
             >
               Sign In
@@ -290,9 +312,9 @@ export default function PawsistenceGame() {
     hasGameBeenSaved.current = false;
     setShowIncorrectDialog(false);
     setAnsweredBreed(null);
-    
+
     // Reset game state and fetch new round
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       currentBreed: null,
       options: [],
@@ -300,7 +322,7 @@ export default function PawsistenceGame() {
       currentStreak: 0,
       gameOver: false,
     }));
-    
+
     void fetchNewRound();
   };
 
@@ -310,8 +332,8 @@ export default function PawsistenceGame() {
   // Update the initial effect to properly handle game state
   useEffect(() => {
     if (!gameData) return;
-    
-    setGameState(prev => ({
+
+    setGameState((prev) => ({
       ...prev,
       playsRemaining: gameData.playsRemaining ?? 0,
       highestStreak: gameData.highestStreak ?? 0,
@@ -326,7 +348,7 @@ export default function PawsistenceGame() {
   // Update gameState when session/gameData changes
   useEffect(() => {
     if (session?.user) {
-      setGameState(prev => ({
+      setGameState((prev) => ({
         ...prev,
         playsRemaining: gameData?.playsRemaining ?? 3,
         highestStreak: gameData?.highestStreak ?? 0,
@@ -338,11 +360,11 @@ export default function PawsistenceGame() {
   useEffect(() => {
     if (!session?.user) {
       const remainingPlays = getGuestPlaysRemaining();
-      
-      setGameState(prev => ({
+
+      setGameState((prev) => ({
         ...prev,
         playsRemaining: remainingPlays,
-        gameOver: remainingPlays <= 0
+        gameOver: remainingPlays <= 0,
       }));
 
       // If no plays remaining, show the finished dialog
@@ -363,18 +385,20 @@ export default function PawsistenceGame() {
 
       const lastPlayed = new Date(lastPlayedStr);
       const now = new Date();
-      
-      const isNewDay = 
-        now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }) !== 
-        lastPlayed.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' });
+
+      const isNewDay =
+        now.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" }) !==
+        lastPlayed.toLocaleDateString("en-US", {
+          timeZone: "America/Los_Angeles",
+        });
 
       if (isNewDay) {
         // Reset plays and update state
-        localStorage.setItem(STORAGE_KEY, '0');
-        setGameState(prev => ({
+        localStorage.setItem(STORAGE_KEY, "0");
+        setGameState((prev) => ({
           ...prev,
           playsRemaining: 3,
-          gameOver: false
+          gameOver: false,
         }));
         setShowNoPlaysDialog(false);
       }
@@ -391,26 +415,28 @@ export default function PawsistenceGame() {
   }, [session?.user]);
 
   // Update PawsistenceFinishedDialog to include stored streak
-  
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 py-8 px-4">
-      <div className="container max-w-4xl mx-auto">
-        <div className="flex flex-col items-center mb-6 space-y-2">
-          <div className="flex items-center justify-between w-full mb-2">
+    <div className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-50">
+      <div className="container mx-auto max-w-4xl">
+        <div className="mb-6 flex flex-col items-center space-y-2">
+          <div className="mb-2 flex w-full items-center justify-between">
             <Link href="/">
-              <Button variant="ghost" className="text-zinc-400 hover:text-zinc-200">
+              <Button
+                variant="ghost"
+                className="text-zinc-400 hover:text-zinc-200"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
             </Link>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-[#FFA500] mt-2">
+          <h1 className="mt-2 text-4xl font-bold tracking-tight text-[#FFA500]">
             Pawsistence
           </h1>
 
           {/* Smaller Centered Streak Display */}
-          <div className="inline-flex items-center justify-center gap-2 bg-zinc-800/50 backdrop-blur-sm rounded-xl p-1 border border-zinc-700 mt-2">
+          <div className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/50 p-1 backdrop-blur-sm">
             <div className="text-lg font-bold text-[#FFD700]">
               Current Streak: {gameState.currentStreak}
             </div>
@@ -420,18 +446,18 @@ export default function PawsistenceGame() {
         {/* Game Board */}
         <div className="rounded-xl p-4">
           {gameState.isLoading && !gameState.currentBreed ? (
-            <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl">
-              <div className="w-full h-[300px] md:h-[350px] lg:h-[400px] bg-zinc-800/50 animate-pulse" />
+            <Card className="mb-6 overflow-hidden rounded-xl border-0 bg-zinc-900/50 shadow-xl backdrop-blur-sm">
+              <div className="h-[300px] w-full animate-pulse bg-zinc-800/50 md:h-[350px] lg:h-[400px]" />
             </Card>
           ) : gameState.currentBreed ? (
-            <Card className="overflow-hidden mb-6 border-0 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl">
-              <div className="relative w-full h-[300px] md:h-[350px] lg:h-[400px]">
+            <Card className="mb-6 overflow-hidden rounded-xl border-0 bg-zinc-900/50 shadow-xl backdrop-blur-sm">
+              <div className="relative h-[300px] w-full md:h-[350px] lg:h-[400px]">
                 <Image
                   src={gameState.currentBreed.imageUrl}
                   alt="Mystery dog"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover hover:scale-105 transition-transform duration-500"
+                  className="object-cover transition-transform duration-500 hover:scale-105"
                   priority
                   quality={90}
                 />
@@ -445,30 +471,32 @@ export default function PawsistenceGame() {
                 key={breed}
                 onClick={() => handleGuess(breed)}
                 disabled={
-                  gameState.gameOver || 
-                  answeredBreed !== null || 
+                  gameState.gameOver ||
+                  answeredBreed !== null ||
                   gameState.playsRemaining <= 0
                 }
                 className={cn(
                   // Base styles
-                  "p-4 text-md uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10",
-                  "disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-gray-500",
+                  "text-md rounded-xl p-4 uppercase shadow-lg shadow-emerald-900/10 transition-all duration-200",
+                  "border border-gray-500 bg-zinc-900/50 text-zinc-100 disabled:opacity-50",
                   "touch-none select-none",
                   // Hover state only on devices that support hover
                   {
-                    "[@media(hover:hover)]:hover:border-emerald-500/50": !answeredBreed && gameState.playsRemaining > 0,
+                    "[@media(hover:hover)]:hover:border-emerald-500/50":
+                      !answeredBreed && gameState.playsRemaining > 0,
                     // Correct answer
-                    "!bg-green-500/10 !border-green-500 !text-green-500":
+                    "!border-green-500 !bg-green-500/10 !text-green-500":
                       answeredBreed && breed === gameState.currentBreed?.breed,
                     // Wrong answer selected
-                    "!bg-red-500/10 !border-red-500 !text-red-500":
-                      answeredBreed === breed && breed !== gameState.currentBreed?.breed,
-                    // Other options when answer is selected
-                    "opacity-0 pointer-events-none":
-                      answeredBreed && 
-                      answeredBreed !== breed && 
+                    "!border-red-500 !bg-red-500/10 !text-red-500":
+                      answeredBreed === breed &&
                       breed !== gameState.currentBreed?.breed,
-                  }
+                    // Other options when answer is selected
+                    "pointer-events-none opacity-0":
+                      answeredBreed &&
+                      answeredBreed !== breed &&
+                      breed !== gameState.currentBreed?.breed,
+                  },
                 )}
                 variant="outline"
               >
@@ -478,7 +506,7 @@ export default function PawsistenceGame() {
           </div>
         </div>
 
-        <IncorrectGuessDialog 
+        <IncorrectGuessDialog
           isOpen={showIncorrectDialog}
           onClose={() => setShowIncorrectDialog(false)}
           playsRemaining={gameState.playsRemaining}
@@ -487,7 +515,7 @@ export default function PawsistenceGame() {
       </div>
 
       {/* Add this dialog for no plays remaining */}
-      <PawsistenceFinishedDialog 
+      <PawsistenceFinishedDialog
         isOpen={showNoPlaysDialog}
         onClose={() => {
           if (gameState.playsRemaining > 0) {
@@ -501,4 +529,4 @@ export default function PawsistenceGame() {
       />
     </div>
   );
-} 
+}
