@@ -2,18 +2,15 @@
 
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 
 const GA_MEASUREMENT_ID = 'G-FKV1NVB1YY';
-
-export function GoogleAnalytics() {
+function GoogleAnalyticsContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const url = pathname + searchParams.toString();
-
-    // Push the page view to Google Analytics
     window.gtag('config', GA_MEASUREMENT_ID, {
       page_path: url,
     });
@@ -40,5 +37,13 @@ export function GoogleAnalytics() {
         }}
       />
     </>
+  );
+}
+
+export function GoogleAnalytics() {
+  return (
+    <Suspense fallback={null}>
+      <GoogleAnalyticsContent />
+    </Suspense>
   );
 }

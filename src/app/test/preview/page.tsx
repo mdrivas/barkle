@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button } from "~/components/ui/button";
@@ -7,7 +8,6 @@ import { Card } from "~/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 
-// Add these interfaces above the component
 interface Breed {
   imageUrl: string;
   breed: string;
@@ -20,12 +20,11 @@ interface BreedsResponse {
   breeds: Breed[];
 }
 
-// Add loading state component
 const LoadingSpinner = () => (
   <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-emerald-500" />
 );
 
-export default function PreviewPage() {
+function PreviewContent() {
   const { data: session, status } = useSession();
   const [breeds, setBreeds] = useState<BreedsResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -124,5 +123,17 @@ export default function PreviewPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PreviewPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+        <LoadingSpinner />
+      </div>
+    }>
+      <PreviewContent />
+    </Suspense>
   );
 } 
