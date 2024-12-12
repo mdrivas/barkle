@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "~/components/ui/dialog";
 import { useSession, signIn } from "next-auth/react";
 import { GoogleLogo } from "~/components/icons";
@@ -22,7 +23,6 @@ interface PawsistenceFinishedDialogProps {
   isHighScore: boolean;
   playsRemaining: number;
   highestStreak: number;
-  nextGameTime: Date | null;
 }
 
 export function PawsistenceFinishedDialog({
@@ -32,7 +32,6 @@ export function PawsistenceFinishedDialog({
   isHighScore,
   playsRemaining,
   highestStreak,
-  nextGameTime,
 }: PawsistenceFinishedDialogProps) {
   const { data: session } = useSession();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -44,44 +43,34 @@ export function PawsistenceFinishedDialog({
     router.push('/?showLeaderboard=true');
   };
 
-  const formatNextGameTime = () => {
-    if (!nextGameTime) return '';
-    return new Date(nextGameTime).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      timeZone: 'America/Los_Angeles',
-    });
-  };
-
   return (
     <>
       <Dialog 
         open={isOpen} 
         onOpenChange={(open) => {
-            if (playsRemaining > 0) {
-                onClose?.();
-            }
+          if (playsRemaining > 0) {
+            onClose?.();
+          }
         }}
         modal={true}
       >
         <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl [&>button]:hidden">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
-              {isOutOfPlays ? "No Plays Remaining" : "Game Over!"}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="flex flex-col gap-4 items-center mt-4">
-            <div className="text-center">
-              <p className="text-gray-300 text-sm sm:text-base">
-                You've used all your plays for today. Come back at {formatNextGameTime()} PST for more attempts!
-              </p>
-              <p className="text-emerald-500 text-sm mt-2">
-                Daily limit: 3 games
-              </p>
-            </div>
+          <div className="flex flex-col items-center justify-center w-full">
+            <DialogHeader className="flex flex-col items-center justify-center w-full">
+              <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
+                {isOutOfPlays ? "No Plays Remaining" : "Game Over!"}
+              </DialogTitle>
+              <div className="flex flex-col items-center justify-center space-y-2 mt-4">
+                <DialogDescription className="text-zinc-300 text-base text-center">
+                  You've used all your plays for today. Come back at 12 AM PST for more attempts!
+                </DialogDescription>
+                <p className="text-emerald-500 text-sm font-medium text-center">
+                  Daily limit: 3 games
+                </p>
+              </div>
+            </DialogHeader>
 
-            <div className="flex flex-col gap-4 w-full">
+            <div className="flex flex-col gap-3 w-full mt-6">
               <Button
                 onClick={() => setIsShareDialogOpen(true)}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-zinc-100"

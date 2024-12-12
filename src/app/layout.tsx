@@ -58,9 +58,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${poppins.variable}`}>
-      {/* Remove the head tag as Next.js handles this automatically */}
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body>
-        {/* Add Google Analytics at the start of body */}
         {process.env.NODE_ENV === 'production' && <GoogleAnalytics />}
         <TooltipProvider>
           <AuthProvider>

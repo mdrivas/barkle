@@ -22,6 +22,37 @@ import {
 import { cn } from "~/lib/utils";
 import { useToast } from "~/hooks/use-toast";
 
+const STAT_CARD_STYLES = {
+  sky: {
+    background: "bg-gradient-to-br from-sky-500/20 to-sky-600/10",
+    icon: "bg-sky-500/25 text-sky-500",
+    text: "text-sky-900",
+    highlight: "text-sky-700",
+    ring: "ring-sky-500/20",
+  },
+  orange: {
+    background: "bg-gradient-to-br from-orange-500/20 to-orange-600/10",
+    icon: "bg-orange-500/25 text-orange-500",
+    text: "text-orange-900",
+    highlight: "text-orange-700",
+    ring: "ring-orange-500/20",
+  },
+  emerald: {
+    background: "bg-gradient-to-br from-emerald-500/20 to-emerald-600/10",
+    icon: "bg-emerald-500/25 text-emerald-500",
+    text: "text-emerald-900",
+    highlight: "text-emerald-700",
+    ring: "ring-emerald-500/20",
+  },
+  indigo: {
+    background: "bg-gradient-to-br from-indigo-500/20 to-indigo-600/10",
+    icon: "bg-indigo-500/25 text-indigo-500",
+    text: "text-indigo-900",
+    highlight: "text-indigo-700",
+    ring: "ring-indigo-500/20",
+  },
+} as const;
+
 export default function AccountPage() {
   const { data: session } = useSession();
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -92,25 +123,56 @@ export default function AccountPage() {
     title: string; 
     value: number; 
     icon: any; 
-    color: string;
+    color: keyof typeof STAT_CARD_STYLES;
     isLoading: boolean;
-  }) => (
-    <Card className={`bg-gradient-to-br from-${color}-500/15 to-${color}-600/5 p-4`}>
-      <div className="flex items-center gap-3">
-        <div className={`rounded-full bg-${color}-500/15 p-2`}>
-          <Icon className={`h-5 w-5 text-${color}-600`} />
+  }) => {
+    const styles = STAT_CARD_STYLES[color];
+    
+    return (
+      <Card className={cn(
+        "relative overflow-hidden p-4 transition-all duration-200 hover:scale-[1.02]",
+        styles.background,
+        "ring-1 ring-white/10",
+        "shadow-lg hover:shadow-xl",
+      )}>
+        <div className="relative z-10">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "rounded-xl p-2.5",
+              styles.icon,
+              "ring-1 ring-white/10"
+            )}>
+              <Icon className="h-5 w-5" />
+            </div>
+            <div>
+              {isLoading ? (
+                <Skeleton className="h-7 w-16" />
+              ) : (
+                <p className={cn(
+                  "text-2xl font-bold tracking-tight",
+                  styles.highlight
+                )}>
+                  {value}
+                </p>
+              )}
+              <p className={cn(
+                "text-sm font-medium",
+                styles.text
+              )}>
+                {title}
+              </p>
+            </div>
+          </div>
         </div>
-        <div>
-          {isLoading ? (
-            <Skeleton className="h-7 w-16" />
-          ) : (
-            <p className={`text-xl font-bold text-${color}-700`}>{value}</p>
-          )}
-          <p className={`text-sm text-${color}-600/90`}>{title}</p>
-        </div>
-      </div>
-    </Card>
-  );
+        {/* Decorative corner gradient */}
+        <div className={cn(
+          "absolute -right-4 -top-4 h-24 w-24 rounded-full blur-2xl",
+          styles.icon,
+          "opacity-20"
+        )} />
+      </Card>
+    );
+  };
 
   const { data: barkleStats, isLoading: isBarkleLoading } = api.score.getBarkleStats.useQuery(
     { userId: session?.user?.id ?? '' },
@@ -125,19 +187,21 @@ export default function AccountPage() {
   const { toast } = useToast();
 
   const handleShare = async () => {
-    const statsText = `🐕 My Barkle Stats 🦮
+    const statsText = `🐕 MY BARKLE STATS 🐕
 
-🎮 Daily Barkle
-Games Played: ${barkleStats?.gamesPlayed ?? 0}
+📊 DAILY BARKLE
+━━━━━━━━━��━━━━━
+🎮 Games Played: ${barkleStats?.gamesPlayed ?? 0}
 🔥 Daily Streak: ${barkleStats?.dailyStreak ?? 0}
-Current Guess Streak: ${userData?.currentGuessStreak ?? 0}
-🏆 Best Guess Streak: ${userData?.highestGuessStreak ?? 0}
+✨ Current Guess Streak: ${userData?.currentGuessStreak ?? 0}
+👑 Best Guess Streak: ${userData?.highestGuessStreak ?? 0}
 
-🐾 Pawsistence
-Today's Plays: ${userData?.pawsistencePlaysToday ?? 0}
-🏆 Best Streak: ${userData?.highestPawsistenceStreak ?? 0}
+🎯 PAWSISTENCE
+━━━━━━━━━━━━━━━
+🎮 Today's Plays: ${userData?.pawsistencePlaysToday ?? 0}
+👑 Longest Streak: ${userData?.highestPawsistenceStreak ?? 0}
 
-Play Barkle: https://barkle.vercel.app`;
+🌟 Fetch your own pups at https://barkle.vercel.app`;
 
     try {
       if (navigator.share) {

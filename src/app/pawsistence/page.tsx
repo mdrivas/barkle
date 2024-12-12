@@ -307,9 +307,6 @@ export default function PawsistenceGame() {
   // Add this state to handle no plays remaining
   const [showNoPlaysDialog, setShowNoPlaysDialog] = useState(false);
 
-  // Add nextGameTime to component state
-  const [nextGameTime, setNextGameTime] = useState<Date | null>(null);
-
   // Update the initial effect to properly handle game state
   useEffect(() => {
     if (!gameData) return;
@@ -350,14 +347,6 @@ export default function PawsistenceGame() {
 
       // If no plays remaining, show the finished dialog
       if (remainingPlays <= 0) {
-        // Calculate next game time in PST
-        const now = new Date();
-        const pstDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-        const tomorrow = new Date(pstDate);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
-        
-        setNextGameTime(tomorrow);
         setShowNoPlaysDialog(true);
       }
     }
@@ -501,7 +490,6 @@ export default function PawsistenceGame() {
       <PawsistenceFinishedDialog 
         isOpen={showNoPlaysDialog}
         onClose={() => {
-          // Only allow closing if there are plays remaining
           if (gameState.playsRemaining > 0) {
             setShowNoPlaysDialog(false);
           }
@@ -510,7 +498,6 @@ export default function PawsistenceGame() {
         isHighScore={gameState.currentStreak > (gameData?.highestStreak ?? 0)}
         playsRemaining={gameState.playsRemaining}
         highestStreak={gameData?.highestStreak ?? 0}
-        nextGameTime={nextGameTime}
       />
     </div>
   );
