@@ -38,6 +38,7 @@
     "@types/seedrandom": "^3.0.8",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dom-to-image-more": "^3.5.0",
     "drizzle-orm": "^0.33.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^11.13.1",
