@@ -12,7 +12,6 @@ import { cn } from "~/lib/utils";
 import { Check, Share2, Instagram } from "lucide-react";
 import { generateShareImage } from '~/lib/generateShareImage';
 import { useToast } from "~/hooks/use-toast";
-import Image from "next/image";
 
 interface ShareResultsDialogProps {
   score: number;
@@ -38,7 +37,6 @@ export function ShareResultsDialog({
   const [copied, setCopied] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const { toast } = useToast();
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const safeResults = questionResults ?? Array(5).fill(false);
 
@@ -151,21 +149,6 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
     }
   };
 
-  const handlePreview = async () => {
-    setIsGeneratingImage(true);
-    try {
-      const dataUrl = await generateShareImage(score, questionResults, mode);
-      setPreviewUrl(dataUrl);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        description: "Failed to generate preview",
-      });
-    } finally {
-      setIsGeneratingImage(false);
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900/95 text-zinc-50 sm:w-full sm:max-w-[400px]">
@@ -205,24 +188,6 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
           )}
 
           <div className="flex flex-col gap-2 border-t border-zinc-800 pt-2">
-            <Button
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              onClick={handlePreview}
-              disabled={isGeneratingImage}
-            >
-              {isGeneratingImage ? "Generating..." : "Preview Image"}
-            </Button>
-            {previewUrl && (
-              <div className="mt-4">
-                <Image 
-                  src={previewUrl} 
-                  alt="Share Preview" 
-                  width={400}
-                  height={400}
-                  className="rounded-lg border border-zinc-700"
-                />
-              </div>
-            )}
             <Button
               className="w-full bg-emerald-600 hover:bg-emerald-700"
               onClick={handleShare}
