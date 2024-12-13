@@ -29,14 +29,15 @@ export async function POST(request: Request) {
       },
     });
 
-    // Use signed URL instead of making public
+    // Get signed URL
     const [url] = await blob.getSignedUrl({
       version: 'v4',
       action: 'read',
       expires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
     
-    const instagramUrl = `instagram-stories://share?source_application=barkle&background_image=${encodeURIComponent(url)}`;
+    // Construct Instagram story URL with correct parameters
+    const instagramUrl = `instagram-stories://share?source_application=barkle&background_asset_uri=${encodeURIComponent(url)}`;
     
     return NextResponse.json({ 
       imageUrl: url,
