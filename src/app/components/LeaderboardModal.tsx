@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
@@ -33,40 +34,48 @@ export function LeaderboardModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="h-[600px] gap-4 border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 sm:max-h-[80vh] sm:max-w-[500px] [&>button]:text-white">
-        <DialogHeader>
+      <DialogContent className="flex h-[600px] flex-col gap-0 border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 sm:max-h-[80vh] sm:max-w-[500px] [&>button]:text-white">
+        <DialogHeader className="flex-none">
           <DialogTitle className="text-2xl font-bold text-zinc-50">
-            🏆 Top Scores 🏆
+            {/* Mode Selector */}
+            <p>🏆 Top Scores 🏆</p>
+            <div className="flex h-min border-b border-zinc-800">
+              <button
+                onClick={() => setMode("daily")}
+                className={`relative h-min flex-1 py-3 text-sm font-medium ${
+                  mode === "daily" ? "text-green-500" : "text-zinc-400"
+                }`}
+              >
+                Today&apos;s Barkle
+                {mode === "daily" && (
+                  <div className="absolute bottom-0 left-0 h-0.5 w-full bg-green-500" />
+                )}
+              </button>
+              <button
+                onClick={() => setMode("pawsistence")}
+                className={`relative h-min flex-1 py-3 text-sm font-medium ${
+                  mode === "pawsistence" ? "text-green-500" : "text-zinc-400"
+                }`}
+              >
+                Pawsistence
+                {mode === "pawsistence" && (
+                  <div className="absolute bottom-0 left-0 h-0.5 w-full bg-green-500" />
+                )}
+              </button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
-        {/* Mode Selector */}
-        <div className="flex border-b border-zinc-800">
-          <button
-            onClick={() => setMode("daily")}
-            className={`relative flex-1 py-3 text-sm font-medium ${
-              mode === "daily" ? "text-green-500" : "text-zinc-400"
-            }`}
-          >
-            Today&apos;s Barkle
-            {mode === "daily" && (
-              <div className="absolute bottom-0 left-0 h-0.5 w-full bg-green-500" />
-            )}
-          </button>
-          <button
-            onClick={() => setMode("pawsistence")}
-            className={`relative flex-1 py-3 text-sm font-medium ${
-              mode === "pawsistence" ? "text-green-500" : "text-zinc-400"
-            }`}
-          >
-            Pawsistence
-            {mode === "pawsistence" && (
-              <div className="absolute bottom-0 left-0 h-0.5 w-full bg-green-500" />
-            )}
-          </button>
+        <div className="flex-1 overflow-hidden">
+          <LeaderboardContent mode={mode} />
         </div>
 
-        <LeaderboardContent mode={mode} />
+        <DialogFooter className="flex-none">
+          <div className="h-min w-full rounded-full bg-gradient-to-r from-[#8B4513] to-[#DEB887] p-2 text-center text-xs font-medium text-white">
+            🏆 {mode === "pawsistence" ? "Top 100 Streaks" : "Today's Top 100"}{" "}
+            🏆
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

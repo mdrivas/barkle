@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
+import { createTRPCRouter, publicProcedure } from "../trpc";
 import { profiles } from "~/server/db/schema";
 import { eq, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -8,7 +8,7 @@ export const pawsistenceRouter = createTRPCRouter({
   getInitialState: publicProcedure
     .input(
       z.object({
-        tempId: z.string().optional(),
+        tempId: z.string().uuid().nullable(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -70,7 +70,7 @@ export const pawsistenceRouter = createTRPCRouter({
   incrementPlays: publicProcedure
     .input(
       z.object({
-        tempId: z.string().optional(),
+        tempId: z.string().uuid().nullable(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -117,7 +117,7 @@ export const pawsistenceRouter = createTRPCRouter({
       z.object({
         streak: z.number(),
         isNewHighScore: z.boolean(),
-        tempId: z.string().optional(),
+        tempId: z.string().uuid().nullable(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { Card } from "~/components/ui/card";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
@@ -17,11 +17,11 @@ import {
   ArrowLeft,
   LogOut,
   Share2,
-  Check,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { useToast } from "~/hooks/use-toast";
-
+import { useSignIn } from "~/hooks/useSignIn";
+import { useProfileContext } from "../components/ProfileProvider";
 const STAT_CARD_STYLES = {
   sky: {
     background: "bg-gradient-to-br from-sky-500/20 to-sky-600/10",
@@ -58,9 +58,13 @@ export default function AccountPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  const { data: userData, isLoading } = api.user.getProfile.useQuery(
-    undefined,
+  const { tempId } = useProfileContext();
+  const {
+    data: userData,
+    isLoading,
+    refetch: refetchProfile,
+  } = api.profile.getProfile.useQuery(
+    { tempId },
     {
       enabled: !!session?.user,
       staleTime: 1000 * 60 * 5,
@@ -69,10 +73,11 @@ export default function AccountPage() {
     },
   );
 
-  const utils = api.useUtils();
-  const { mutate: updateImage } = api.user.updateProfileImage.useMutation({
+  const { handleGoogleSignIn } = useSignIn();
+
+  const { mutate: updateImage } = api.profile.updateProfileImage.useMutation({
     onSuccess: () => {
-      utils.user.getProfile.invalidate();
+      void refetchProfile();
     },
   });
 
@@ -116,6 +121,10 @@ export default function AccountPage() {
     }
   };
 
+  const signInWithGoogle = () => {
+    void handleGoogleSignIn();
+  };
+
   const StatCard = ({
     title,
     value,
@@ -125,7 +134,7 @@ export default function AccountPage() {
   }: {
     title: string;
     value: number;
-    icon: any;
+    icon: any; // Consider using a more specific type like LucideIcon
     color: keyof typeof STAT_CARD_STYLES;
     isLoading: boolean;
   }) => {
@@ -185,11 +194,6 @@ export default function AccountPage() {
       enabled: !!session?.user?.id,
     });
 
-  const { data: pawsistenceStats, isLoading: isPawsistenceLoading } =
-    api.score.getPawsistenceStats.useQuery(undefined, {
-      enabled: !!session?.user?.id,
-    });
-
   const { toast } = useToast();
 
   const handleShare = async () => {
@@ -224,6 +228,7 @@ export default function AccountPage() {
       }
     } catch (error) {
       console.error("Error sharing:", error);
+      console.error("Error sharing:", error);
     }
   };
 
@@ -235,7 +240,7 @@ export default function AccountPage() {
             Welcome to Barkle
           </h1>
           <button
-            onClick={() => void signIn("google")}
+            onClick={signInWithGoogle}
             className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-6 py-3 text-black transition-colors hover:bg-gray-50"
           >
             <GoogleLogo />
@@ -297,6 +302,7 @@ export default function AccountPage() {
               <label
                 className={cn(
                   "absolute bottom-0 right-0 cursor-pointer",
+                  isUploading && "pointer-events-none",
                   isUploading && "pointer-events-none",
                 )}
               >

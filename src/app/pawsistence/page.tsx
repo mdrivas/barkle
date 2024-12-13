@@ -5,7 +5,7 @@ import { Card } from "~/components/ui/card";
 import { useToast } from "~/hooks/use-toast";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { cn } from "~/lib/utils";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -13,7 +13,8 @@ import { api } from "~/trpc/react";
 import { PawsistenceFinishedDialog } from "./components/PawsistenceFinishedDialog";
 import { IncorrectGuessDialog } from "./components/IncorrectGuessDialog";
 import { UsernameDialog } from "~/app/daily/components/UsernameDialog";
-
+import { useProfileContext } from "~/app/components/ProfileProvider";
+import { useSignIn } from "~/hooks/useSignIn";
 interface DogBreed {
   breed: string;
   imageUrl: string;
@@ -37,25 +38,25 @@ interface BreedsResponse {
 export default function PawsistenceGame() {
   const { data: session } = useSession();
   const { toast } = useToast();
-  const [localTempId, setLocalTempId] = useState<string | null>(null);
+  const { tempId } = useProfileContext();
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
+  const { handleGoogleSignIn } = useSignIn();
 
-  const { data: gameData } = api.pawsistence.getInitialState.useQuery(
-    {
-      tempId: !session?.user ? (localTempId ?? undefined) : undefined,
-    },
-    {
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      enabled: true,
-    },
-  );
-
-  const utils = api.useUtils();
+  const { data: gameData, refetch: refetchGameData } =
+    api.pawsistence.getInitialState.useQuery(
+      {
+        tempId,
+      },
+      {
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        enabled: !!tempId || !!session?.user,
+      },
+    );
 
   const { mutate: saveGameResult } = api.pawsistence.saveGame.useMutation({
     onSuccess: () => {
-      void utils.pawsistence.getInitialState.invalidate();
+      void refetchGameData();
     },
   });
 
@@ -169,30 +170,28 @@ export default function PawsistenceGame() {
       saveGameResult({
         streak: gameState.currentStreak,
         isNewHighScore: true,
-        tempId: !session?.user ? (localTempId ?? undefined) : undefined,
+        tempId,
       });
     } else {
       saveGameResult({
         streak: gameState.currentStreak,
         isNewHighScore: false,
-        tempId: !session?.user ? (localTempId ?? undefined) : undefined,
+        tempId,
       });
     }
-  }, [gameState.currentStreak, gameData?.highestStreak, saveGameResult]);
+  }, [
+    gameState.currentStreak,
+    gameData?.highestStreak,
+    saveGameResult,
+    tempId,
+  ]);
 
   const [showIncorrectDialog, setShowIncorrectDialog] = useState(false);
 
   const handleSignIn = async () => {
-    let tempId = localStorage.getItem("barkle_temp_id");
-
-    if (!tempId) {
-      tempId = crypto.randomUUID();
-      localStorage.setItem("barkle_temp_id", tempId);
+    if (tempId) {
+      await handleGoogleSignIn();
     }
-
-    await signIn("google", {
-      callbackUrl: `${window.location.pathname}?tempId=${tempId}`,
-    });
   };
 
   const handleGuess = async (breed: string) => {
@@ -216,7 +215,7 @@ export default function PawsistenceGame() {
       saveGameResult({
         streak: newStreak,
         isNewHighScore,
-        tempId: !session?.user ? (localTempId ?? undefined) : undefined,
+        tempId,
       });
 
       setTimeout(() => {
@@ -232,7 +231,7 @@ export default function PawsistenceGame() {
 
       // Increment plays for both logged-in and temporary users
       incrementPlays({
-        tempId: !session?.user ? (localTempId ?? undefined) : undefined,
+        tempId,
       });
 
       if (!session?.user) {
@@ -321,36 +320,14 @@ export default function PawsistenceGame() {
   // Add profileQuery near other queries
   const profileQuery = api.profile.getProfile.useQuery(
     {
-      tempId: localTempId ?? undefined,
+      tempId,
     },
     {
-      enabled: !session?.user,
+      enabled: !!tempId || !!session?.user,
     },
   );
 
   const createProfileMutation = api.profile.createTempProfile.useMutation();
-
-  // Replace the tempId effect with this one
-  useEffect(() => {
-    if (!session?.user) {
-      const storedTempId = localStorage.getItem("barkle_temp_id");
-
-      if (storedTempId) {
-        setLocalTempId(storedTempId);
-      } else {
-        // Only create new tempId and profile if we don't have one
-        const newTempId = crypto.randomUUID();
-        localStorage.setItem("barkle_temp_id", newTempId);
-        setLocalTempId(newTempId);
-
-        // Create a temporary profile
-        void createProfileMutation.mutateAsync({
-          tempId: newTempId,
-          username: `Guest${Math.floor(Math.random() * 10000)}`,
-        });
-      }
-    }
-  }, [session?.user, createProfileMutation]);
 
   // Add state for username dialog
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
@@ -358,10 +335,10 @@ export default function PawsistenceGame() {
   // Add username submit handler
   const onUsernameSubmit = async (username: string) => {
     try {
-      if (!session?.user && localTempId) {
+      if (!session?.user && tempId) {
         await createProfileMutation.mutateAsync({
           username,
-          tempId: localTempId,
+          tempId,
         });
         void profileQuery.refetch();
       }
@@ -372,56 +349,17 @@ export default function PawsistenceGame() {
 
   // Add effect to check for username
   useEffect(() => {
-    if (!session?.user && localTempId && !profileQuery.isLoading) {
+    if (!session?.user && tempId && !profileQuery.isLoading) {
       if (!profileQuery.data?.username) {
         setShowUsernameDialog(true);
       }
     }
   }, [
     session?.user,
-    localTempId,
+    tempId,
     profileQuery.data?.username,
     profileQuery.isLoading,
   ]);
-
-  // Add migrateProfile mutation
-  const migrateProfileMutation = api.profile.migrateProfile.useMutation();
-
-  // Add gameDataQuery near other queries
-  const gameDataQuery = api.pawsistence.getInitialState.useQuery({
-    tempId: localTempId ?? undefined,
-  });
-
-  // Update useEffect to handle auth return with cleanup and flags
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const tempId = searchParams.get("tempId");
-    let isMounted = true;
-    let hasMigrated = false;
-
-    // Only run migration if we have both session and tempId
-    if (session?.user && tempId && !hasMigrated) {
-      hasMigrated = true; // Prevent multiple migrations
-
-      void migrateProfileMutation.mutateAsync(
-        { tempId },
-        {
-          onSuccess: () => {
-            if (isMounted) {
-              void profileQuery.refetch();
-              void gameDataQuery.refetch();
-              // Clear tempId from URL
-              window.history.replaceState({}, "", window.location.pathname);
-            }
-          },
-        },
-      );
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [session?.user]); // Only depend on session change
 
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-50">

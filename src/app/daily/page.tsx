@@ -14,6 +14,7 @@ import { DailyInstructions } from "./components/DailyInstructions";
 import { UsernameDialog } from "./components/UsernameDialog";
 import { useRouter, useSearchParams } from "next/navigation";
 import seedrandom from "seedrandom";
+import { useProfileContext } from "~/app/components/ProfileProvider";
 
 interface DogBreed {
   breed: string;
@@ -38,16 +39,6 @@ interface BreedsResponse {
   status: string;
 }
 
-interface ImageResponse {
-  message: string;
-  status: string;
-}
-
-interface DailyBreeds {
-  breeds: DogBreed[];
-  date: string;
-}
-
 function generateDailySeededRandom(seed: string) {
   return seedrandom(seed);
 }
@@ -57,32 +48,16 @@ export default function DailyGame() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tempId = searchParams.get("tempId");
-  const isReturningFromAuth = !!tempId;
 
-  // Get or create tempId for non-signed in users
-  const [localTempId, setLocalTempId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!session?.user) {
-      const storedTempId = localStorage.getItem("barkle_temp_id");
-      if (storedTempId) {
-        setLocalTempId(storedTempId);
-      } else {
-        const newTempId = crypto.randomUUID();
-        localStorage.setItem("barkle_temp_id", newTempId);
-        setLocalTempId(newTempId);
-      }
-    }
-  }, [session?.user]);
+  const { tempId } = useProfileContext();
 
   // Single canPlayQuery
   const canPlayQuery = api.score.canPlayToday.useQuery(
     {
-      tempId: !session?.user ? (tempId ?? localTempId ?? undefined) : undefined,
+      tempId,
     },
     {
-      enabled: !!localTempId || !!session?.user,
+      enabled: !!tempId || !!session?.user,
     },
   );
 
@@ -96,7 +71,7 @@ export default function DailyGame() {
   // Update the toast effect
   useEffect(() => {
     if (
-      !isReturningFromAuth &&
+      !canPlayQuery.data?.canPlay &&
       !hasShownToast &&
       canPlayQuery.data &&
       !canPlayQuery.data.canPlay
@@ -117,7 +92,7 @@ export default function DailyGame() {
 
       setHasShownToast(true);
     }
-  }, [canPlayQuery.data, toast, isReturningFromAuth, hasShownToast]);
+  }, [canPlayQuery.data, toast, canPlayQuery.data?.canPlay, hasShownToast]);
 
   // Add the new query
   const currentStreakQuery = api.score.getCurrentStreak.useQuery(undefined, {
@@ -293,7 +268,7 @@ export default function DailyGame() {
           results: [...questionResults, isCorrect]
             .map((r) => (r ? "1" : "0"))
             .join(","),
-          tempId: !session?.user ? (localTempId ?? undefined) : undefined,
+          tempId,
           currentGuessStreak: newGuessStreak,
         });
 
@@ -323,17 +298,8 @@ export default function DailyGame() {
     }
   };
 
-  const handleGameFinishedClose = () => {
-    setGameState((prev) => ({
-      ...prev,
-      gameOver: false,
-    }));
-  };
-
-  // Show username dialog when user returns from auth with tempId
   useEffect(() => {
     if (session?.user && tempId) {
-      setShowUsernameDialog(true);
       // Get the score from URL if available
       const urlScore = searchParams.get("score");
       const urlResults = searchParams.get("results");
@@ -351,81 +317,32 @@ export default function DailyGame() {
   }, [session?.user, tempId, searchParams]);
 
   // Add new profile query and mutation
-  const profileQuery = api.profile.getProfile.useQuery(
+  const {
+    data: userProfile,
+    isFetched: userProfileFetched,
+    refetch: refetchProfile,
+  } = api.profile.getProfile.useQuery(
     {
-      tempId: !session?.user ? (localTempId ?? undefined) : undefined,
+      tempId,
     },
     {
-      enabled: !!localTempId || !!session?.user,
+      enabled: !!tempId || !!session?.user,
     },
   );
 
   const createProfileMutation = api.profile.createTempProfile.useMutation();
 
-  // Add state to track migration status
-  const [isMigrating, setIsMigrating] = useState(false);
-
-  // Update the auth return effect
-  useEffect(() => {
-    if (session?.user && tempId) {
-      setIsMigrating(true); // Set migrating status
-      const urlScore = searchParams.get("score");
-      const urlResults = searchParams.get("results");
-
-      // Migrate the profile first
-      void migrateProfileMutation.mutateAsync(
-        { tempId },
-        {
-          onSuccess: () => {
-            if (urlScore && urlResults) {
-              setGameState((prev) => ({
-                ...prev,
-                score: parseInt(urlScore),
-                gameOver: true,
-                hasSavedScore: true,
-              }));
-              setQuestionResults(urlResults.split(",").map((r) => r === "1"));
-              setShowGameResults(true);
-            }
-            void todayScoreQuery.refetch();
-            void canPlayQuery.refetch();
-            void profileQuery.refetch();
-          },
-          onSettled: () => {
-            setIsMigrating(false);
-          },
-        },
-      );
-    }
-  }, [session?.user, tempId, searchParams]);
-
   // Update the instructions effect to check migration status
   useEffect(() => {
-    if (
-      canPlayQuery.data?.canPlay &&
-      !isReturningFromAuth &&
-      !showGameResults &&
-      !isMigrating
-    ) {
-      if (!profileQuery.data && !session?.user) {
-        setShowInstructions(true);
-      } else {
-        setShowInstructions(true);
-      }
+    if (userProfileFetched && !userProfile) {
+      setShowInstructions(true);
     }
-  }, [
-    canPlayQuery.data?.canPlay,
-    isReturningFromAuth,
-    showGameResults,
-    profileQuery.data,
-    session?.user,
-    isMigrating,
-  ]);
+  }, [userProfileFetched, userProfile]);
 
   // Update handleInstructionsClose to check migration status
   const handleInstructionsClose = () => {
     setShowInstructions(false);
-    if (!profileQuery.data && !session?.user && !isMigrating) {
+    if (!userProfile) {
       setTimeout(() => {
         setShowUsernameDialog(true);
       }, 100);
@@ -435,14 +352,14 @@ export default function DailyGame() {
   // Update username submit handler
   const onUsernameSubmit = async (username: string) => {
     try {
-      if (!session?.user && localTempId) {
+      if (!session?.user && tempId) {
         await createProfileMutation.mutateAsync({
           username,
-          tempId: localTempId,
+          tempId,
         });
 
         // Refetch profile data
-        void profileQuery.refetch();
+        void refetchProfile();
       }
       setShowUsernameDialog(false);
     } catch (error) {
@@ -453,17 +370,14 @@ export default function DailyGame() {
   // Single todayScoreQuery
   const todayScoreQuery = api.score.getTodayScore.useQuery(
     {
-      tempId: !session?.user ? (tempId ?? localTempId ?? undefined) : undefined,
+      tempId,
     },
     {
       enabled:
-        (!canPlayQuery.data?.canPlay && (!!localTempId || !!session?.user)) ||
+        (!canPlayQuery.data?.canPlay && (!!tempId || !!session?.user)) ||
         gameState.gameOver,
     },
   );
-
-  // Add at the top with other hooks
-  const migrateProfileMutation = api.profile.migrateProfile.useMutation();
 
   // Show loading until canPlayQuery is settled
   if (canPlayQuery.isLoading) {
@@ -476,7 +390,7 @@ export default function DailyGame() {
 
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-12 text-zinc-50">
-      {isReturningFromAuth || canPlayQuery.data?.canPlay ? (
+      {canPlayQuery.data?.canPlay ? (
         <div className="container mx-auto max-w-3xl">
           <div className="mb-8 space-y-4 text-center">
             <Link href="/">

@@ -1,7 +1,6 @@
 import { postRouter } from "~/server/api/routers/post";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { scoreRouter } from "~/server/api/routers/score";
-import { userRouter } from "~/server/api/routers/user";
 import { gameRouter } from "./routers/game";
 import { dogSubmissionRouter } from "./routers/dogSubmission";
 import { pawsistenceRouter } from "./routers/pawsistence";
@@ -16,7 +15,6 @@ import { profileRouter } from "./routers/profile";
 export const appRouter = createTRPCRouter({
   post: postRouter,
   score: scoreRouter,
-  user: userRouter,
   game: gameRouter,
   dogSubmission: dogSubmissionRouter,
   pawsistence: pawsistenceRouter,

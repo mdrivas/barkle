@@ -7,13 +7,15 @@ import { LeaderboardModal } from "./components/LeaderboardModal";
 import Image from "next/image";
 import Link from "next/link";
 import { GameModeModal } from "./components/GameModeModal";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { Roboto } from "next/font/google";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DogSubmissionModal } from "./components/DogSubmissionModal";
 import { api } from "~/trpc/react";
 import { NewUserDialog } from "./components/NewUserDialog";
+
+import { useSignIn } from "~/hooks/useSignIn";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -22,10 +24,11 @@ const roboto = Roboto({
 });
 
 export default function Home() {
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showNewUserDialog, setShowNewUserDialog] = useState(false);
+  const { handleGoogleSignIn } = useSignIn();
 
   useEffect(() => {
     if (searchParams.get("showLeaderboard") === "true") {
@@ -35,16 +38,13 @@ export default function Home() {
   }, [searchParams]);
 
   const { data: gamesCount } = api.score.getTodayGames.useQuery();
-  const { data: profile, isLoading: isProfileLoading } =
-    api.user.getProfile.useQuery(undefined, {
-      enabled: !!session?.user,
-      retry: false,
-      staleTime: 0,
-    });
 
-  const { data: usernameCheck } = api.user.needsUsername.useQuery(undefined, {
-    enabled: !!session?.user,
-  });
+  const { data: usernameCheck } = api.profile.needsUsername.useQuery(
+    undefined,
+    {
+      enabled: !!session?.user,
+    },
+  );
 
   useEffect(() => {
     if (usernameCheck?.needsUsername && usernameCheck?.isNewUser) {
@@ -54,18 +54,7 @@ export default function Home() {
 
   // Generic sign-in function you can use throughout your app
   const handleSignIn = () => {
-    let tempId = localStorage.getItem("barkle_temp_id");
-
-    if (!tempId) {
-      tempId = crypto.randomUUID();
-      localStorage.setItem("barkle_temp_id", tempId);
-    }
-
-    void signIn("google", {
-      prompt: "select_account",
-      callbackUrl: window.location.href,
-      tempId: tempId,
-    });
+    void handleGoogleSignIn();
   };
 
   return (

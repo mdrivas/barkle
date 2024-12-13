@@ -61,16 +61,6 @@ export const users = createTable("user", {
     mode: "date",
     withTimezone: true,
   }).default(sql`CURRENT_TIMESTAMP`),
-  username: varchar("username", { length: 30 }).unique(),
-  isAdmin: boolean("is_admin").default(false).notNull(),
-  currentDailyStreak: integer("current_daily_streak").default(0),
-  highestDailyStreak: integer("highest_daily_streak").default(0),
-  currentGuessStreak: integer("current_guess_streak").default(0),
-  highestGuessStreak: integer("highest_guess_streak").default(0),
-  lastPlayedAt: timestamp("last_played_at", { withTimezone: true }),
-  highestPawsistenceStreak: integer("highest_pawsistence_streak").default(0),
-  pawsistencePlaysToday: integer("pawsistence_plays_today").default(0),
-  lastPawsistenceAt: timestamp("last_pawsistence_at", { withTimezone: true }),
 });
 
 export type User = InferSelectModel<typeof users>;
@@ -78,9 +68,14 @@ export type NewUser = InferInsertModel<typeof users>;
 
 export const profiles = createTable("profile", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  userId: varchar("user_id", { length: 255 })
+    .references(() => users.id, {
+      onDelete: "cascade",
+    })
+    .unique(),
   username: varchar("username", { length: 30 }).unique(),
   tempId: varchar("temp_id", { length: 255 }).unique().$type<string | null>(),
+  profileImageUrl: varchar("profile_image_url", { length: 255 }),
   isAdmin: boolean("is_admin").default(false).notNull(),
   currentDailyStreak: integer("current_daily_streak").default(0),
   highestDailyStreak: integer("highest_daily_streak").default(0),
@@ -115,7 +110,7 @@ export const accounts = createTable(
   {
     userId: varchar("user_id", { length: 255 })
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: "cascade" }),
     type: varchar("type", { length: 255 })
       .$type<AdapterAccount["type"]>()
       .notNull(),
@@ -151,7 +146,7 @@ export const sessions = createTable(
       .primaryKey(),
     userId: varchar("user_id", { length: 255 })
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: "cascade" }),
     expires: timestamp("expires", {
       mode: "date",
       withTimezone: true,
@@ -185,7 +180,9 @@ export const scores = createTable("scores", {
   id: serial("id").primaryKey(),
   score: integer("score").notNull(),
   results: text("results"),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id, {
+    onDelete: "cascade",
+  }),
   tempId: varchar("temp_id", { length: 255 }),
   playedAt: timestamp("played_at", { withTimezone: true }),
 });
@@ -206,7 +203,7 @@ export const dogSubmissions = createTable("dog_submission", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id", { length: 255 })
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
   breed: varchar("breed", { length: 100 }).notNull(),
   status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending' | 'verified' | 'rejected'
   imagePath: varchar("image_path", { length: 255 }).notNull(), // Store just the path/filename
@@ -216,13 +213,17 @@ export const dogSubmissions = createTable("dog_submission", {
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
   verifiedBy: varchar("verified_by", { length: 255 }).references(
     () => users.id,
+    { onDelete: "set null" },
   ),
   lastFeaturedAt: timestamp("last_featured_at"),
 });
 
 // Add relations
 export const dogSubmissionsRelations = relations(dogSubmissions, ({ one }) => ({
-  user: one(users, { fields: [dogSubmissions.userId], references: [users.id] }),
+  profile: one(profiles, {
+    fields: [dogSubmissions.userId],
+    references: [profiles.userId],
+  }),
   verifier: one(users, {
     fields: [dogSubmissions.verifiedBy],
     references: [users.id],

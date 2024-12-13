@@ -24,13 +24,13 @@ export function NewUserDialog({
   const { toast } = useToast();
   const utils = api.useUtils();
 
-  const setUsernameMutation = api.user.setUsername.useMutation({
+  const setUsernameMutation = api.profile.setUsername.useMutation({
     onSuccess: async () => {
       toast({
         title: "Welcome to Barkle! 🐾",
         description: "Your username has been set. Time to start playing!",
       });
-      await utils.user.getProfile.invalidate();
+      await utils.profile.getProfile.refetch();
       onClose();
     },
     onError: (error) => {

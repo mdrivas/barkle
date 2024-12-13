@@ -5,16 +5,15 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { scores } from "~/server/db/schema";
-import { eq, and, gte, sql, isNotNull, desc, asc, or } from "drizzle-orm";
+import { eq, and, sql, isNotNull, desc, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { profiles } from "~/server/db/schema";
-import { canPlayToday, getNextGameTime } from "~/lib/dates";
 
 export const scoreRouter = createTRPCRouter({
   canPlayToday: publicProcedure
     .input(
       z.object({
-        tempId: z.string().uuid().optional(),
+        tempId: z.string().uuid().nullable(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -60,7 +59,7 @@ export const scoreRouter = createTRPCRouter({
     .input(
       z.object({
         score: z.number(),
-        tempId: z.string().uuid().optional(),
+        tempId: z.string().uuid().nullable(),
         results: z.string(),
         currentGuessStreak: z.number(),
       }),
@@ -193,7 +192,7 @@ export const scoreRouter = createTRPCRouter({
   getTodayScore: publicProcedure
     .input(
       z.object({
-        tempId: z.string().uuid().optional(),
+        tempId: z.string().uuid().nullable(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -260,95 +259,60 @@ export const scoreRouter = createTRPCRouter({
     return result[0]?.count ?? 0;
   }),
 
-  getDailyLeaderboard: publicProcedure
-    .input(
-      z.object({
-        tempId: z.string().uuid().optional(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      // First find the profile to get both userId and tempId
-      const profile = await ctx.db.query.profiles.findFirst({
-        where: or(
-          ctx.session?.user?.id
-            ? eq(profiles.userId, ctx.session.user.id)
-            : undefined,
-          input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
+  getDailyLeaderboard: publicProcedure.query(async ({ ctx }) => {
+    return ctx.db
+      .select({
+        username: profiles.username,
+        score: scores.score,
+        currentStreak: profiles.currentGuessStreak,
+        dailyStreak: profiles.currentDailyStreak,
+        userId: scores.userId,
+        tempId: scores.tempId,
+      })
+      .from(scores)
+      .leftJoin(
+        profiles,
+        or(
+          and(isNotNull(scores.userId), eq(scores.userId, profiles.userId)),
+          and(isNotNull(scores.tempId), eq(scores.tempId, profiles.tempId)),
         ),
-      });
-
-      return ctx.db
-        .select({
-          username: profiles.username,
-          score: scores.score,
-          currentStreak: profiles.currentGuessStreak,
-          dailyStreak: profiles.currentDailyStreak,
-          userId: scores.userId,
-          tempId: scores.tempId,
-          isCurrentUser: sql<boolean>`
-            CASE WHEN ${profiles.id} = ${profile?.id ?? 0} THEN true ELSE false END
-          `,
-        })
-        .from(scores)
-        .leftJoin(
-          profiles,
-          or(
-            and(isNotNull(scores.userId), eq(scores.userId, profiles.userId)),
-            and(isNotNull(scores.tempId), eq(scores.tempId, profiles.tempId)),
-          ),
-        )
-        .where(
-          and(
-            sql`date_trunc('day', ${scores.playedAt} AT TIME ZONE 'America/Los_Angeles') = 
+      )
+      .where(
+        and(
+          sql`date_trunc('day', ${scores.playedAt} AT TIME ZONE 'America/Los_Angeles') = 
                 date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`,
-            isNotNull(profiles.username),
-          ),
-        )
-        .orderBy(
-          desc(scores.score),
-          desc(profiles.currentGuessStreak),
-          desc(profiles.currentDailyStreak),
-        )
-        .limit(100);
-    }),
-
-  getPawsistenceLeaderboard: publicProcedure
-    .input(
-      z.object({
-        tempId: z.string().uuid().optional(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const profile = await ctx.db.query.profiles.findFirst({
-        where: or(
-          ctx.session?.user?.id
-            ? eq(profiles.userId, ctx.session.user.id)
-            : undefined,
-          input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
+          isNotNull(profiles.username),
         ),
-      });
+      )
+      .orderBy(
+        desc(scores.score),
+        desc(profiles.currentGuessStreak),
+        desc(profiles.currentDailyStreak),
+      )
+      .limit(100);
+  }),
 
-      return ctx.db
-        .select({
-          username: profiles.username,
-          highestStreak: profiles.highestPawsistenceStreak,
-          userId: profiles.userId,
-          tempId: profiles.tempId,
-          isCurrentUser: sql<boolean>`CASE WHEN ${profiles.id} = ${profile?.id ?? 0} THEN true ELSE false END`,
-        })
-        .from(profiles)
-        .where(
-          and(
-            isNotNull(profiles.username),
-            isNotNull(profiles.highestPawsistenceStreak),
-            sql`${profiles.highestPawsistenceStreak} > 0`,
-            // Include either users with userId OR tempId
-            or(isNotNull(profiles.userId), isNotNull(profiles.tempId)),
-          ),
-        )
-        .orderBy(desc(profiles.highestPawsistenceStreak))
-        .limit(100);
-    }),
+  getPawsistenceLeaderboard: publicProcedure.query(async ({ ctx }) => {
+    return ctx.db
+      .select({
+        username: profiles.username,
+        highestStreak: profiles.highestPawsistenceStreak,
+        userId: profiles.userId,
+        tempId: profiles.tempId,
+      })
+      .from(profiles)
+      .where(
+        and(
+          isNotNull(profiles.username),
+          isNotNull(profiles.highestPawsistenceStreak),
+          sql`${profiles.highestPawsistenceStreak} > 0`,
+          // Include either users with userId OR tempId
+          or(isNotNull(profiles.userId), isNotNull(profiles.tempId)),
+        ),
+      )
+      .orderBy(desc(profiles.highestPawsistenceStreak))
+      .limit(100);
+  }),
   // TODO: Take out userId from input, change to protected procedure
   getBarkleStats: protectedProcedure.query(async ({ ctx }) => {
     // Get all stats from profile

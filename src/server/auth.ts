@@ -1,12 +1,10 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { eq } from "drizzle-orm";
 import {
   getServerSession,
   type DefaultSession,
   type NextAuthOptions,
 } from "next-auth";
 import { type Adapter } from "next-auth/adapters";
-import DiscordProvider from "next-auth/providers/discord";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 
@@ -14,7 +12,6 @@ import { env } from "~/env";
 import { db } from "~/server/db";
 import {
   accounts,
-  profiles,
   sessions,
   users,
   verificationTokens,
@@ -41,6 +38,7 @@ declare module "next-auth" {
     username: string | null;
   }
 }
+
 /**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
@@ -48,30 +46,6 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    signIn: async ({ user, account }) => {
-      if (account && user) {
-        try {
-          const tempId = account.tempId as string | undefined;
-
-          if (tempId) {
-            await db
-              .update(profiles)
-              .set({
-                userId: user.id,
-                username: user.name,
-                tempId: null,
-              })
-              .where(eq(profiles.tempId, tempId));
-
-            user.id = tempId;
-          }
-        } catch (error) {
-          console.error("Error syncing temp user:", error);
-        }
-      }
-      return true;
-    },
-
     session: ({ session, token, user }) => ({
       ...session,
       user: {

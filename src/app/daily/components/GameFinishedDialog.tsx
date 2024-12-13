@@ -10,12 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { GoogleLogo } from "~/components/icons";
 import { api } from "~/trpc/react";
 import { ShareResultsDialog } from "~/app/components/ShareResultsDialog";
 import { useToast } from "~/hooks/use-toast";
 import { Share2 } from "lucide-react";
+import { useSignIn } from "~/hooks/useSignIn";
+import { useProfileContext } from "~/app/components/ProfileProvider";
 
 // Props interface for GameFinishedDialog component
 interface GameFinishedDialogProps {
@@ -38,16 +40,13 @@ export function GameFinishedDialog({
   const { data: session } = useSession();
   const saveScore = api.score.saveScore.useMutation();
   const { toast } = useToast();
-  const migrateProfileMutation = api.profile.migrateProfile.useMutation();
+  const { tempId } = useProfileContext();
 
   // Add state for share dialog
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
-  // Add state for tempId
-  const [tempId, setTempId] = useState<string | undefined>();
-
-  // Add state to track if we've handled the auth return
-  const [hasHandledAuthReturn, setHasHandledAuthReturn] = useState(false);
+  // Use the custom hook to get tempId
+  const { handleGoogleSignIn } = useSignIn();
 
   // Add state to track if username has been set
   const [shouldShowResults, setShouldShowResults] =
@@ -60,69 +59,29 @@ export function GameFinishedDialog({
     }
   }, [isReturningFromAuth]);
 
-  // Add useEffect to get localStorage value
-  useEffect(() => {
-    setTempId(localStorage.getItem("barkle_temp_id") ?? undefined);
-  }, []);
-
-  // Add effect to handle auth return
-  useEffect(() => {
-    if (
-      isReturningFromAuth &&
-      session?.user &&
-      tempId &&
-      !hasHandledAuthReturn
-    ) {
-      void migrateProfileMutation.mutateAsync(
-        { tempId },
-        {
-          onSuccess: () => {
-            setHasHandledAuthReturn(true);
-            setShouldShowResults(true);
-            // Refetch queries to get updated data
-            void todayScoreQuery.refetch();
-          },
-          onError: (error) => {
-            toast({
-              title: "Error",
-              description: "Failed to update profile. Please try again.",
-              variant: "destructive",
-            });
-          },
-        },
-      );
-    }
-  }, [isReturningFromAuth, session?.user, tempId, hasHandledAuthReturn]);
-
   // Define handleViewLeaderboard at the top level of the component
   const handleViewLeaderboard = () => {
     router.push("/?showLeaderboard=true");
   };
 
-  // Handler for Google sign in
+  // Simplified sign in handler
   const handleSignIn = async () => {
-    const existingTempId = localStorage.getItem("barkle_temp_id");
-    const newTempId = crypto.randomUUID();
     const resultsString = questionResults.map((r) => (r ? "1" : "0")).join(",");
 
     try {
-      // Save score with new tempId if none exists
-      const tempIdToUse = existingTempId ?? newTempId;
-      if (!existingTempId) {
-        localStorage.setItem("barkle_temp_id", newTempId);
-
+      if (tempId) {
+        // Save the score first
         await saveScore.mutateAsync({
           score,
           results: resultsString,
-          tempId: tempIdToUse,
+          tempId,
           currentGuessStreak: 0,
         });
-      }
 
-      void signIn("google", {
-        callbackUrl: `${window.location.pathname}?tempId=${tempIdToUse}&score=${score}&results=${resultsString}`,
-        tempId: tempIdToUse,
-      });
+        void handleGoogleSignIn(
+          `${window.location.pathname}?score=${score}&results=${resultsString}`,
+        );
+      }
     } catch (error) {
       console.error("Failed to save score for anonymous user:", error);
       toast({
@@ -150,10 +109,10 @@ export function GameFinishedDialog({
     }
   };
 
-  // Update the query to use the state
+  // Simplified query
   const todayScoreQuery = api.score.getTodayScore.useQuery(
     {
-      tempId: !session?.user ? (tempId ?? undefined) : undefined,
+      tempId,
     },
     {
       enabled: !!tempId || !!session?.user,

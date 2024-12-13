@@ -62,7 +62,7 @@ async function generateDailyBreeds() {
         ),
       ),
     with: {
-      user: {
+      profile: {
         columns: {
           username: true,
         },
@@ -109,7 +109,7 @@ async function generateDailyBreeds() {
         breed: communityDog.breed,
         imageUrl: `https://storage.googleapis.com/${dogSubmissionsBucket.name}/${communityDog.imagePath}`,
         type: "community",
-        submittedBy: communityDog.user?.username ?? "Anonymous",
+        submittedBy: communityDog.profile?.username ?? "Anonymous",
       });
 
       await db
@@ -169,7 +169,7 @@ async function previewTomorrowBreeds() {
         ),
       ),
     with: {
-      user: {
+      profile: {
         columns: {
           username: true,
         },
@@ -215,7 +215,7 @@ async function previewTomorrowBreeds() {
         breed: communityDog.breed,
         imageUrl: `https://storage.googleapis.com/${dogSubmissionsBucket.name}/${communityDog.imagePath}`,
         type: "community",
-        submittedBy: communityDog.user?.username ?? "Anonymous",
+        submittedBy: communityDog.profile?.username ?? "Anonymous",
       });
     }
   } else {
