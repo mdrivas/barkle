@@ -10,7 +10,7 @@ import {
 } from "~/components/ui/dialog";
 import { cn } from "~/lib/utils";
 import { Check, Share2, Home, Instagram } from "lucide-react";
-import html2canvas from "html2canvas";
+import domtoimage from 'dom-to-image-more';
 import { ShareableCard } from "./ShareableCard";
 import { useToast } from "~/hooks/use-toast";
 
@@ -42,8 +42,10 @@ export function ShareResultsDialog({
 
   const safeResults = questionResults ?? Array(5).fill(false);
 
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(
+    typeof window !== 'undefined' ? window.navigator.userAgent : ''
+  );
+  
   const getDogAscii = (score: number) => {
     if (score >= 4) {
       return `  ∩＿∩
@@ -123,31 +125,15 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
     
     setIsGeneratingImage(true);
     try {
-      // 1. Generate the image
-      console.log("Generating canvas...");
-      const canvas = await html2canvas(shareableCardRef.current, {
-        scale: 2,
-        backgroundColor: "#18181B",
-        logging: true, // Enable logging
+      const dataUrl = await domtoimage.toPng(shareableCardRef.current, {
+        width: 500,
+        height: 500,
+        bgcolor: '#18181B'
       });
-      console.log("Canvas generated");
 
-      // 2. Convert to blob
-      console.log("Converting to blob...");
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error("Failed to create blob"));
-          }, 
-          'image/png', 
-          1.0
-        );
-      });
-      console.log("Blob created, size:", blob.size);
-
-      // 3. Upload to GCS
-      console.log("Uploading to GCS...");
+      const blobResponse = await fetch(dataUrl);
+      const blob = await blobResponse.blob();
+      
       const formData = new FormData();
       formData.append('file', blob, 'share.png');
 
@@ -156,27 +142,17 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
         body: formData,
       });
 
-      console.log("Upload response status:", response.status);
-      const responseData = await response.json() as UploadResponse;
-      console.log("Upload response:", responseData);
-
-      if (!response.ok) throw new Error(`Upload failed: ${JSON.stringify(responseData)}`);
+      const data = await response.json() as UploadResponse;
+      if (!response.ok) throw new Error(data.error || "Upload failed");
       
-      const { imageUrl } = responseData;
-      if (!imageUrl) throw new Error("No image URL received");
-
-      console.log("Opening Instagram with URL:", imageUrl);
-      window.location.href = `instagram://story-camera?media=${encodeURIComponent(imageUrl)}`;
+      if (!data.imageUrl) throw new Error("No image URL received");
+      window.location.href = `instagram://story-camera?media=${encodeURIComponent(data.imageUrl)}`;
       
-      toast({
-        description: "Opening Instagram...",
-        className: "bg-zinc-800 border-zinc-700 text-zinc-50",
-      });
     } catch (error) {
-      console.error("Detailed error:", error);
+      console.error("Error:", error);
       toast({
         variant: "destructive",
-        description: `Share failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: error instanceof Error ? error.message : "Share failed",
       });
     } finally {
       setIsGeneratingImage(false);
