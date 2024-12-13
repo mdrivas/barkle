@@ -8,7 +8,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "~/components/ui/toaster";
 import { AuthProvider } from "./components/AuthProvider";
 import { Suspense } from "react";
-import { TooltipProvider } from "~/components/ui/tooltip"
+import { TooltipProvider } from "~/components/ui/tooltip";
 import { GoogleAnalytics } from "~/components/GoogleAnalytics"; // Add this import
 
 const poppins = Poppins({
@@ -26,9 +26,7 @@ export const metadata: Metadata = {
       { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
       { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
     ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180" },
-    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   openGraph: {
     type: "website",
@@ -62,16 +60,18 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body>
-        {process.env.NODE_ENV === 'production' && <GoogleAnalytics />}
+        {process.env.NODE_ENV === "production" && <GoogleAnalytics />}
         <TooltipProvider>
           <AuthProvider>
             <Toaster />
             <TRPCReactProvider>
-              <Suspense fallback={
-                <div className="flex items-center justify-center min-h-screen">
-                  <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-emerald-500" />
-                </div>
-              }>
+              <Suspense
+                fallback={
+                  <div className="flex min-h-screen items-center justify-center">
+                    <div className="h-32 w-32 animate-spin rounded-full border-t-2 border-emerald-500" />
+                  </div>
+                }
+              >
                 {children}
               </Suspense>
             </TRPCReactProvider>

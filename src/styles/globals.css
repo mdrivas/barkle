@@ -27,7 +27,7 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem
+    --radius: 0.5rem;
   }
   .dark {
     --background: 240 10% 3.9%;
@@ -53,7 +53,7 @@
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%
+    --chart-5: 340 75% 55%;
   }
 }
 @layer base {
@@ -72,8 +72,12 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .animate-shimmer {
@@ -94,16 +98,43 @@
 }
 
 .bg-gold {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.5) 25%, rgba(184, 134, 11, 0.5) 25%, rgba(255, 215, 0, 0.5) 50%, rgba(184, 134, 11, 0.5) 50%, rgba(255, 215, 0, 0.5) 75%, rgba(184, 134, 11, 0.5) 75%, rgba(255, 215, 0, 0.5));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 215, 0, 0.5) 25%,
+    rgba(184, 134, 11, 0.5) 25%,
+    rgba(255, 215, 0, 0.5) 50%,
+    rgba(184, 134, 11, 0.5) 50%,
+    rgba(255, 215, 0, 0.5) 75%,
+    rgba(184, 134, 11, 0.5) 75%,
+    rgba(255, 215, 0, 0.5)
+  );
   background-size: 200% 200%;
 }
 
 .bg-silver {
-  background: linear-gradient(135deg, rgba(192, 192, 192, 0.5) 25%, rgba(128, 128, 128, 0.5) 25%, rgba(192, 192, 192, 0.5) 50%, rgba(128, 128, 128, 0.5) 50%, rgba(192, 192, 192, 0.5) 75%, rgba(128, 128, 128, 0.5) 75%, rgba(192, 192, 192, 0.5));
+  background: linear-gradient(
+    135deg,
+    rgba(192, 192, 192, 0.5) 25%,
+    rgba(128, 128, 128, 0.5) 25%,
+    rgba(192, 192, 192, 0.5) 50%,
+    rgba(128, 128, 128, 0.5) 50%,
+    rgba(192, 192, 192, 0.5) 75%,
+    rgba(128, 128, 128, 0.5) 75%,
+    rgba(192, 192, 192, 0.5)
+  );
   background-size: 200% 200%;
 }
 
 .bg-bronze {
-  background: linear-gradient(135deg, rgba(205, 127, 50, 0.5) 25%, rgba(139, 69, 19, 0.5) 25%, rgba(205, 127, 50, 0.5) 50%, rgba(139, 69, 19, 0.5) 50%, rgba(205, 127, 50, 0.5) 75%, rgba(139, 69, 19, 0.5) 75%, rgba(205, 127, 50, 0.5));
+  background: linear-gradient(
+    135deg,
+    rgba(205, 127, 50, 0.5) 25%,
+    rgba(139, 69, 19, 0.5) 25%,
+    rgba(205, 127, 50, 0.5) 50%,
+    rgba(139, 69, 19, 0.5) 50%,
+    rgba(205, 127, 50, 0.5) 75%,
+    rgba(139, 69, 19, 0.5) 75%,
+    rgba(205, 127, 50, 0.5)
+  );
   background-size: 200% 200%;
 }

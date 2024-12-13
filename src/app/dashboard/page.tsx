@@ -20,31 +20,37 @@ const sampleData = [
 ];
 
 export default function DashboardPage() {
-  const totalProjects = sampleData.reduce((sum, item) => sum + item.projects, 0);
+  const totalProjects = sampleData.reduce(
+    (sum, item) => sum + item.projects,
+    0,
+  );
   const totalTasks = sampleData.reduce((sum, item) => sum + item.tasks, 0);
-  const totalTeamMembers = sampleData.reduce((sum, item) => sum + item.teamMembers, 0);
+  const totalTeamMembers = sampleData.reduce(
+    (sum, item) => sum + item.teamMembers,
+    0,
+  );
 
   return (
     <div className="p-6">
       <h1 className="mb-6 text-3xl font-bold">Dashboard</h1>
-      
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-8">
+
+      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card className="p-4">
-          <h3 className="text-lg font-semibold mb-2">Total Projects</h3>
+          <h3 className="mb-2 text-lg font-semibold">Total Projects</h3>
           <p className="text-3xl font-bold">{totalProjects}</p>
         </Card>
         <Card className="p-4">
-          <h3 className="text-lg font-semibold mb-2">Active Tasks</h3>
+          <h3 className="mb-2 text-lg font-semibold">Active Tasks</h3>
           <p className="text-3xl font-bold">{totalTasks}</p>
         </Card>
         <Card className="p-4">
-          <h3 className="text-lg font-semibold mb-2">Team Members</h3>
+          <h3 className="mb-2 text-lg font-semibold">Team Members</h3>
           <p className="text-3xl font-bold">{totalTeamMembers}</p>
         </Card>
       </div>
 
-      <Card className="p-4 mb-8">
-        <h3 className="text-lg font-semibold mb-4">Location Overview</h3>
+      <Card className="mb-8 p-4">
+        <h3 className="mb-4 text-lg font-semibold">Location Overview</h3>
         <Table>
           <TableHeader>
             <TableRow>

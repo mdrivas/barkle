@@ -23,21 +23,21 @@ export function IncorrectGuessDialog({
 }: IncorrectGuessDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl">
+      <DialogContent className="rounded-xl border border-zinc-800 bg-zinc-950/95 text-zinc-50">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">
+          <DialogTitle className="text-center text-2xl font-bold">
             Incorrect Guess! 🐾
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="flex flex-col items-center gap-4 mt-2">
+
+        <div className="mt-2 flex flex-col items-center gap-4">
           <p className="text-lg text-zinc-300">
-            {playsRemaining} {playsRemaining === 1 ? 'try' : 'tries'} remaining
+            {playsRemaining} {playsRemaining === 1 ? "try" : "tries"} remaining
           </p>
-          
+
           <Button
             onClick={onPlayAgain}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg font-semibold rounded-xl"
+            className="w-full rounded-xl bg-emerald-600 py-6 text-lg font-semibold text-white hover:bg-emerald-700"
           >
             Play Again
           </Button>
@@ -45,4 +45,4 @@ export function IncorrectGuessDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}
