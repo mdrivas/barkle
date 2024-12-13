@@ -14,15 +14,13 @@ import { useToast } from "~/hooks/use-toast";
 import { api } from "~/trpc/react";
 import Image from "next/image";
 import { Camera, ArrowRight } from "lucide-react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { useSignIn } from "~/hooks/useSignIn";
 
 interface DogSubmissionModalProps {
   className?: string;
   variant?: "default" | "link";
 }
-
-// Add this type for submission status
-type SubmissionStatus = "pending" | "verified" | "rejected";
 
 export function DogSubmissionModal({
   className,
@@ -36,6 +34,7 @@ export function DogSubmissionModal({
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const { data: session } = useSession();
+  const { handleGoogleSignIn } = useSignIn();
 
   const handleClose = () => {
     setOpen(false);
@@ -54,10 +53,7 @@ export function DogSubmissionModal({
   };
 
   const handleSignIn = async () => {
-    const result = await signIn("google", {
-      redirect: false,
-      callbackUrl: window.location.href,
-    });
+    const result = await handleGoogleSignIn();
 
     if (result?.ok) {
       setShowAuthPrompt(false);

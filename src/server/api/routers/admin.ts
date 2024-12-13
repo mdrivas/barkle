@@ -1,34 +1,11 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, adminProcedure } from "../trpc";
 import { dogSubmissionsBucket } from "~/lib/gcs-config";
-import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
-import { users, dogSubmissions } from "~/server/db/schema";
-import { db } from "~/server/db";
-
-interface AdminCheckContext {
-  db: typeof db;
-  session: { user: { id: string } };
-}
-
-// Helper function to check admin status from database
-const checkAdminDB = async (ctx: AdminCheckContext) => {
-  const user = await ctx.db.query.users.findFirst({
-    where: eq(users.id, ctx.session.user.id),
-    columns: {
-      isAdmin: true,
-    },
-  });
-  return user?.isAdmin ?? false;
-};
+import { dogSubmissions } from "~/server/db/schema";
 
 export const adminRouter = createTRPCRouter({
-  getPendingImages: protectedProcedure.query(async ({ ctx }) => {
-    const isAdmin = await checkAdminDB(ctx);
-    if (!isAdmin) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
-
+  getPendingImages: adminProcedure.query(async ({ ctx }) => {
     const pendingSubmissions = await ctx.db.query.dogSubmissions.findMany({
       where: eq(dogSubmissions.status, "pending"),
       with: {
@@ -50,7 +27,7 @@ export const adminRouter = createTRPCRouter({
     }));
   }),
 
-  approveImage: protectedProcedure
+  approveImage: adminProcedure
     .input(
       z.object({
         submissionId: z.number(),
@@ -58,11 +35,6 @@ export const adminRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const isAdmin = await checkAdminDB(ctx);
-      if (!isAdmin) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
       // Move file in GCS
       const file = dogSubmissionsBucket.file(input.filename);
       const newFile = dogSubmissionsBucket.file(
@@ -84,25 +56,15 @@ export const adminRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  rejectImage: protectedProcedure
+  rejectImage: adminProcedure
     .input(z.object({ filename: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const isAdmin = await checkAdminDB(ctx);
-      if (!isAdmin) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
       const file = dogSubmissionsBucket.file(input.filename);
       await file.delete();
       return { success: true };
     }),
 
-  getStats: protectedProcedure.query(async ({ ctx }) => {
-    const isAdmin = await checkAdminDB(ctx);
-    if (!isAdmin) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
-
+  getStats: adminProcedure.query(async () => {
     const [pendingFiles] = await dogSubmissionsBucket.getFiles({
       prefix: "pending/",
     });
@@ -118,7 +80,7 @@ export const adminRouter = createTRPCRouter({
     };
   }),
 
-  batchProcessImages: protectedProcedure
+  batchProcessImages: adminProcedure
     .input(
       z.object({
         decisions: z.array(
@@ -130,11 +92,6 @@ export const adminRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const isAdmin = await checkAdminDB(ctx);
-      if (!isAdmin) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
       await Promise.all(
         input.decisions.map(async ({ filename, action }) => {
           const file = dogSubmissionsBucket.file(filename);

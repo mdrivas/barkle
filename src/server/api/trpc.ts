@@ -131,3 +131,30 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+/**
+ * Admin (authenticated + admin) procedure
+ *
+ * If you want a query or mutation to ONLY be accessible to admin users, use this. It verifies
+ * the session is valid and guarantees the user has admin privileges.
+ */
+export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const profile = await ctx.db.query.profiles.findFirst({
+    where: (profiles, { eq }) => eq(profiles.userId, ctx.session.user.id),
+  });
+
+  if (!profile?.isAdmin) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin access required",
+    });
+  }
+
+  return next({
+    ctx: {
+      // infers the session and admin status
+      session: ctx.session,
+      profile,
+    },
+  });
+});

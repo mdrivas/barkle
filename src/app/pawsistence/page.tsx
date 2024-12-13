@@ -5,7 +5,7 @@ import { Card } from "~/components/ui/card";
 import { useToast } from "~/hooks/use-toast";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { cn } from "~/lib/utils";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -13,8 +13,8 @@ import { api } from "~/trpc/react";
 import { PawsistenceFinishedDialog } from "./components/PawsistenceFinishedDialog";
 import { IncorrectGuessDialog } from "./components/IncorrectGuessDialog";
 import { UsernameDialog } from "~/app/daily/components/UsernameDialog";
-import { useTempId } from "~/hooks/useTempId";
-
+import { useProfileContext } from "~/app/components/ProfileProvider";
+import { useSignIn } from "~/hooks/useSignIn";
 interface DogBreed {
   breed: string;
   imageUrl: string;
@@ -38,25 +38,25 @@ interface BreedsResponse {
 export default function PawsistenceGame() {
   const { data: session } = useSession();
   const { toast } = useToast();
-  const tempId = useTempId();
+  const { tempId } = useProfileContext();
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
+  const { handleGoogleSignIn } = useSignIn();
 
-  const { data: gameData } = api.pawsistence.getInitialState.useQuery(
-    {
-      tempId,
-    },
-    {
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      enabled: !!tempId || !!session?.user,
-    },
-  );
-
-  const utils = api.useUtils();
+  const { data: gameData, refetch: refetchGameData } =
+    api.pawsistence.getInitialState.useQuery(
+      {
+        tempId,
+      },
+      {
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        enabled: !!tempId || !!session?.user,
+      },
+    );
 
   const { mutate: saveGameResult } = api.pawsistence.saveGame.useMutation({
     onSuccess: () => {
-      void utils.pawsistence.getInitialState.invalidate();
+      void refetchGameData();
     },
   });
 
@@ -190,9 +190,7 @@ export default function PawsistenceGame() {
 
   const handleSignIn = async () => {
     if (tempId) {
-      await signIn("google", {
-        callbackUrl: `${window.location.pathname}`,
-      });
+      await handleGoogleSignIn();
     }
   };
 

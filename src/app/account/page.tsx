@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { Card } from "~/components/ui/card";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
@@ -17,12 +17,11 @@ import {
   ArrowLeft,
   LogOut,
   Share2,
-  Check,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { useToast } from "~/hooks/use-toast";
-import { useTempId } from "~/hooks/useTempId";
-
+import { useSignIn } from "~/hooks/useSignIn";
+import { useProfileContext } from "../components/ProfileProvider";
 const STAT_CARD_STYLES = {
   sky: {
     background: "bg-gradient-to-br from-sky-500/20 to-sky-600/10",
@@ -59,9 +58,13 @@ export default function AccountPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  const { data: userData, isLoading } = api.user.getProfile.useQuery(
-    undefined,
+  const { tempId } = useProfileContext();
+  const {
+    data: userData,
+    isLoading,
+    refetch: refetchProfile,
+  } = api.profile.getProfile.useQuery(
+    { tempId },
     {
       enabled: !!session?.user,
       staleTime: 1000 * 60 * 5,
@@ -70,12 +73,11 @@ export default function AccountPage() {
     },
   );
 
-  const tempId = useTempId();
+  const { handleGoogleSignIn } = useSignIn();
 
-  const utils = api.useUtils();
-  const { mutate: updateImage } = api.user.updateProfileImage.useMutation({
+  const { mutate: updateImage } = api.profile.updateProfileImage.useMutation({
     onSuccess: () => {
-      utils.user.getProfile.invalidate();
+      void refetchProfile();
     },
   });
 
@@ -120,11 +122,7 @@ export default function AccountPage() {
   };
 
   const signInWithGoogle = () => {
-    void signIn("google", {
-      prompt: "select_account",
-      callbackUrl: window.location.href,
-      tempId: tempId,
-    });
+    void handleGoogleSignIn();
   };
 
   const StatCard = ({

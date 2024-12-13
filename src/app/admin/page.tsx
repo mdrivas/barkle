@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { api } from "~/trpc/react";
 import Image from "next/image";
-import { Grid, List, CheckCircle, Clock, ImageIcon, Home } from "lucide-react";
+import { Grid, List, CheckCircle, Clock, ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NavigationBar } from "~/app/components/NavigationBar";
+import { useSession } from "next-auth/react";
+import { Loader2 } from "lucide-react";
+import { useSignIn } from "~/hooks/useSignIn";
 
 type ViewMode = "single" | "grid";
 
@@ -21,30 +24,39 @@ export default function AdminPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("single");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [decisions, setDecisions] = useState<ImageDecision[]>([]);
-  const utils = api.useUtils();
 
-  const { data: isAdmin, isLoading } = api.user.isAdmin.useQuery();
-  const { data: pendingImages, refetch } =
-    api.admin.getPendingImages.useQuery();
-  const { data: stats } = api.admin.getStats.useQuery();
+  const { handleGoogleSignIn } = useSignIn();
 
-  // Move hooks above any conditional returns
-  useEffect(() => {
-    if (!isLoading && !isAdmin) {
-      router.push("/");
-    }
-  }, [isLoading, isAdmin, router]);
+  const { data: session, status: sessionStatus } = useSession({
+    required: true,
+    onUnauthenticated() {
+      handleGoogleSignIn();
+    },
+  });
 
-  if (!isLoading && !isAdmin) {
-    return null;
-  }
+  const {
+    data: isAdmin,
+    isLoading: isAdminLoading,
+    refetch: refetchAdmin,
+  } = api.profile.isAdmin.useQuery(undefined, {
+    enabled: sessionStatus === "authenticated",
+    retry: false,
+  });
 
-  const currentImage = pendingImages?.[currentIndex];
+  const { data: pendingImages, refetch } = api.admin.getPendingImages.useQuery(
+    undefined,
+    {
+      enabled: !!isAdmin && sessionStatus === "authenticated",
+    },
+  );
 
-  // New mutation for batch processing
+  const { data: stats } = api.admin.getStats.useQuery(undefined, {
+    enabled: !!isAdmin && sessionStatus === "authenticated",
+  });
+
   const batchProcessMutation = api.admin.batchProcessImages.useMutation({
     onSuccess: async () => {
-      await utils.admin.getStats.invalidate();
+      await refetchAdmin();
       await refetch();
       setDecisions([]);
       setCurrentIndex(0);
@@ -56,7 +68,6 @@ export default function AdminPage() {
     action: "approve" | "reject",
   ) => {
     setDecisions((prev) => [...prev, { filename, action }]);
-    // Move to next image
     if (currentIndex >= (pendingImages?.length ?? 0) - 1) {
       setCurrentIndex(0);
     } else {
@@ -68,6 +79,37 @@ export default function AdminPage() {
     if (decisions.length === 0) return;
     await batchProcessMutation.mutateAsync({ decisions });
   };
+
+  if (sessionStatus === "loading" || isAdminLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#1a1a1b]">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+          <p className="text-sm text-zinc-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (sessionStatus === "authenticated" && isAdmin === false) {
+    router.push("/");
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#1a1a1b]">
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-zinc-400">Access Denied</p>
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/")}
+            className="text-green-500"
+          >
+            Return Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentImage = pendingImages?.[currentIndex];
 
   return (
     <div className="min-h-screen bg-[#1a1a1b]">
@@ -246,7 +288,6 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Fixed Submit Changes Button */}
           {decisions.length > 0 && (
             <div className="fixed bottom-8 right-8 z-10">
               <Button

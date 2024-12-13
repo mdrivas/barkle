@@ -14,7 +14,7 @@ import { DailyInstructions } from "./components/DailyInstructions";
 import { UsernameDialog } from "./components/UsernameDialog";
 import { useRouter, useSearchParams } from "next/navigation";
 import seedrandom from "seedrandom";
-import { useTempId } from "~/hooks/useTempId";
+import { useProfileContext } from "~/app/components/ProfileProvider";
 
 interface DogBreed {
   breed: string;
@@ -49,7 +49,7 @@ export default function DailyGame() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const tempId = useTempId();
+  const { tempId } = useProfileContext();
 
   // Single canPlayQuery
   const canPlayQuery = api.score.canPlayToday.useQuery(
@@ -317,7 +317,11 @@ export default function DailyGame() {
   }, [session?.user, tempId, searchParams]);
 
   // Add new profile query and mutation
-  const profileQuery = api.profile.getProfile.useQuery(
+  const {
+    data: userProfile,
+    isFetched: userProfileFetched,
+    refetch: refetchProfile,
+  } = api.profile.getProfile.useQuery(
     {
       tempId,
     },
@@ -330,28 +334,15 @@ export default function DailyGame() {
 
   // Update the instructions effect to check migration status
   useEffect(() => {
-    if (
-      canPlayQuery.data?.canPlay &&
-      !canPlayQuery.data.canPlay &&
-      !showGameResults
-    ) {
-      if (!profileQuery.data && !session?.user) {
-        setShowInstructions(true);
-      } else {
-        setShowInstructions(true);
-      }
+    if (userProfileFetched && !userProfile) {
+      setShowInstructions(true);
     }
-  }, [
-    canPlayQuery.data?.canPlay,
-    showGameResults,
-    profileQuery.data,
-    session?.user,
-  ]);
+  }, [userProfileFetched, userProfile]);
 
   // Update handleInstructionsClose to check migration status
   const handleInstructionsClose = () => {
     setShowInstructions(false);
-    if (!profileQuery.data && !session?.user) {
+    if (!userProfile) {
       setTimeout(() => {
         setShowUsernameDialog(true);
       }, 100);
@@ -368,7 +359,7 @@ export default function DailyGame() {
         });
 
         // Refetch profile data
-        void profileQuery.refetch();
+        void refetchProfile();
       }
       setShowUsernameDialog(false);
     } catch (error) {

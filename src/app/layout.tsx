@@ -9,7 +9,8 @@ import { Toaster } from "~/components/ui/toaster";
 import { AuthProvider } from "./components/AuthProvider";
 import { Suspense } from "react";
 import { TooltipProvider } from "~/components/ui/tooltip";
-import { GoogleAnalytics } from "~/components/GoogleAnalytics"; // Add this import
+import { GoogleAnalytics } from "./components/GoogleAnalytics"; // Add this import
+import { ProfileProvider } from "./components/ProfileProvider";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -65,15 +66,17 @@ export default function RootLayout({
           <AuthProvider>
             <Toaster />
             <TRPCReactProvider>
-              <Suspense
-                fallback={
-                  <div className="flex min-h-screen items-center justify-center">
-                    <div className="h-32 w-32 animate-spin rounded-full border-t-2 border-emerald-500" />
-                  </div>
-                }
-              >
-                {children}
-              </Suspense>
+              <ProfileProvider>
+                <Suspense
+                  fallback={
+                    <div className="flex min-h-screen items-center justify-center">
+                      <div className="h-32 w-32 animate-spin rounded-full border-t-2 border-emerald-500" />
+                    </div>
+                  }
+                >
+                  {children}
+                </Suspense>
+              </ProfileProvider>
             </TRPCReactProvider>
           </AuthProvider>
         </TooltipProvider>

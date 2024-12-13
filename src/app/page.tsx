@@ -7,14 +7,15 @@ import { LeaderboardModal } from "./components/LeaderboardModal";
 import Image from "next/image";
 import Link from "next/link";
 import { GameModeModal } from "./components/GameModeModal";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { Roboto } from "next/font/google";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DogSubmissionModal } from "./components/DogSubmissionModal";
 import { api } from "~/trpc/react";
 import { NewUserDialog } from "./components/NewUserDialog";
-import { useTempId } from "~/hooks/useTempId";
+
+import { useSignIn } from "~/hooks/useSignIn";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function Home() {
   const searchParams = useSearchParams();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showNewUserDialog, setShowNewUserDialog] = useState(false);
+  const { handleGoogleSignIn } = useSignIn();
 
   useEffect(() => {
     if (searchParams.get("showLeaderboard") === "true") {
@@ -37,9 +39,12 @@ export default function Home() {
 
   const { data: gamesCount } = api.score.getTodayGames.useQuery();
 
-  const { data: usernameCheck } = api.user.needsUsername.useQuery(undefined, {
-    enabled: !!session?.user,
-  });
+  const { data: usernameCheck } = api.profile.needsUsername.useQuery(
+    undefined,
+    {
+      enabled: !!session?.user,
+    },
+  );
 
   useEffect(() => {
     if (usernameCheck?.needsUsername && usernameCheck?.isNewUser) {
@@ -47,15 +52,9 @@ export default function Home() {
     }
   }, [usernameCheck]);
 
-  const tempId = useTempId();
-
   // Generic sign-in function you can use throughout your app
   const handleSignIn = () => {
-    void signIn("google", {
-      prompt: "select_account",
-      callbackUrl: window.location.href,
-      tempId: tempId,
-    });
+    void handleGoogleSignIn();
   };
 
   return (

@@ -10,13 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { GoogleLogo } from "~/components/icons";
 import { api } from "~/trpc/react";
 import { ShareResultsDialog } from "~/app/components/ShareResultsDialog";
 import { useToast } from "~/hooks/use-toast";
 import { Share2 } from "lucide-react";
-import { useTempId } from "~/hooks/useTempId";
+import { useSignIn } from "~/hooks/useSignIn";
+import { useProfileContext } from "~/app/components/ProfileProvider";
 
 // Props interface for GameFinishedDialog component
 interface GameFinishedDialogProps {
@@ -39,12 +40,13 @@ export function GameFinishedDialog({
   const { data: session } = useSession();
   const saveScore = api.score.saveScore.useMutation();
   const { toast } = useToast();
+  const { tempId } = useProfileContext();
 
   // Add state for share dialog
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   // Use the custom hook to get tempId
-  const tempId = useTempId();
+  const { handleGoogleSignIn } = useSignIn();
 
   // Add state to track if username has been set
   const [shouldShowResults, setShouldShowResults] =
@@ -68,17 +70,18 @@ export function GameFinishedDialog({
 
     try {
       if (tempId) {
+        // Save the score first
         await saveScore.mutateAsync({
           score,
           results: resultsString,
           tempId,
           currentGuessStreak: 0,
         });
-      }
 
-      void signIn("google", {
-        callbackUrl: `${window.location.pathname}&score=${score}&results=${resultsString}`,
-      });
+        void handleGoogleSignIn(
+          `${window.location.pathname}?score=${score}&results=${resultsString}`,
+        );
+      }
     } catch (error) {
       console.error("Failed to save score for anonymous user:", error);
       toast({

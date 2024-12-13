@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
-import { Button } from "~/components/ui/button";
 import { Terms } from "~/app/components/Terms";
 import { Privacy } from "~/app/components/Privacy";
 import { FAQSheet } from "~/app/components/FAQSheet";
@@ -16,7 +15,7 @@ interface NavItem {
 
 export function NavigationBar() {
   const { data: session } = useSession();
-  const { data: isAdmin } = api.user.isAdmin.useQuery(undefined, {
+  const { data: isAdmin } = api.profile.isAdmin.useQuery(undefined, {
     enabled: !!session?.user,
   });
 

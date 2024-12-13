@@ -1,12 +1,10 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { eq } from "drizzle-orm";
 import {
   getServerSession,
   type DefaultSession,
   type NextAuthOptions,
 } from "next-auth";
 import { type Adapter } from "next-auth/adapters";
-import DiscordProvider from "next-auth/providers/discord";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 
@@ -14,7 +12,6 @@ import { env } from "~/env";
 import { db } from "~/server/db";
 import {
   accounts,
-  profiles,
   sessions,
   users,
   verificationTokens,
@@ -40,11 +37,8 @@ declare module "next-auth" {
     role: "admin" | "user";
     username: string | null;
   }
-
-  interface Account {
-    tempId?: string;
-  }
 }
+
 /**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
@@ -52,32 +46,6 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    signIn: async ({ user, account }) => {
-      if (account && user) {
-        try {
-          // Get temp ID from query parameter (you'll need to pass this during OAuth flow)
-          const tempId = account.tempId as string | undefined;
-
-          if (tempId) {
-            // Update the existing temp user record with the new auth details
-            await db
-              .update(profiles)
-              .set({
-                userId: user.id,
-                tempId: null,
-              })
-              .where(eq(profiles.tempId, tempId));
-
-            // Set the user's ID to the temp ID to maintain the same record
-            user.id = tempId;
-          }
-        } catch (error) {
-          console.error("Error syncing temp user:", error);
-          // Still allow sign in even if sync fails
-        }
-      }
-      return true;
-    },
     session: ({ session, token, user }) => ({
       ...session,
       user: {

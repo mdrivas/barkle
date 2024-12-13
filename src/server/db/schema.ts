@@ -61,16 +61,6 @@ export const users = createTable("user", {
     mode: "date",
     withTimezone: true,
   }).default(sql`CURRENT_TIMESTAMP`),
-  username: varchar("username", { length: 30 }).unique(),
-  isAdmin: boolean("is_admin").default(false).notNull(),
-  currentDailyStreak: integer("current_daily_streak").default(0),
-  highestDailyStreak: integer("highest_daily_streak").default(0),
-  currentGuessStreak: integer("current_guess_streak").default(0),
-  highestGuessStreak: integer("highest_guess_streak").default(0),
-  lastPlayedAt: timestamp("last_played_at", { withTimezone: true }),
-  highestPawsistenceStreak: integer("highest_pawsistence_streak").default(0),
-  pawsistencePlaysToday: integer("pawsistence_plays_today").default(0),
-  lastPawsistenceAt: timestamp("last_pawsistence_at", { withTimezone: true }),
 });
 
 export type User = InferSelectModel<typeof users>;
@@ -78,11 +68,14 @@ export type NewUser = InferInsertModel<typeof users>;
 
 export const profiles = createTable("profile", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id, {
-    onDelete: "cascade",
-  }),
+  userId: varchar("user_id", { length: 255 })
+    .references(() => users.id, {
+      onDelete: "cascade",
+    })
+    .unique(),
   username: varchar("username", { length: 30 }).unique(),
   tempId: varchar("temp_id", { length: 255 }).unique().$type<string | null>(),
+  profileImageUrl: varchar("profile_image_url", { length: 255 }),
   isAdmin: boolean("is_admin").default(false).notNull(),
   currentDailyStreak: integer("current_daily_streak").default(0),
   highestDailyStreak: integer("highest_daily_streak").default(0),
