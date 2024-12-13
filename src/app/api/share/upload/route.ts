@@ -29,8 +29,19 @@ export async function POST(request: Request) {
       },
     });
 
-    const publicUrl = `https://storage.googleapis.com/${env.GCS_INSTAGRAM_STORIES_BUCKET}/${filename}`;
-    return NextResponse.json({ imageUrl: publicUrl });
+    // Use signed URL instead of making public
+    const [url] = await blob.getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+    });
+    
+    const instagramUrl = `instagram-stories://share?source_application=barkle&background_image=${encodeURIComponent(url)}`;
+    
+    return NextResponse.json({ 
+      imageUrl: url,
+      instagramUrl: instagramUrl 
+    });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });

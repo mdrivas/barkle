@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { cn } from "~/lib/utils";
-import { Check, Share2, Home, Instagram } from "lucide-react";
+import { Check, Share2, Instagram } from "lucide-react";
 import domtoimage from 'dom-to-image-more';
 import { ShareableCard } from "./ShareableCard";
 import { useToast } from "~/hooks/use-toast";
@@ -24,8 +24,8 @@ interface ShareResultsDialogProps {
 
 interface UploadResponse {
   imageUrl?: string;
+  instagramUrl?: string;
   error?: string;
-  details?: string;
 }
 
 export function ShareResultsDialog({
@@ -142,11 +142,13 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
         body: formData,
       });
 
-      const data = await response.json() as UploadResponse;
+      const data = (await response.json()) as UploadResponse;
       if (!response.ok) throw new Error(data.error || "Upload failed");
       
-      if (!data.imageUrl) throw new Error("No image URL received");
-      window.location.href = `instagram://story-camera?media=${encodeURIComponent(data.imageUrl)}`;
+      if (!data.instagramUrl) throw new Error("No Instagram URL received");
+      
+      // Use the Instagram URL scheme
+      window.location.href = data.instagramUrl;
       
     } catch (error) {
       console.error("Error:", error);

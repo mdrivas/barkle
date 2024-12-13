@@ -249,7 +249,7 @@ export function GameFinishedDialog({
           <div className="mt-4 flex flex-col items-center gap-4">
             <div className="text-center">
               <h2 className="mb-4 text-2xl font-bold text-zinc-100 sm:text-2xl">
-                {session ? "Daily Challenge Complete!" : "Today's Score"}
+                {session ? "Daily Barkle Complete!" : "Today's Score"}
               </h2>
               <p className="mb-2 text-4xl font-bold">
                 <span className="text-emerald-500">{displayScore}/5</span>
