@@ -93,13 +93,11 @@ export default function AccountPage() {
       formData.append("file", file);
       formData.append("type", "profile");
 
-
       // Upload to your preferred service
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
-
 
       if (!response.ok) {
         throw new Error("Upload failed");
@@ -107,10 +105,8 @@ export default function AccountPage() {
 
       const { url } = await response.json();
 
-
       // Update user profile with new image URL
       await updateImage({ imageUrl: url });
-
 
       // Clear file state but keep preview
       setImageFile(null);
@@ -140,22 +136,11 @@ export default function AccountPage() {
   }: {
     title: string;
     value: number;
-    icon: any;
-  const StatCard = ({
-    title,
-    value,
-    icon: Icon,
-    color,
-    isLoading,
-  }: {
-    title: string;
-    value: number;
-    icon: any;
+    icon: any; // Consider using a more specific type like LucideIcon
     color: keyof typeof STAT_CARD_STYLES;
     isLoading: boolean;
   }) => {
     const styles = STAT_CARD_STYLES[color];
-
 
     return (
       <Card
@@ -166,23 +151,8 @@ export default function AccountPage() {
           "shadow-lg hover:shadow-xl",
         )}
       >
-      <Card
-        className={cn(
-          "relative overflow-hidden p-4 transition-all duration-200 hover:scale-[1.02]",
-          styles.background,
-          "ring-1 ring-white/10",
-          "shadow-lg hover:shadow-xl",
-        )}
-      >
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                "rounded-xl p-2.5",
-                styles.icon,
-                "ring-1 ring-white/10",
-              )}
-            >
             <div
               className={cn(
                 "rounded-xl p-2.5",
@@ -202,28 +172,14 @@ export default function AccountPage() {
                     styles.highlight,
                   )}
                 >
-                <p
-                  className={cn(
-                    "text-2xl font-bold tracking-tight",
-                    styles.highlight,
-                  )}
-                >
                   {value}
                 </p>
               )}
-              <p className={cn("text-sm font-medium", styles.text)}>{title}</p>
               <p className={cn("text-sm font-medium", styles.text)}>{title}</p>
             </div>
           </div>
         </div>
         {/* Decorative corner gradient */}
-        <div
-          className={cn(
-            "absolute -right-4 -top-4 h-24 w-24 rounded-full blur-2xl",
-            styles.icon,
-            "opacity-20",
-          )}
-        />
         <div
           className={cn(
             "absolute -right-4 -top-4 h-24 w-24 rounded-full blur-2xl",
@@ -285,9 +241,6 @@ export default function AccountPage() {
           <h1 className="text-center text-2xl font-bold text-zinc-50">
             Welcome to Barkle
           </h1>
-          <h1 className="text-center text-2xl font-bold text-zinc-50">
-            Welcome to Barkle
-          </h1>
           <button
             onClick={signInWithGoogle}
             className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-6 py-3 text-black transition-colors hover:bg-gray-50"
@@ -296,10 +249,6 @@ export default function AccountPage() {
             Continue with Google
           </button>
           <Link href="/" className="block text-center">
-            <Button
-              variant="ghost"
-              className="text-zinc-400 hover:text-zinc-200"
-            >
             <Button
               variant="ghost"
               className="text-zinc-400 hover:text-zinc-200"
@@ -322,16 +271,10 @@ export default function AccountPage() {
               variant="ghost"
               className="text-zinc-400 hover:text-zinc-200"
             >
-            <Button
-              variant="ghost"
-              className="text-zinc-400 hover:text-zinc-200"
-            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
           </Link>
-          <Button
-            onClick={() => void signOut({ callbackUrl: "/" })}
           <Button
             onClick={() => void signOut({ callbackUrl: "/" })}
             variant="destructive"
@@ -359,7 +302,6 @@ export default function AccountPage() {
                 )}
               </div>
               <label
-              <label
                 className={cn(
                   "absolute bottom-0 right-0 cursor-pointer",
                   isUploading && "pointer-events-none",
@@ -374,12 +316,7 @@ export default function AccountPage() {
                   disabled={isUploading}
                 />
                 <div
-                <div
                   className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-full",
-                    isUploading
-                      ? "bg-gray-500"
-                      : "bg-green-500 hover:bg-green-600",
                     "flex h-8 w-8 items-center justify-center rounded-full",
                     isUploading
                       ? "bg-gray-500"
@@ -395,13 +332,11 @@ export default function AccountPage() {
               </label>
             </div>
 
-
             <div className="text-center">
               {isLoading ? (
                 <Skeleton className="h-8 w-32" />
               ) : (
                 <p className="text-2xl font-bold text-zinc-50">
-                  {userData?.username ?? "User"}
                   {userData?.username ?? "User"}
                 </p>
               )}
@@ -413,10 +348,6 @@ export default function AccountPage() {
         <div className="space-y-6">
           {/* Daily Barkle Section */}
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-zinc-200">
-              Daily Barkle
-            </h2>
-            <div className="mb-4 grid grid-cols-2 gap-4">
             <h2 className="mb-4 text-xl font-semibold text-zinc-200">
               Daily Barkle
             </h2>
@@ -459,9 +390,6 @@ export default function AccountPage() {
             <h2 className="mb-4 text-xl font-semibold text-zinc-200">
               Pawsistence
             </h2>
-            <h2 className="mb-4 text-xl font-semibold text-zinc-200">
-              Pawsistence
-            </h2>
             <div className="grid grid-cols-2 gap-4">
               <StatCard
                 title="Plays Today"
@@ -485,7 +413,6 @@ export default function AccountPage() {
           <Button
             onClick={handleShare}
             className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-700/20 transition-all duration-200 hover:from-emerald-700 hover:to-emerald-600 hover:shadow-emerald-700/40"
-            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-700/20 transition-all duration-200 hover:from-emerald-700 hover:to-emerald-600 hover:shadow-emerald-700/40"
             size="lg"
           >
             <Share2 className="mr-2 h-5 w-5" />
@@ -495,6 +422,4 @@ export default function AccountPage() {
       </div>
     </div>
   );
-}
-
 }
