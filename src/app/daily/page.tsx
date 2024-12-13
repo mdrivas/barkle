@@ -43,6 +43,15 @@ function generateDailySeededRandom(seed: string) {
   return seedrandom(seed);
 }
 
+interface DailyBreedsResponse {
+  breeds: string;
+}
+
+interface BreedImagesResponse {
+  message: string[];
+  status: string;
+}
+
 export default function DailyGame() {
   const { data: session } = useSession();
   const { toast } = useToast();
@@ -146,7 +155,7 @@ export default function DailyGame() {
   const fetchNewRound = useCallback(async () => {
     if (!dailyBreedsQuery.data) return;
 
-    const parsedBreeds: DogBreed[] = JSON.parse(dailyBreedsQuery.data.breeds);
+    const parsedBreeds = JSON.parse((dailyBreedsQuery.data as DailyBreedsResponse).breeds) as DogBreed[];
     if (currentRoundIndex >= parsedBreeds.length) return;
 
     const currentBreed = parsedBreeds[currentRoundIndex];
@@ -154,7 +163,7 @@ export default function DailyGame() {
 
     // Get all possible breeds from the API
     const breedsResponse = await fetch("https://dog.ceo/api/breeds/list/all");
-    const breedsData: BreedsResponse = await breedsResponse.json();
+    const breedsData = await breedsResponse.json() as BreedsResponse;
 
     // Use round-specific seed for consistent randomization
     const roundSeed = `${currentRoundIndex}`;
@@ -168,8 +177,8 @@ export default function DailyGame() {
       const breedImagesResponse = await fetch(
         `https://dog.ceo/api/breed/${currentBreed.breed}/images`,
       );
-      const breedImagesData = await breedImagesResponse.json();
-      const images = breedImagesData.message as string[];
+      const breedImagesData = await breedImagesResponse.json() as BreedImagesResponse;
+      const images = breedImagesData.message;
 
       const imageIndex = Math.floor(roundRng() * images.length);
       selectedImage =
@@ -402,7 +411,7 @@ export default function DailyGame() {
             {/* Modern Score Display */}
             <div className="inline-flex items-center justify-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-sm">
               <div className="flex items-center gap-4">
-                {[...Array(5)].map((_, i) => (
+                {[...Array<undefined>(5)].map((_, i) => (
                   <div
                     key={i}
                     className={cn(

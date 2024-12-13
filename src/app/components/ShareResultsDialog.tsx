@@ -22,7 +22,11 @@ interface ShareResultsDialogProps {
   mode?: "daily" | "pawsistence";
 }
 
-
+interface UploadResponse {
+  imageUrl?: string;
+  error?: string;
+  details?: string;
+}
 
 export function ShareResultsDialog({
   score,
@@ -120,18 +124,30 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
     setIsGeneratingImage(true);
     try {
       // 1. Generate the image
+      console.log("Generating canvas...");
       const canvas = await html2canvas(shareableCardRef.current, {
         scale: 2,
         backgroundColor: "#18181B",
-        logging: false,
+        logging: true, // Enable logging
       });
+      console.log("Canvas generated");
 
-      // 2. Convert to blob for upload
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => resolve(blob!), 'image/png', 1.0);
+      // 2. Convert to blob
+      console.log("Converting to blob...");
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("Failed to create blob"));
+          }, 
+          'image/png', 
+          1.0
+        );
       });
+      console.log("Blob created, size:", blob.size);
 
       // 3. Upload to GCS
+      console.log("Uploading to GCS...");
       const formData = new FormData();
       formData.append('file', blob, 'share.png');
 
@@ -140,10 +156,16 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Upload failed');
+      console.log("Upload response status:", response.status);
+      const responseData = await response.json() as UploadResponse;
+      console.log("Upload response:", responseData);
+
+      if (!response.ok) throw new Error(`Upload failed: ${JSON.stringify(responseData)}`);
       
-      // 4. Get URL and open Instagram
-      const { imageUrl } = await response.json() as { imageUrl: string };
+      const { imageUrl } = responseData;
+      if (!imageUrl) throw new Error("No image URL received");
+
+      console.log("Opening Instagram with URL:", imageUrl);
       window.location.href = `instagram://story-camera?media=${encodeURIComponent(imageUrl)}`;
       
       toast({
@@ -151,10 +173,10 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
         className: "bg-zinc-800 border-zinc-700 text-zinc-50",
       });
     } catch (error) {
-      console.error(error);
+      console.error("Detailed error:", error);
       toast({
         variant: "destructive",
-        description: "Failed to share to Instagram",
+        description: `Share failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     } finally {
       setIsGeneratingImage(false);
