@@ -38,6 +38,7 @@ export function GameFinishedDialog({
   const { data: session } = useSession();
   const saveScore = api.score.saveScore.useMutation();
   const { toast } = useToast();
+  const migrateProfileMutation = api.profile.migrateProfile.useMutation();
 
   // Add state for share dialog
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -63,6 +64,30 @@ export function GameFinishedDialog({
   useEffect(() => {
     setTempId(localStorage.getItem("barkle_temp_id") ?? undefined);
   }, []);
+
+  // Add effect to handle auth return
+  useEffect(() => {
+    if (isReturningFromAuth && session?.user && tempId && !hasHandledAuthReturn) {
+      void migrateProfileMutation.mutateAsync(
+        { tempId },
+        {
+          onSuccess: () => {
+            setHasHandledAuthReturn(true);
+            setShouldShowResults(true);
+            // Refetch queries to get updated data
+            void todayScoreQuery.refetch();
+          },
+          onError: (error) => {
+            toast({
+              title: "Error",
+              description: "Failed to update profile. Please try again.",
+              variant: "destructive",
+            });
+          },
+        }
+      );
+    }
+  }, [isReturningFromAuth, session?.user, tempId, hasHandledAuthReturn]);
 
   // Define handleViewLeaderboard at the top level of the component
   const handleViewLeaderboard = () => {

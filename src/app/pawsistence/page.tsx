@@ -12,6 +12,7 @@ import { ArrowLeft } from "lucide-react";
 import { api } from "~/trpc/react";
 import { PawsistenceFinishedDialog } from "./components/PawsistenceFinishedDialog";
 import { IncorrectGuessDialog } from "./components/IncorrectGuessDialog";
+import { UsernameDialog } from "~/app/daily/components/UsernameDialog";
 
 interface DogBreed {
   breed: string;
@@ -33,50 +34,20 @@ interface BreedsResponse {
   status: string;
 }
 
-const STORAGE_KEY = "pawsistence_guest_plays";
-const STORAGE_LAST_PLAYED_KEY = "pawsistence_last_played";
-
-const getGuestPlaysRemaining = () => {
-  if (typeof window === "undefined") return 3;
-
-  const lastPlayedStr = localStorage.getItem(STORAGE_LAST_PLAYED_KEY);
-  const lastPlayed = lastPlayedStr ? new Date(lastPlayedStr) : null;
-
-  // Check if it's a new day in PST
-  const now = new Date();
-  const isNewDay =
-    !lastPlayed ||
-    now.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" }) !==
-      new Date(lastPlayed).toLocaleDateString("en-US", {
-        timeZone: "America/Los_Angeles",
-      });
-
-  if (isNewDay) {
-    localStorage.setItem(STORAGE_KEY, "0");
-    return 3;
-  }
-
-  const plays = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
-  return Math.max(0, 3 - plays);
-};
-
-const incrementGuestPlays = () => {
-  const plays = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
-  localStorage.setItem(STORAGE_KEY, String(plays + 1));
-  localStorage.setItem(STORAGE_LAST_PLAYED_KEY, new Date().toISOString());
-};
-
 export default function PawsistenceGame() {
   const { data: session } = useSession();
   const { toast } = useToast();
+  const [localTempId, setLocalTempId] = useState<string | null>(null);
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
 
   const { data: gameData } = api.pawsistence.getInitialState.useQuery(
-    undefined,
+    {
+      tempId: !session?.user ? localTempId ?? undefined : undefined,
+    },
     {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      enabled: !!session?.user,
+      enabled: true,
     },
   );
 
@@ -119,10 +90,8 @@ export default function PawsistenceGame() {
     isLoading: true,
     currentStreak: 0,
     gameOver: false,
-    playsRemaining: session?.user
-      ? (gameData?.playsRemaining ?? 3)
-      : getGuestPlaysRemaining(),
-    highestStreak: session?.user ? (gameData?.highestStreak ?? 0) : 0,
+    playsRemaining: gameData?.playsRemaining ?? 3,
+    highestStreak: gameData?.highestStreak ?? 0,
   });
 
   const happyBarkRef = useRef<HTMLAudioElement | null>(null);
@@ -200,11 +169,13 @@ export default function PawsistenceGame() {
       saveGameResult({
         streak: gameState.currentStreak,
         isNewHighScore: true,
+        tempId: !session?.user ? localTempId ?? undefined : undefined,
       });
     } else {
       saveGameResult({
         streak: gameState.currentStreak,
         isNewHighScore: false,
+        tempId: !session?.user ? localTempId ?? undefined : undefined,
       });
     }
   }, [gameState.currentStreak, gameData?.highestStreak, saveGameResult]);
@@ -221,7 +192,6 @@ export default function PawsistenceGame() {
 
     await signIn("google", {
       callbackUrl: `${window.location.pathname}?tempId=${tempId}`,
-      tempId: tempId,
     });
   };
 
@@ -234,27 +204,20 @@ export default function PawsistenceGame() {
 
     if (gameState.isLoading || gameState.gameOver) return;
 
-    // Check if non-logged in user has reached play limit
-    if (!session?.user && getGuestPlaysRemaining() <= 0) {
-      setShowNoPlaysDialog(true);
-      return;
-    }
-
     const isCorrect = breed === gameState.currentBreed?.breed;
     setAnsweredBreed(breed);
 
     if (isCorrect) {
       void happyBarkRef.current?.play();
       const newStreak = gameState.currentStreak + 1;
+      const isNewHighScore = newStreak > (gameData?.highestStreak ?? 0);
 
-      // If user is logged in, check and save new high score
-      if (session?.user) {
-        const isNewHighScore = newStreak > (gameData?.highestStreak ?? 0);
-        saveGameResult({
-          streak: newStreak,
-          isNewHighScore,
-        });
-      }
+      // Save game for both logged-in and temporary users
+      saveGameResult({
+        streak: newStreak,
+        isNewHighScore,
+        tempId: !session?.user ? localTempId ?? undefined : undefined,
+      });
 
       setTimeout(() => {
         setAnsweredBreed(null);
@@ -267,33 +230,16 @@ export default function PawsistenceGame() {
     } else {
       void angryBarkRef.current?.play();
 
-      if (session?.user) {
-        // Let the mutation's onSuccess handle all state updates
-        incrementPlays();
-        // Show the dialog and wait for user interaction
-        setShowIncorrectDialog(true);
-      } else {
-        // Only increment guest plays on incorrect answers
-        incrementGuestPlays();
-        const remainingPlays = getGuestPlaysRemaining();
+      // Increment plays for both logged-in and temporary users
+      incrementPlays({
+        tempId: !session?.user ? localTempId ?? undefined : undefined,
+      });
 
-        setGameState((prev) => ({
-          ...prev,
-          gameOver: remainingPlays <= 0,
-          playsRemaining: remainingPlays,
-        }));
-
-        if (remainingPlays <= 0) {
-          setShowNoPlaysDialog(true);
-        } else {
-          setShowIncorrectDialog(true);
-        }
-
-        // Toast remains the same
+      if (!session?.user) {
+        // Show sign-in toast for temporary users
         toast({
-          title: "Sign in to save your streak!",
-          description:
-            "Create an account to track your progress and compete on the leaderboard.",
+          title: "Want to secure your progress?",
+          description: "Sign in to protect your stats, submit dog photos, and unlock more features!",
           action: (
             <Button
               onClick={handleSignIn}
@@ -359,62 +305,117 @@ export default function PawsistenceGame() {
   // Add effect to check guest plays on mount
   useEffect(() => {
     if (!session?.user) {
-      const remainingPlays = getGuestPlaysRemaining();
-
       setGameState((prev) => ({
         ...prev,
-        playsRemaining: remainingPlays,
-        gameOver: remainingPlays <= 0,
+        playsRemaining: gameData?.playsRemaining ?? 3,
+        gameOver: !(gameData?.canPlay ?? true),
       }));
 
-      // If no plays remaining, show the finished dialog
-      if (remainingPlays <= 0) {
+      if (!(gameData?.canPlay ?? true)) {
         setShowNoPlaysDialog(true);
       }
     }
-  }, [session?.user]);
+  }, [session?.user, gameData]);
 
-  // Add effect to check for midnight PST reset
+  // Add profileQuery near other queries
+  const profileQuery = api.profile.getProfile.useQuery(
+    {
+      tempId: localTempId ?? undefined,
+    },
+    {
+      enabled: !session?.user,
+    }
+  );
+
+  const createProfileMutation = api.profile.createTempProfile.useMutation();
+
+  // Replace the tempId effect with this one
   useEffect(() => {
-    if (session?.user) return; // Only for non-logged in users
-
-    // Function to check if it's a new day in PST
-    const checkAndResetPlays = () => {
-      const lastPlayedStr = localStorage.getItem(STORAGE_LAST_PLAYED_KEY);
-      if (!lastPlayedStr) return;
-
-      const lastPlayed = new Date(lastPlayedStr);
-      const now = new Date();
-
-      const isNewDay =
-        now.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" }) !==
-        lastPlayed.toLocaleDateString("en-US", {
-          timeZone: "America/Los_Angeles",
+    if (!session?.user) {
+      const storedTempId = localStorage.getItem("barkle_temp_id");
+      
+      if (storedTempId) {
+        setLocalTempId(storedTempId);
+      } else {
+        // Only create new tempId and profile if we don't have one
+        const newTempId = crypto.randomUUID();
+        localStorage.setItem("barkle_temp_id", newTempId);
+        setLocalTempId(newTempId);
+        
+        // Create a temporary profile
+        void createProfileMutation.mutateAsync({
+          tempId: newTempId,
+          username: `Guest${Math.floor(Math.random() * 10000)}`,
         });
-
-      if (isNewDay) {
-        // Reset plays and update state
-        localStorage.setItem(STORAGE_KEY, "0");
-        setGameState((prev) => ({
-          ...prev,
-          playsRemaining: 3,
-          gameOver: false,
-        }));
-        setShowNoPlaysDialog(false);
       }
+    }
+  }, [session?.user, createProfileMutation]);
+
+  // Add state for username dialog
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+
+  // Add username submit handler
+  const onUsernameSubmit = async (username: string) => {
+    try {
+      if (!session?.user && localTempId) {
+        await createProfileMutation.mutateAsync({
+          username,
+          tempId: localTempId,
+        });
+        void profileQuery.refetch();
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Add effect to check for username
+  useEffect(() => {
+    if (!session?.user && localTempId && !profileQuery.isLoading) {
+      if (!profileQuery.data?.username) {
+        setShowUsernameDialog(true);
+      }
+    }
+  }, [session?.user, localTempId, profileQuery.data?.username, profileQuery.isLoading]);
+
+  // Add migrateProfile mutation
+  const migrateProfileMutation = api.profile.migrateProfile.useMutation();
+
+  // Add gameDataQuery near other queries
+  const gameDataQuery = api.pawsistence.getInitialState.useQuery({
+    tempId: localTempId ?? undefined,
+  });
+
+  // Update useEffect to handle auth return with cleanup and flags
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const tempId = searchParams.get("tempId");
+    let isMounted = true;
+    let hasMigrated = false;
+
+    // Only run migration if we have both session and tempId
+    if (session?.user && tempId && !hasMigrated) {
+      hasMigrated = true; // Prevent multiple migrations
+      
+      void migrateProfileMutation.mutateAsync(
+        { tempId },
+        {
+          onSuccess: () => {
+            if (isMounted) {
+              void profileQuery.refetch();
+              void gameDataQuery.refetch();
+              // Clear tempId from URL
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          },
+        }
+      );
+    }
+
+    return () => {
+      isMounted = false;
     };
-
-    // Check immediately
-    checkAndResetPlays();
-
-    // Set up interval to check every minute
-    const interval = setInterval(checkAndResetPlays, 60000);
-
-    // Cleanup
-    return () => clearInterval(interval);
-  }, [session?.user]);
-
-  // Update PawsistenceFinishedDialog to include stored streak
+  }, [session?.user]); // Only depend on session change
 
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-50">
@@ -527,6 +528,14 @@ export default function PawsistenceGame() {
         playsRemaining={gameState.playsRemaining}
         highestStreak={gameData?.highestStreak ?? 0}
       />
+
+      {showUsernameDialog && (
+        <UsernameDialog
+          isOpen={showUsernameDialog}
+          onClose={() => setShowUsernameDialog(false)}
+          onSubmit={onUsernameSubmit}
+        />
+      )}
     </div>
   );
 }

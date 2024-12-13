@@ -33,7 +33,7 @@ export function LeaderboardModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 sm:max-w-[500px] gap-4 [&>button]:text-white">
+      <DialogContent className="bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 sm:max-w-[500px] sm:max-h-[80vh] h-[600px] gap-4 [&>button]:text-white">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-zinc-50">
             🏆 Top Scores 🏆

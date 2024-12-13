@@ -14,11 +14,16 @@ type DailyScore = {
   currentStreak: number | null;
   dailyStreak: number | null;
   userId: string | null;
+  tempId: string | null;
+  isCurrentUser: boolean;
 };
 
 type PawsistenceScore = {
   username: string | null;
   highestStreak: number | null;
+  userId: string | null;
+  tempId: string | null;
+  isCurrentUser: boolean;
 };
 
 const isPawsistenceScore = (score: DailyScore | PawsistenceScore): score is PawsistenceScore => 
@@ -28,8 +33,12 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
   const { data: session } = useSession();
   const isPawsistence = mode === "pawsistence";
   
-  const dailyLeaderboard = api.score.getDailyLeaderboard.useQuery();
-  const pawsistenceLeaderboard = api.score.getPawsistenceLeaderboard.useQuery();
+  const dailyLeaderboard = api.score.getDailyLeaderboard.useQuery({
+    tempId: !session?.user ? localStorage.getItem("barkle_temp_id") ?? undefined : undefined,
+  });
+  const pawsistenceLeaderboard = api.score.getPawsistenceLeaderboard.useQuery({
+    tempId: !session?.user ? localStorage.getItem("barkle_temp_id") ?? undefined : undefined,
+  });
 
   const data = mode === "daily" ? dailyLeaderboard.data : pawsistenceLeaderboard.data;
   const isLoading = mode === "daily" ? dailyLeaderboard.isLoading : pawsistenceLeaderboard.isLoading;
@@ -48,7 +57,7 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
     </div>;
   }
 
-  const userScore = data.find(entry => entry.username === session?.user?.name);
+  const userScore = data?.find(entry => entry.isCurrentUser);
 
   return (
     <>
@@ -56,22 +65,24 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
       {userScore && (
         <div className="bg-green-900/20 rounded-lg p-3 border border-green-900/30">
           <div className="text-green-500 text-xs font-medium mb-2">
-            {isPawsistence ? "Your Best Streak" : "Your Score Today"}
+            Your Best Streak
           </div>
-          <div className={cn("grid gap-2 text-xs items-center", 
-            isPawsistence ? "grid-cols-2" : "grid-cols-5"
+          <div className={cn("grid items-center", 
+            isPawsistence 
+              ? "grid-cols-3 gap-2" // Match the 3 columns for pawsistence
+              : "grid-cols-5 gap-2" // Match the 5 columns for daily
           )}>
-            <div className="text-green-500">
+            <div className="text-green-500 text-center font-bold">
               #{data.findIndex(entry => entry.username === userScore.username) + 1}
             </div>
             <div className="text-zinc-100 truncate">{userScore.username}</div>
             {isPawsistenceScore(userScore) ? (
-              <div className="text-amber-500">{userScore.highestStreak}🔥</div>
+              <div className="text-amber-500 text-center">{userScore.highestStreak}🔥</div>
             ) : (
               <>
-                <div className="text-amber-500">{userScore.score}/5</div>
-                <div className="text-green-500">{userScore.currentStreak}🔥</div>
-                <div className="text-amber-500">{userScore.dailyStreak}🔥</div>
+                <div className="text-amber-500 text-center">{userScore.score}/5</div>
+                <div className="text-green-500 text-center">{userScore.currentStreak}🔥</div>
+                <div className="text-amber-500 text-center">{userScore.dailyStreak}🔥</div>
               </>
             )}
           </div>
@@ -85,18 +96,18 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
         <div className="text-center">Rank</div>
         <div>Player</div>
         {isPawsistence ? (
-          <div>Best Streak</div>
+          <div className="text-center">Best Streak</div>
         ) : (
           <>
-            <div>Score</div>
-            <div>Streak</div>
-            <div>Daily</div>
+            <div className="text-center">Score</div>
+            <div className="text-center">Streak</div>
+            <div className="text-center">Daily</div>
           </>
         )}
       </div>
 
       {/* Scores List */}
-      <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+      <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800/50">
         {data.map((entry, i) => (
           <div 
             key={entry.username}
@@ -116,12 +127,12 @@ export function LeaderboardContent({ mode }: LeaderboardContentProps) {
               "font-semibold": i < 3
             })}>{entry.username}</div>
             {isPawsistenceScore(entry) ? (
-              <div className="text-amber-500">{entry.highestStreak}🔥</div>
+              <div className="text-amber-500 text-center">{entry.highestStreak}🔥</div>
             ) : (
               <>
-                <div className="text-amber-500">{entry.score}/5</div>
-                <div className="text-green-500">{entry.currentStreak}🔥</div>
-                <div className="text-amber-500">{entry.dailyStreak}🔥</div>
+                <div className="text-amber-500 text-center">{entry.score}/5</div>
+                <div className="text-green-500 text-center">{entry.currentStreak}🔥</div>
+                <div className="text-amber-500 text-center">{entry.dailyStreak}🔥</div>
               </>
             )}
           </div>

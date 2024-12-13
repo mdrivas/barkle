@@ -175,12 +175,12 @@ export default function AccountPage() {
   };
 
   const { data: barkleStats, isLoading: isBarkleLoading } = api.score.getBarkleStats.useQuery(
-    { userId: session?.user?.id ?? '' },
+    undefined,
     { enabled: !!session?.user?.id }
   );
 
   const { data: pawsistenceStats, isLoading: isPawsistenceLoading } = api.score.getPawsistenceStats.useQuery(
-    { userId: session?.user?.id ?? '' },
+    undefined,
     { enabled: !!session?.user?.id }
   );
 
@@ -190,7 +190,7 @@ export default function AccountPage() {
     const statsText = `🐕 MY BARKLE STATS 🐕
 
 📊 DAILY BARKLE
-━━━━━━━━━��━━━━━
+━━━━━━━━━━━━━━━
 🎮 Games Played: ${barkleStats?.gamesPlayed ?? 0}
 🔥 Daily Streak: ${barkleStats?.dailyStreak ?? 0}
 ✨ Current Guess Streak: ${userData?.currentGuessStreak ?? 0}

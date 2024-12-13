@@ -54,15 +54,14 @@ export const users = createTable("user", {
     .notNull()
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  tempId: varchar("temp_id", { length: 255 }).unique(),
+  image: varchar("image", { length: 255 }),
   name: varchar("name", { length: 255 }),
-  username: varchar("username", { length: 30 }).unique(),
   email: varchar("email", { length: 255 }),
   emailVerified: timestamp("email_verified", {
     mode: "date",
     withTimezone: true,
   }).default(sql`CURRENT_TIMESTAMP`),
-  image: varchar("image", { length: 255 }),
+  username: varchar("username", { length: 30 }).unique(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   currentDailyStreak: integer("current_daily_streak").default(0),
   highestDailyStreak: integer("highest_daily_streak").default(0),
@@ -77,8 +76,39 @@ export const users = createTable("user", {
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const profiles = createTable("profile", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 })
+    .references(() => users.id),
+  username: varchar("username", { length: 30 }).unique(),
+  tempId: varchar("temp_id", { length: 255 }).unique().$type<string | null>(),
+  isAdmin: boolean("is_admin").default(false).notNull(),
+  currentDailyStreak: integer("current_daily_streak").default(0),
+  highestDailyStreak: integer("highest_daily_streak").default(0),
+  currentGuessStreak: integer("current_guess_streak").default(0),
+  highestGuessStreak: integer("highest_guess_streak").default(0),
+  lastPlayedAt: timestamp("last_played_at", { withTimezone: true }),
+  highestPawsistenceStreak: integer("highest_pawsistence_streak").default(0),
+  pawsistencePlaysToday: integer("pawsistence_plays_today").default(0),
+  lastPawsistenceAt: timestamp("last_pawsistence_at", { withTimezone: true }),
+});
+
+export type Profile = InferSelectModel<typeof profiles>;
+export type NewProfile = InferInsertModel<typeof profiles>;
+
+export const usersRelations = relations(users, ({ many, one }) => ({
   accounts: many(accounts),
+  profile: one(profiles, {
+    fields: [users.id],
+    references: [profiles.userId],
+  }),
+}));
+
+export const profilesRelations = relations(profiles, ({ one }) => ({
+  user: one(users, {
+    fields: [profiles.userId],
+    references: [users.id],
+  }),
 }));
 
 export const accounts = createTable(
