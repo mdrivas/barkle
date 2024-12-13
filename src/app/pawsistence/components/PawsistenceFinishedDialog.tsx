@@ -8,8 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "~/components/ui/dialog";
-import { useSession, signIn } from "next-auth/react";
-import { GoogleLogo } from "~/components/icons";
+import { useSession } from "next-auth/react";
 import { Share2, Trophy, Home } from "lucide-react";
 import { useState } from "react";
 import { ShareResultsDialog } from "~/app/components/ShareResultsDialog";
@@ -33,7 +32,6 @@ export function PawsistenceFinishedDialog({
   playsRemaining,
   highestStreak,
 }: PawsistenceFinishedDialogProps) {
-  const { data: session } = useSession();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const isOutOfPlays = playsRemaining === 0 && currentStreak === 0;
