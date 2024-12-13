@@ -60,6 +60,7 @@
   * {
     @apply border-border;
     -webkit-tap-highlight-color: transparent;
+    font-family: var(--font-poppins), system-ui, sans-serif;
   }
   body {
     @apply bg-background text-foreground;

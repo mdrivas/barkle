@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -10,9 +10,9 @@ import {
 } from "~/components/ui/dialog";
 import { cn } from "~/lib/utils";
 import { Check, Share2, Instagram } from "lucide-react";
-import domtoimage from 'dom-to-image-more';
-import { ShareableCard } from "./ShareableCard";
+import { generateShareImage } from '~/lib/generateShareImage';
 import { useToast } from "~/hooks/use-toast";
+import Image from "next/image";
 
 interface ShareResultsDialogProps {
   score: number;
@@ -37,8 +37,8 @@ export function ShareResultsDialog({
 }: ShareResultsDialogProps) {
   const [copied, setCopied] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const shareableCardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const safeResults = questionResults ?? Array(5).fill(false);
 
@@ -121,16 +121,9 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
   };
 
   const handleInstagramShare = async () => {
-    if (!shareableCardRef.current) return;
-    
     setIsGeneratingImage(true);
     try {
-      const dataUrl = await domtoimage.toPng(shareableCardRef.current, {
-        width: 500,
-        height: 500,
-        bgcolor: '#18181B'
-      });
-
+      const dataUrl = await generateShareImage(score, questionResults, mode);
       const blobResponse = await fetch(dataUrl);
       const blob = await blobResponse.blob();
       
@@ -144,17 +137,29 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
 
       const data = (await response.json()) as UploadResponse;
       if (!response.ok) throw new Error(data.error || "Upload failed");
-      
       if (!data.instagramUrl) throw new Error("No Instagram URL received");
       
-      // Use the Instagram URL scheme
       window.location.href = data.instagramUrl;
-      
     } catch (error) {
       console.error("Error:", error);
       toast({
         variant: "destructive",
         description: error instanceof Error ? error.message : "Share failed",
+      });
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  const handlePreview = async () => {
+    setIsGeneratingImage(true);
+    try {
+      const dataUrl = await generateShareImage(score, questionResults, mode);
+      setPreviewUrl(dataUrl);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: "Failed to generate preview",
       });
     } finally {
       setIsGeneratingImage(false);
@@ -201,6 +206,24 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
 
           <div className="flex flex-col gap-2 border-t border-zinc-800 pt-2">
             <Button
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              onClick={handlePreview}
+              disabled={isGeneratingImage}
+            >
+              {isGeneratingImage ? "Generating..." : "Preview Image"}
+            </Button>
+            {previewUrl && (
+              <div className="mt-4">
+                <Image 
+                  src={previewUrl} 
+                  alt="Share Preview" 
+                  width={400}
+                  height={400}
+                  className="rounded-lg border border-zinc-700"
+                />
+              </div>
+            )}
+            <Button
               className="w-full bg-emerald-600 hover:bg-emerald-700"
               onClick={handleShare}
             >
@@ -226,16 +249,6 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
                 </span>
               </Button>
             )}
-          </div>
-
-          <div className="hidden">
-            <div ref={shareableCardRef}>
-              <ShareableCard
-                score={score}
-                questionResults={questionResults}
-                mode={mode}
-              />
-            </div>
           </div>
         </div>
       </DialogContent>
