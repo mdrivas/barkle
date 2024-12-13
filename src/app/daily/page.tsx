@@ -442,11 +442,11 @@ export default function DailyGame() {
           <div className="space-y-4">
             {gameState.isLoading && !gameState.currentBreed ? (
               <Card className="mb-8 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
-                <div className="h-[300px] w-full animate-pulse rounded-xl bg-zinc-800/50 md:h-[350px] lg:h-[400px]" />
+                <div className="h-[250px] w-full animate-pulse rounded-xl bg-zinc-800/50 md:h-[300px] lg:h-[350px]" />
               </Card>
             ) : gameState.currentBreed ? (
               <Card className="mb-8 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
-                <div className="relative h-[300px] w-full md:h-[350px] lg:h-[400px]">
+                <div className="relative h-[250px] w-full md:h-[300px] lg:h-[350px]">
                   <Image
                     src={gameState.currentBreed.imageUrl}
                     alt="Mystery dog"
