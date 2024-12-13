@@ -220,7 +220,10 @@ export const dogSubmissions = createTable("dog_submission", {
 
 // Add relations
 export const dogSubmissionsRelations = relations(dogSubmissions, ({ one }) => ({
-  user: one(users, { fields: [dogSubmissions.userId], references: [users.id] }),
+  profile: one(profiles, {
+    fields: [dogSubmissions.userId],
+    references: [profiles.userId],
+  }),
   verifier: one(users, {
     fields: [dogSubmissions.verifiedBy],
     references: [users.id],

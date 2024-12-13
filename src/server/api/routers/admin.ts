@@ -9,10 +9,9 @@ export const adminRouter = createTRPCRouter({
     const pendingSubmissions = await ctx.db.query.dogSubmissions.findMany({
       where: eq(dogSubmissions.status, "pending"),
       with: {
-        user: {
+        profile: {
           columns: {
-            name: true,
-            email: true,
+            username: true,
           },
         },
       },
@@ -22,7 +21,7 @@ export const adminRouter = createTRPCRouter({
       name: submission.imagePath,
       url: `https://storage.googleapis.com/${dogSubmissionsBucket.name}/${submission.imagePath}`,
       breed: submission.breed,
-      submittedBy: submission.user.name ?? "Anonymous",
+      submittedBy: submission.profile?.username ?? "Anonymous",
       submittedAt: submission.createdAt,
     }));
   }),
