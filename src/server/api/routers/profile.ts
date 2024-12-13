@@ -121,7 +121,14 @@ export const profileRouter = createTRPCRouter({
         });
 
         if (existingUserProfile) {
-          // User already has a profile, no action needed
+          // User already has a profile, just migrate any scores
+          await tx
+            .update(scores)
+            .set({
+              userId: ctx.session.user.id,
+              tempId: null,
+            })
+            .where(eq(scores.tempId, input.tempId));
           return true;
         }
 

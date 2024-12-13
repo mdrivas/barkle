@@ -174,7 +174,7 @@ const UserScoreSection = ({
 }) => (
   <div className="rounded-lg border border-green-900/30 bg-green-900/20 p-3">
     <div className="mb-2 text-xs font-medium text-green-500">
-      Your Best Score
+      {isPawsistence ? "Your Best Score" : "Your Score Today"}
     </div>
     <div
       className={cn(

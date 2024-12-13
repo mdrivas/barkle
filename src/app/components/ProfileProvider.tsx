@@ -30,23 +30,21 @@ export function ProfileProvider({
   const [tempId, setTempId] = useState<string | null>(null);
 
   const { mutate: migrateOrCreateProfile } =
-    api.profile.migrateOrCreateProfile.useMutation();
+    api.profile.migrateOrCreateProfile.useMutation({
+      onSettled: () => {
+        setIsInitialized(true);
+      },
+    });
 
   useEffect(() => {
     const initializeProfile = async () => {
-      // Add early return if already initialized
       if (isInitialized) return;
-
-      // Only proceed if we have a definitive session status
       if (status === "loading") return;
 
       const existingTempId = localStorage.getItem(TEMP_ID_KEY);
 
       if (session?.user) {
         if (existingTempId) {
-          // Add flag to prevent double execution
-          setIsInitialized(true); // Move this up before the mutation
-
           migrateOrCreateProfile(
             { tempId: existingTempId },
             {
@@ -56,11 +54,10 @@ export function ProfileProvider({
               },
             },
           );
+        } else {
+          setIsInitialized(true);
         }
-        // If no existing tempId, we're already good (signed in user)
-        setIsInitialized(true);
       } else {
-        // Not signed in - ensure we have a temp ID
         if (!existingTempId) {
           const newTempId = crypto.randomUUID();
           localStorage.setItem(TEMP_ID_KEY, newTempId);

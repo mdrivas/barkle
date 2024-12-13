@@ -67,26 +67,19 @@ export function GameFinishedDialog({
   // Simplified sign in handler
   const handleSignIn = async () => {
     const resultsString = questionResults.map((r) => (r ? "1" : "0")).join(",");
-
+    
     try {
       if (tempId) {
-        // Save the score first
-        await saveScore.mutateAsync({
-          score,
-          results: resultsString,
-          tempId,
-          currentGuessStreak: 0,
-        });
-
+        // Don't save score again, just redirect to auth with the score params
         void handleGoogleSignIn(
           `${window.location.pathname}?score=${score}&results=${resultsString}`,
         );
       }
     } catch (error) {
-      console.error("Failed to save score for anonymous user:", error);
+      console.error("Failed during sign in:", error);
       toast({
         title: "Error",
-        description: "Failed to save score. Please try again later.",
+        description: "Failed to sign in. Please try again later.",
         variant: "destructive",
       });
     }
@@ -153,7 +146,7 @@ export function GameFinishedDialog({
   const SignInPrompt = () => (
     <div className="space-y-3 text-center">
       <p className="text-gray-300">
-        Want to start tracking your stats and streaks?
+        Create an account to save your progress permanently and submit your own pup photos!
       </p>
     </div>
   );
