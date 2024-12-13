@@ -14,6 +14,7 @@ import { env } from "~/env";
 import { db } from "~/server/db";
 import {
   accounts,
+  profiles,
   sessions,
   users,
   verificationTokens,
@@ -54,14 +55,13 @@ export const authOptions: NextAuthOptions = {
 
           if (tempId) {
             await db
-              .update(users)
+              .update(profiles)
               .set({
-                name: user.name,
-                email: user.email,
-                image: user.image,
-                emailVerified: new Date(),
+                userId: user.id,
+                username: user.name,
+                tempId: null,
               })
-              .where(eq(users.id, tempId));
+              .where(eq(profiles.tempId, tempId));
 
             user.id = tempId;
           }
