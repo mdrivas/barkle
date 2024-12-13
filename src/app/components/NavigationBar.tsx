@@ -27,7 +27,7 @@ export function NavigationBar() {
   ];
 
   return (
-    <nav className="w-full border-b border-green-900/30 bg-gradient-to-br from-[#1a1a1b] to-[#121213]">
+    <nav className="sticky top-0 z-50 w-full border-b border-green-900/30 bg-gradient-to-br from-[#1a1a1b] to-[#121213]">
       <div className="mx-auto max-w-7xl">
         <div className="flex w-full justify-end gap-2 px-3 py-1.5 text-[10px] text-green-500 [&>*]:transition-colors [&>*]:hover:text-green-400">
           {isAdmin && (

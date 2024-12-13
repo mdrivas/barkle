@@ -15,9 +15,10 @@ import { GoogleLogo } from "~/components/icons";
 import { api } from "~/trpc/react";
 import { ShareResultsDialog } from "~/app/components/ShareResultsDialog";
 import { useToast } from "~/hooks/use-toast";
-import { Share2 } from "lucide-react";
+import { Share2, Home } from "lucide-react";
 import { useSignIn } from "~/hooks/useSignIn";
 import { useProfileContext } from "~/app/components/ProfileProvider";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 // Props interface for GameFinishedDialog component
 interface GameFinishedDialogProps {
@@ -118,11 +119,15 @@ export function GameFinishedDialog({
     ? todayScoreQuery.data.results.split(",").map((r) => r === "1")
     : questionResults;
 
-  // Replace shareResults component with button
+  // Replace shareResults component with button - Updated for authenticated users
   const shareResults = (
     <Button
       onClick={() => setIsShareDialogOpen(true)}
-      className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-6 text-lg font-medium text-zinc-100 transition-all duration-200 hover:bg-emerald-700"
+      className={`flex w-full items-center justify-center gap-2 rounded-xl ${
+        session 
+          ? "bg-emerald-900 text-emerald-100" 
+          : "bg-emerald-900/80 text-emerald-100/90"
+      } py-2 text-base font-medium transition-all duration-200 hover:bg-emerald-800`}
     >
       Share Results
       <Share2 className="h-5 w-5" />
@@ -132,29 +137,61 @@ export function GameFinishedDialog({
   const leaderboardButton = (
     <Button
       onClick={handleViewLeaderboard}
-      className={`flex items-center justify-center gap-2 border-none py-6 text-lg font-medium text-zinc-50 transition-all duration-200 ${
-        session
-          ? "bg-amber-500 shadow-lg shadow-amber-900/20 hover:bg-amber-300 focus:bg-amber-300"
-          : "cursor-pointer bg-amber-600/50 hover:bg-amber-600/50 focus:bg-amber-600/50 focus:ring-0 active:bg-amber-600/50"
-      }`}
+      className={`flex w-full items-center justify-center gap-2 rounded-xl ${
+        session 
+          ? "bg-amber-900 text-amber-100" 
+          : "bg-amber-900/80 text-amber-100/90"
+      } py-2 text-base font-medium transition-all duration-200 hover:bg-amber-800`}
     >
       View Leaderboard 🏆
     </Button>
   );
 
+  const returnHomeButton = (
+    <Button
+      variant="outline"
+      onClick={() => router.push("/")}
+      className={`flex w-full items-center justify-center gap-2 rounded-xl border-zinc-800 ${
+        session 
+          ? "bg-transparent text-zinc-200" 
+          : "bg-transparent text-zinc-400"
+      } py-2 text-base font-medium hover:bg-zinc-800/50`}
+    >
+      <Home className="h-5 w-5" /> Return Home
+    </Button>
+  );
+
   // Session-specific components
   const SignInPrompt = () => (
-    <div className="space-y-3 text-center">
-      <p className="text-gray-300">
-        Create an account to save your progress permanently and submit your own pup photos!
-      </p>
+    <div className="mt-4 space-y-4 text-center">
+      <h3 className="text-2xl font-bold text-zinc-100">Save your score!</h3>
+      <div className="mb-4 flex justify-center gap-4 text-[10px] text-zinc-300">
+        <div className="flex items-center gap-1">
+          <div className="flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500/20">
+            <span className="text-emerald-500">✓</span>
+          </div>
+          <span>Create account</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500/20">
+            <span className="text-emerald-500">✓</span>
+          </div>
+          <span>Track streaks</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500/20">
+            <span className="text-emerald-500">✓</span>
+          </div>
+          <span>Submit photos</span>
+        </div>
+      </div>
     </div>
   );
 
   const GoogleSignInButton = () => (
     <button
       onClick={handleSignIn}
-      className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2 text-gray-900 transition-colors duration-200 hover:bg-gray-50"
+      className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-base font-medium text-gray-900 shadow-lg transition-colors duration-200 hover:bg-gray-50"
     >
       <GoogleLogo />
       Continue with Google
@@ -163,8 +200,17 @@ export function GameFinishedDialog({
 
   const authenticatedContent = (
     <div className="flex w-full flex-col gap-4">
+      <div className="relative my-3">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-zinc-700" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-zinc-950 px-2 text-zinc-500">Continue with</span>
+        </div>
+      </div>
       {shareResults}
       {leaderboardButton}
+      {returnHomeButton}
     </div>
   );
 
@@ -173,9 +219,17 @@ export function GameFinishedDialog({
       <SignInPrompt />
       <div className="flex w-full flex-col gap-4">
         <GoogleSignInButton />
-        <div className="my-2 h-px w-full bg-zinc-600/50" />
+        <div className="relative my-3">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-zinc-700" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-zinc-950 px-2 text-zinc-500">or</span>
+          </div>
+        </div>
         {shareResults}
         {leaderboardButton}
+        {returnHomeButton}
       </div>
     </>
   );
@@ -188,21 +242,22 @@ export function GameFinishedDialog({
       >
         <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-950/95 text-zinc-50 sm:w-full sm:max-w-[400px] [&>button]:hidden">
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl font-bold text-zinc-50">
-              {displayScore > 0 ? "Congratulations! 🎉" : "Game Over"}
-            </DialogTitle>
+            <VisuallyHidden asChild>
+              <DialogTitle>Game Results</DialogTitle>
+            </VisuallyHidden>
           </DialogHeader>
-
           <div className="mt-4 flex flex-col items-center gap-4">
             <div className="text-center">
-              <p className="mb-2 text-2xl font-bold text-emerald-500">
-                {displayScore} {displayScore === 1 ? "Point" : "Points"} 🐾
+              <h2 className="mb-4 text-2xl font-bold text-zinc-100 sm:text-2xl">
+                {session ? "Daily Challenge Complete!" : "Today's Score"}
+              </h2>
+              <p className="mb-2 text-4xl font-bold">
+                <span className="text-emerald-500">{displayScore}/5</span>
               </p>
               <p className="text-sm text-gray-300 sm:text-base">
                 {getScoreMessage(displayScore)}
               </p>
             </div>
-
             {session ? authenticatedContent : unauthenticatedContent}
           </div>
         </DialogContent>

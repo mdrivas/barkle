@@ -236,15 +236,6 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
                 </span>
               )}
             </Button>
-            <Button
-              variant="outline"
-              className="w-full border-none bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
-              onClick={() => (window.location.href = "/")}
-            >
-              <span className="flex items-center gap-2">
-                <Home className="h-4 w-4" /> Return Home
-              </span>
-            </Button>
             {isMobile && (
               <Button
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"

@@ -11,6 +11,7 @@ import { Suspense } from "react";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { GoogleAnalytics } from "./components/GoogleAnalytics"; // Add this import
 import { ProfileProvider } from "./components/ProfileProvider";
+import { NavigationBar } from "./components/NavigationBar";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -60,22 +61,27 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body>
+      <body className="min-h-screen bg-[#121213]">
         {process.env.NODE_ENV === "production" && <GoogleAnalytics />}
         <TooltipProvider>
           <AuthProvider>
             <Toaster />
             <TRPCReactProvider>
               <ProfileProvider>
-                <Suspense
-                  fallback={
-                    <div className="flex min-h-screen items-center justify-center">
-                      <div className="h-32 w-32 animate-spin rounded-full border-t-2 border-emerald-500" />
-                    </div>
-                  }
-                >
-                  {children}
-                </Suspense>
+                <div className="flex min-h-screen flex-col">
+                  <NavigationBar />
+                  <main className="flex-1 pb-8">
+                    <Suspense
+                      fallback={
+                        <div className="flex min-h-screen items-center justify-center">
+                          <div className="h-32 w-32 animate-spin rounded-full border-t-2 border-emerald-500" />
+                        </div>
+                      }
+                    >
+                      {children}
+                    </Suspense>
+                  </main>
+                </div>
               </ProfileProvider>
             </TRPCReactProvider>
           </AuthProvider>
