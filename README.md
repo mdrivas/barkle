@@ -26,7 +26,7 @@ Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/ver
    DONT DIS 2. Run `./start-database.sh` to start a local postgres database in a docker container
    DONT DO DIS 3. Run `npm run db:push` to push default migrations
 2. Run `npm install` to install the dependencies -> I am using node v18.17.0
-3. Run `npm run dev` to start the development server :)
+3. Run `npm run dev` to start the development server :) e
 
 # Configuration Instructions
 
