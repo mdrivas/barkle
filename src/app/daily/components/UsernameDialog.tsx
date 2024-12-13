@@ -17,7 +17,11 @@ interface UsernameDialogProps {
   onSubmit?: (username: string) => Promise<void>;
 }
 
-export function UsernameDialog({ isOpen, onClose, onSubmit }: UsernameDialogProps) {
+export function UsernameDialog({
+  isOpen,
+  onClose,
+  onSubmit,
+}: UsernameDialogProps) {
   const [username, setUsername] = useState("");
   const { toast } = useToast();
 
@@ -42,7 +46,8 @@ export function UsernameDialog({ isOpen, onClose, onSubmit }: UsernameDialogProp
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to set username",
+        description:
+          error instanceof Error ? error.message : "Failed to set username",
         variant: "destructive",
       });
     }
@@ -50,9 +55,9 @@ export function UsernameDialog({ isOpen, onClose, onSubmit }: UsernameDialogProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-900/95 text-zinc-50 border border-zinc-800 rounded-xl">
+      <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900/95 text-zinc-50 sm:w-full sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">
+          <DialogTitle className="text-center text-2xl font-bold">
             Choose Your Username 🐕
           </DialogTitle>
         </DialogHeader>
@@ -64,7 +69,7 @@ export function UsernameDialog({ isOpen, onClose, onSubmit }: UsernameDialogProp
               placeholder="Enter username"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              className="bg-zinc-800 border-zinc-700 text-zinc-100"
+              className="border-zinc-700 bg-zinc-800 text-zinc-100"
               maxLength={30}
               pattern="[a-zA-Z0-9_-]+"
               title="Letters, numbers, underscores, and hyphens only"
@@ -84,4 +89,4 @@ export function UsernameDialog({ isOpen, onClose, onSubmit }: UsernameDialogProp
       </DialogContent>
     </Dialog>
   );
-} 
+}

@@ -28,9 +28,9 @@ export function NavigationBar() {
   ];
 
   return (
-    <nav className="w-full bg-gradient-to-br from-[#1a1a1b] to-[#121213] border-b border-green-900/30">
-      <div className="max-w-7xl mx-auto">
-        <div className="w-full px-3 py-1.5 flex justify-end gap-2 text-[10px] text-green-500 [&>*]:hover:text-green-400 [&>*]:transition-colors">
+    <nav className="w-full border-b border-green-900/30 bg-gradient-to-br from-[#1a1a1b] to-[#121213]">
+      <div className="mx-auto max-w-7xl">
+        <div className="flex w-full justify-end gap-2 px-3 py-1.5 text-[10px] text-green-500 [&>*]:transition-colors [&>*]:hover:text-green-400">
           {isAdmin && (
             <>
               <Link href="/" className="text-[10px] font-normal">
@@ -50,7 +50,7 @@ export function NavigationBar() {
           {navItems.map(({ Component }, index) => (
             <React.Fragment key={index}>
               {index > 0 && <span className="text-green-800">|</span>}
-              <div className="[&>*]:!text-[10px] [&>*]:!font-normal [&>*]:!p-0">
+              <div className="[&>*]:!p-0 [&>*]:!text-[10px] [&>*]:!font-normal">
                 <Component />
               </div>
             </React.Fragment>
@@ -64,24 +64,24 @@ export function NavigationBar() {
 /**
  * NavigationBar Component Style Guide
  * ----------------------------------
- * 
+ *
  * Layout Requirements:
  * - Must maintain full width with gradient background
  * - Navigation items should be right-aligned
  * - Items should be separated by green dividers
- * 
+ *
  * Styling Requirements:
  * - Font size should be 10px for all navigation items
- * - Text color should be green-500 
+ * - Text color should be green-500
  * - Hover state should transition to green-400
  * - All transitions should be smooth
  * - Dividers should use green-800 color
- * 
+ *
  * Component Structure:
  * - Keep Privacy, Terms, FAQ and Feedback components as direct children
  * - Maintain consistent spacing with gap-2
  * - Preserve the gradient background and border styling
- * 
+ *
  * Accessibility:
  * - Ensure all interactive elements are keyboard accessible
  * - Maintain proper contrast ratios for text

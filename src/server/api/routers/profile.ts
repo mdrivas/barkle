@@ -7,12 +7,14 @@ import { scores } from "~/server/db/schema";
 export const profileRouter = createTRPCRouter({
   // Get profile by userId or tempId
   getProfile: publicProcedure
-    .input(z.object({
-      tempId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        tempId: z.string().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session?.user.id;
-      
+
       if (!userId && !input.tempId) return null;
 
       return await ctx.db.query.profiles.findFirst({
@@ -25,10 +27,12 @@ export const profileRouter = createTRPCRouter({
 
   // Create profile for non-authenticated users
   createTempProfile: publicProcedure
-    .input(z.object({
-      username: z.string().min(1).max(30),
-      tempId: z.string(),
-    }))
+    .input(
+      z.object({
+        username: z.string().min(1).max(30),
+        tempId: z.string(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       // Check if username is taken
       const existing = await ctx.db.query.profiles.findFirst({
@@ -47,30 +51,34 @@ export const profileRouter = createTRPCRouter({
 
   // Update profile with userId after auth
   attachUserId: protectedProcedure
-    .input(z.object({
-      tempId: z.string(),
-    }))
+    .input(
+      z.object({
+        tempId: z.string(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       return await ctx.db
         .update(profiles)
-        .set({ 
+        .set({
           userId: ctx.session.user.id,
           // Optionally clear tempId if you don't need it anymore
-          // tempId: null, 
+          // tempId: null,
         })
         .where(eq(profiles.tempId, input.tempId));
     }),
 
   migrateProfile: protectedProcedure
-    .input(z.object({
-      tempId: z.string(),
-    }))
+    .input(
+      z.object({
+        tempId: z.string(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       return await ctx.db.transaction(async (tx) => {
         // Update profile with userId but keep tempId
         await tx
           .update(profiles)
-          .set({ 
+          .set({
             userId: ctx.session.user.id,
           })
           .where(eq(profiles.tempId, input.tempId));
@@ -78,7 +86,7 @@ export const profileRouter = createTRPCRouter({
         // Update scores with userId but keep tempId
         await tx
           .update(scores)
-          .set({ 
+          .set({
             userId: ctx.session.user.id,
           })
           .where(eq(scores.tempId, input.tempId));
@@ -86,4 +94,4 @@ export const profileRouter = createTRPCRouter({
         return true;
       });
     }),
-}); 
+});

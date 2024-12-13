@@ -6,9 +6,11 @@ import { TRPCError } from "@trpc/server";
 
 export const pawsistenceRouter = createTRPCRouter({
   getInitialState: publicProcedure
-    .input(z.object({
-      tempId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        tempId: z.string().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session?.user.id;
 
@@ -30,19 +32,24 @@ export const pawsistenceRouter = createTRPCRouter({
       // Reset plays if it's a new day in PST
       const now = new Date();
       const lastPlayed = profile.lastPawsistenceAt;
-      const isNewDay = !lastPlayed || 
-        now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }) !== 
-        lastPlayed.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' });
+      const isNewDay =
+        !lastPlayed ||
+        now.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" }) !==
+          lastPlayed.toLocaleDateString("en-US", {
+            timeZone: "America/Los_Angeles",
+          });
 
       if (isNewDay) {
         await ctx.db
           .update(profiles)
           .set({ pawsistencePlaysToday: 0 })
-          .where(or(
-            userId ? eq(profiles.userId, userId) : undefined,
-            input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
-          ));
-        
+          .where(
+            or(
+              userId ? eq(profiles.userId, userId) : undefined,
+              input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
+            ),
+          );
+
         return {
           playsRemaining: 3,
           highestStreak: profile.highestPawsistenceStreak ?? 0,
@@ -61,9 +68,11 @@ export const pawsistenceRouter = createTRPCRouter({
     }),
 
   incrementPlays: publicProcedure
-    .input(z.object({
-      tempId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        tempId: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session?.user.id;
 
@@ -81,7 +90,7 @@ export const pawsistenceRouter = createTRPCRouter({
         if (currentPlays >= 3) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "No plays remaining today. Come back tomorrow!"
+            message: "No plays remaining today. Come back tomorrow!",
           });
         }
 
@@ -92,21 +101,25 @@ export const pawsistenceRouter = createTRPCRouter({
             pawsistencePlaysToday: newPlaysCount,
             lastPawsistenceAt: new Date(),
           })
-          .where(or(
-            userId ? eq(profiles.userId, userId) : undefined,
-            input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
-          ));
+          .where(
+            or(
+              userId ? eq(profiles.userId, userId) : undefined,
+              input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
+            ),
+          );
 
         return { playsRemaining: Math.max(0, 3 - newPlaysCount) };
       });
     }),
 
   saveGame: publicProcedure
-    .input(z.object({
-      streak: z.number(),
-      isNewHighScore: z.boolean(),
-      tempId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        streak: z.number(),
+        isNewHighScore: z.boolean(),
+        tempId: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session?.user.id;
 
@@ -127,10 +140,12 @@ export const pawsistenceRouter = createTRPCRouter({
             .set({
               highestPawsistenceStreak: input.streak,
             })
-            .where(or(
-              userId ? eq(profiles.userId, userId) : undefined,
-              input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
-            ));
+            .where(
+              or(
+                userId ? eq(profiles.userId, userId) : undefined,
+                input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
+              ),
+            );
         }
 
         return { success: true };

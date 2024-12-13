@@ -1,8 +1,8 @@
-import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import "@testing-library/jest-dom";
+import { vi } from "vitest";
 
 // Mock tRPC mutations and queries
-vi.mock('~/trpc/react', () => ({
+vi.mock("~/trpc/react", () => ({
   api: {
     score: {
       canPlayToday: {
@@ -13,8 +13,8 @@ vi.mock('~/trpc/react', () => ({
       },
       getTodayScore: {
         useQuery: vi.fn(() => ({
-          data: { score: 3, results: '1,1,1,0,0' },
-          
+          data: { score: 3, results: "1,1,1,0,0" },
+
           isLoading: false,
         })),
       },
@@ -28,7 +28,10 @@ vi.mock('~/trpc/react', () => ({
     game: {
       getDailyBreeds: {
         useQuery: vi.fn(() => ({
-          data: { breeds: JSON.stringify([{ breed: 'labrador', imageUrl: 'url' }]), date: '2023-10-10' },
+          data: {
+            breeds: JSON.stringify([{ breed: "labrador", imageUrl: "url" }]),
+            date: "2023-10-10",
+          },
           isLoading: false,
         })),
       },
@@ -39,7 +42,7 @@ vi.mock('~/trpc/react', () => ({
 }));
 
 // Mock next/navigation
-vi.mock('next/navigation', () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
     replace: vi.fn(),
@@ -50,11 +53,11 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock next-auth
-vi.mock('next-auth/react', () => ({
+vi.mock("next-auth/react", () => ({
   useSession: () => ({
     data: null,
-    status: 'unauthenticated',
+    status: "unauthenticated",
   }),
   signIn: vi.fn(),
   signOut: vi.fn(),
-})); 
+}));

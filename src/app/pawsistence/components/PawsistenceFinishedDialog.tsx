@@ -40,13 +40,13 @@ export function PawsistenceFinishedDialog({
   const router = useRouter();
 
   const handleViewLeaderboard = () => {
-    router.push('/?showLeaderboard=true');
+    router.push("/?showLeaderboard=true");
   };
 
   return (
     <>
-      <Dialog 
-        open={isOpen} 
+      <Dialog
+        open={isOpen}
         onOpenChange={(open) => {
           if (playsRemaining > 0) {
             onClose?.();
@@ -54,44 +54,45 @@ export function PawsistenceFinishedDialog({
         }}
         modal={true}
       >
-        <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-950/95 text-zinc-50 border border-zinc-800 rounded-xl [&>button]:hidden">
-          <div className="flex flex-col items-center justify-center w-full">
-            <DialogHeader className="flex flex-col items-center justify-center w-full">
-              <DialogTitle className="text-2xl font-bold text-zinc-50 text-center">
+        <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-950/95 text-zinc-50 sm:w-full sm:max-w-[400px] [&>button]:hidden">
+          <div className="flex w-full flex-col items-center justify-center">
+            <DialogHeader className="flex w-full flex-col items-center justify-center">
+              <DialogTitle className="text-center text-2xl font-bold text-zinc-50">
                 {isOutOfPlays ? "No Plays Remaining" : "Game Over!"}
               </DialogTitle>
-              <div className="flex flex-col items-center justify-center space-y-2 mt-4">
-                <DialogDescription className="text-zinc-300 text-base text-center">
-                  You've used all your plays for today. Come back at 12 AM PST for more attempts!
+              <div className="mt-4 flex flex-col items-center justify-center space-y-2">
+                <DialogDescription className="text-center text-base text-zinc-300">
+                  You've used all your plays for today. Come back at 12 AM PST
+                  for more attempts!
                 </DialogDescription>
-                <p className="text-emerald-500 text-sm font-medium text-center">
+                <p className="text-center text-sm font-medium text-emerald-500">
                   Daily limit: 3 games
                 </p>
               </div>
             </DialogHeader>
 
-            <div className="flex flex-col gap-3 w-full mt-6">
+            <div className="mt-6 flex w-full flex-col gap-3">
               <Button
                 onClick={() => setIsShareDialogOpen(true)}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-zinc-100"
+                className="w-full bg-emerald-600 text-zinc-100 hover:bg-emerald-700"
               >
-                <Share2 className="w-4 h-4 mr-2" />
+                <Share2 className="mr-2 h-4 w-4" />
                 Share Results
               </Button>
-              
+
               <Button
                 onClick={handleViewLeaderboard}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-zinc-100"
+                className="w-full bg-amber-600 text-zinc-100 hover:bg-amber-700"
               >
-                <Trophy className="w-4 h-4 mr-2" />
+                <Trophy className="mr-2 h-4 w-4" />
                 View Leaderboard
               </Button>
 
               <Button
-                onClick={() => window.location.href = '/'}
-                className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
+                onClick={() => (window.location.href = "/")}
+                className="w-full bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
               >
-                <Home className="w-4 h-4 mr-2" />
+                <Home className="mr-2 h-4 w-4" />
                 Return Home
               </Button>
             </div>
@@ -99,7 +100,7 @@ export function PawsistenceFinishedDialog({
         </DialogContent>
       </Dialog>
 
-      <ShareResultsDialog 
+      <ShareResultsDialog
         score={highestStreak ?? currentStreak}
         questionResults={[true]}
         isOpen={isShareDialogOpen}
@@ -115,4 +116,4 @@ export function PawsistenceFinishedDialog({
       />
     </>
   );
-} 
+}

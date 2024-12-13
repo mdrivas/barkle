@@ -15,13 +15,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { status } = useSession();
 
   useEffect(() => {
-    if (status !== "loading" &&status !== "authenticated") {
+    if (status !== "loading" && status !== "authenticated") {
       router.push("/");
     }
   }, [router, status]);
 
   if (status === "loading") {
-    return <LoadingSkeleton/>;
+    return <LoadingSkeleton />;
   }
 
   return <>{children}</>;

@@ -13,11 +13,11 @@ import { Input } from "~/components/ui/input";
 import { api } from "~/trpc/react";
 import { useToast } from "~/hooks/use-toast";
 
-export function NewUserDialog({ 
-  isOpen, 
-  onClose 
-}: { 
-  isOpen: boolean; 
+export function NewUserDialog({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
   onClose: () => void;
 }) {
   const [username, setUsername] = useState("");
@@ -64,9 +64,9 @@ export function NewUserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-[400px] bg-zinc-900/95 text-zinc-50 border border-zinc-800 rounded-xl">
+      <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900/95 text-zinc-50 sm:w-full sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">
+          <DialogTitle className="text-center text-2xl font-bold">
             Welcome to Barkle! 🐕
           </DialogTitle>
           <DialogDescription className="text-center text-zinc-400">
@@ -81,7 +81,7 @@ export function NewUserDialog({
               placeholder="Enter username"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              className="bg-zinc-800 border-zinc-700 text-zinc-100"
+              className="border-zinc-700 bg-zinc-800 text-zinc-100"
               maxLength={30}
               pattern="[a-zA-Z0-9_-]+"
               title="Letters, numbers, underscores, and hyphens only"
@@ -103,4 +103,4 @@ export function NewUserDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}
