@@ -14,11 +14,12 @@ import { DailyInstructions } from "./components/DailyInstructions";
 import { UsernameDialog } from "./components/UsernameDialog";
 import { useRouter, useSearchParams } from "next/navigation";
 import seedrandom from "seedrandom";
+import { useTempId } from "~/hooks/useTempId";
 
 interface DogBreed {
   breed: string;
   imageUrl: string;
-  type: 'api' | 'community';
+  type: "api" | "community";
   submittedBy?: string;
 }
 
@@ -38,16 +39,6 @@ interface BreedsResponse {
   status: string;
 }
 
-interface ImageResponse {
-  message: string;
-  status: string;
-}
-
-interface DailyBreeds {
-  breeds: DogBreed[];
-  date: string;
-}
-
 function generateDailySeededRandom(seed: string) {
   return seedrandom(seed);
 }
@@ -57,33 +48,17 @@ export default function DailyGame() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tempId = searchParams.get("tempId");
-  const isReturningFromAuth = !!tempId;
 
-  // Get or create tempId for non-signed in users
-  const [localTempId, setLocalTempId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!session?.user) {
-      const storedTempId = localStorage.getItem("barkle_temp_id");
-      if (storedTempId) {
-        setLocalTempId(storedTempId);
-      } else {
-        const newTempId = crypto.randomUUID();
-        localStorage.setItem("barkle_temp_id", newTempId);
-        setLocalTempId(newTempId);
-      }
-    }
-  }, [session?.user]);
+  const tempId = useTempId();
 
   // Single canPlayQuery
   const canPlayQuery = api.score.canPlayToday.useQuery(
     {
-      tempId: !session?.user ? tempId ?? localTempId ?? undefined : undefined,
+      tempId,
     },
     {
-      enabled: !!localTempId || !!session?.user,
-    }
+      enabled: !!tempId || !!session?.user,
+    },
   );
 
   const [showInstructions, setShowInstructions] = useState(false);
@@ -96,7 +71,7 @@ export default function DailyGame() {
   // Update the toast effect
   useEffect(() => {
     if (
-      !isReturningFromAuth &&
+      !canPlayQuery.data?.canPlay &&
       !hasShownToast &&
       canPlayQuery.data &&
       !canPlayQuery.data.canPlay
@@ -117,12 +92,7 @@ export default function DailyGame() {
 
       setHasShownToast(true);
     }
-  }, [
-    canPlayQuery.data,
-    toast,
-    isReturningFromAuth,
-    hasShownToast,
-  ]);
+  }, [canPlayQuery.data, toast, canPlayQuery.data?.canPlay, hasShownToast]);
 
   // Add the new query
   const currentStreakQuery = api.score.getCurrentStreak.useQuery(undefined, {
@@ -144,7 +114,7 @@ export default function DailyGame() {
   // Add an effect to update the streak when the query loads
   useEffect(() => {
     if (currentStreakQuery.data !== undefined) {
-      setGameState(prev => ({
+      setGameState((prev) => ({
         ...prev,
         currentGuessStreak: currentStreakQuery.data,
       }));
@@ -166,10 +136,10 @@ export default function DailyGame() {
 
   // Add this query to fetch daily breeds
   const dailyBreedsQuery = api.game.getDailyBreeds.useQuery(
-    { 
-      timezone: new Date().getTimezoneOffset()
+    {
+      timezone: new Date().getTimezoneOffset(),
     },
-    { enabled: canPlayQuery.data?.canPlay }
+    { enabled: canPlayQuery.data?.canPlay },
   );
 
   // Replace the fetchNewRound function with this version
@@ -192,32 +162,35 @@ export default function DailyGame() {
 
     // Use the stored image URL directly for community dogs
     let selectedImage = currentBreed.imageUrl;
-    
+
     // Only fetch new image from API if it's not a community dog
-    if (currentBreed.type === 'api') {
+    if (currentBreed.type === "api") {
       const breedImagesResponse = await fetch(
-        `https://dog.ceo/api/breed/${currentBreed.breed}/images`
+        `https://dog.ceo/api/breed/${currentBreed.breed}/images`,
       );
       const breedImagesData = await breedImagesResponse.json();
       const images = breedImagesData.message as string[];
 
       const imageIndex = Math.floor(roundRng() * images.length);
-      selectedImage = images[imageIndex] ?? images[0] ?? "https://dog.ceo/api/breeds/image/random";
+      selectedImage =
+        images[imageIndex] ??
+        images[0] ??
+        "https://dog.ceo/api/breeds/image/random";
     }
 
     // Rest of the function remains the same...
     const dailyBreedNames = parsedBreeds.map((b) => b.breed);
     const possibleWrongBreeds = Object.keys(breedsData.message).filter(
-      (breed) => !dailyBreedNames.includes(breed)
+      (breed) => !dailyBreedNames.includes(breed),
     );
 
     const shuffledWrongBreeds = [...possibleWrongBreeds].sort(
-      () => roundRng() - 0.5
+      () => roundRng() - 0.5,
     );
 
     const wrongOptions = shuffledWrongBreeds.slice(0, 3);
     const options = [currentBreed.breed, ...wrongOptions].sort(
-      () => roundRng() - 0.5
+      () => roundRng() - 0.5,
     );
 
     setGameState((prev) => ({
@@ -226,7 +199,7 @@ export default function DailyGame() {
         breed: currentBreed.breed,
         imageUrl: selectedImage,
         type: currentBreed.type,
-        submittedBy: currentBreed.submittedBy
+        submittedBy: currentBreed.submittedBy,
       },
       options,
       isLoading: false,
@@ -247,7 +220,8 @@ export default function DailyGame() {
   const saveScoreMutation = api.score.saveScore.useMutation();
 
   const handleGuess = async (breed: string) => {
-    if (gameState.isLoading || gameState.gameOver || answeredBreed !== null) return;
+    if (gameState.isLoading || gameState.gameOver || answeredBreed !== null)
+      return;
 
     const isCorrect = breed === gameState.currentBreed?.breed;
     const newScore = isCorrect ? gameState.score + 1 : gameState.score;
@@ -255,9 +229,7 @@ export default function DailyGame() {
     const newGameOver = newGuessesRemaining === 0;
 
     // Update guess streak - increment if correct, reset if wrong
-    const newGuessStreak = isCorrect
-      ? gameState.currentGuessStreak + 1
-      : 0;
+    const newGuessStreak = isCorrect ? gameState.currentGuessStreak + 1 : 0;
 
     // Update game state
     setGameState((prev) => ({
@@ -296,14 +268,14 @@ export default function DailyGame() {
           results: [...questionResults, isCorrect]
             .map((r) => (r ? "1" : "0"))
             .join(","),
-          tempId: !session?.user ? localTempId ?? undefined : undefined,
+          tempId,
           currentGuessStreak: newGuessStreak,
         });
-        
+
         // Invalidate the queries to force a refresh
         void todayScoreQuery.refetch();
         void canPlayQuery.refetch();
-        
+
         setShowGameResults(true);
       } catch (error) {
         console.error("Failed to save score:", error);
@@ -326,29 +298,20 @@ export default function DailyGame() {
     }
   };
 
-  const handleGameFinishedClose = () => {
-    setGameState((prev) => ({
-      ...prev,
-      gameOver: false,
-    }));
-  };
-
-  // Show username dialog when user returns from auth with tempId
   useEffect(() => {
     if (session?.user && tempId) {
-      setShowUsernameDialog(true);
       // Get the score from URL if available
       const urlScore = searchParams.get("score");
       const urlResults = searchParams.get("results");
 
       if (urlScore && urlResults) {
         // Just update game state, don't show results yet
-        setGameState(prev => ({
+        setGameState((prev) => ({
           ...prev,
           score: parseInt(urlScore),
           gameOver: true,
         }));
-        setQuestionResults(urlResults.split(",").map(r => r === "1"));
+        setQuestionResults(urlResults.split(",").map((r) => r === "1"));
       }
     }
   }, [session?.user, tempId, searchParams]);
@@ -356,67 +319,39 @@ export default function DailyGame() {
   // Add new profile query and mutation
   const profileQuery = api.profile.getProfile.useQuery(
     {
-      tempId: !session?.user ? localTempId ?? undefined : undefined,
+      tempId,
     },
     {
-      enabled: !!localTempId || !!session?.user,
-    }
+      enabled: !!tempId || !!session?.user,
+    },
   );
 
   const createProfileMutation = api.profile.createTempProfile.useMutation();
 
-  // Add state to track migration status
-  const [isMigrating, setIsMigrating] = useState(false);
-
-  // Update the auth return effect
-  useEffect(() => {
-    if (session?.user && tempId) {
-      setIsMigrating(true); // Set migrating status
-      const urlScore = searchParams.get("score");
-      const urlResults = searchParams.get("results");
-
-      // Migrate the profile first
-      void migrateProfileMutation.mutateAsync(
-        { tempId },
-        {
-          onSuccess: () => {
-            if (urlScore && urlResults) {
-              setGameState(prev => ({
-                ...prev,
-                score: parseInt(urlScore),
-                gameOver: true,
-                hasSavedScore: true,
-              }));
-              setQuestionResults(urlResults.split(",").map(r => r === "1"));
-              setShowGameResults(true);
-            }
-            void todayScoreQuery.refetch();
-            void canPlayQuery.refetch();
-            void profileQuery.refetch();
-          },
-          onSettled: () => {
-            setIsMigrating(false);
-          }
-        }
-      );
-    }
-  }, [session?.user, tempId, searchParams]);
-
   // Update the instructions effect to check migration status
   useEffect(() => {
-    if (canPlayQuery.data?.canPlay && !isReturningFromAuth && !showGameResults && !isMigrating) {
+    if (
+      canPlayQuery.data?.canPlay &&
+      !canPlayQuery.data.canPlay &&
+      !showGameResults
+    ) {
       if (!profileQuery.data && !session?.user) {
         setShowInstructions(true);
       } else {
         setShowInstructions(true);
       }
     }
-  }, [canPlayQuery.data?.canPlay, isReturningFromAuth, showGameResults, profileQuery.data, session?.user, isMigrating]);
+  }, [
+    canPlayQuery.data?.canPlay,
+    showGameResults,
+    profileQuery.data,
+    session?.user,
+  ]);
 
   // Update handleInstructionsClose to check migration status
   const handleInstructionsClose = () => {
     setShowInstructions(false);
-    if (!profileQuery.data && !session?.user && !isMigrating) {
+    if (!profileQuery.data && !session?.user) {
       setTimeout(() => {
         setShowUsernameDialog(true);
       }, 100);
@@ -426,12 +361,12 @@ export default function DailyGame() {
   // Update username submit handler
   const onUsernameSubmit = async (username: string) => {
     try {
-      if (!session?.user && localTempId) {
+      if (!session?.user && tempId) {
         await createProfileMutation.mutateAsync({
           username,
-          tempId: localTempId,
+          tempId,
         });
-        
+
         // Refetch profile data
         void profileQuery.refetch();
       }
@@ -444,52 +379,50 @@ export default function DailyGame() {
   // Single todayScoreQuery
   const todayScoreQuery = api.score.getTodayScore.useQuery(
     {
-      tempId: !session?.user ? tempId ?? localTempId ?? undefined : undefined,
+      tempId,
     },
     {
-      enabled: (!canPlayQuery.data?.canPlay && (!!localTempId || !!session?.user)) || gameState.gameOver,
-    }
+      enabled:
+        (!canPlayQuery.data?.canPlay && (!!tempId || !!session?.user)) ||
+        gameState.gameOver,
+    },
   );
-
-  // Add at the top with other hooks
-  const migrateProfileMutation = api.profile.migrateProfile.useMutation();
 
   // Show loading until canPlayQuery is settled
   if (canPlayQuery.isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-emerald-500" />
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+        <div className="h-32 w-32 animate-spin rounded-full border-t-2 border-emerald-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 py-12 px-4">
-      {(isReturningFromAuth || canPlayQuery.data?.canPlay) ? (
-        <div className="container max-w-3xl mx-auto">
-          <div className="text-center mb-8 space-y-4">
+    <div className="min-h-screen bg-zinc-950 px-4 py-12 text-zinc-50">
+      {canPlayQuery.data?.canPlay ? (
+        <div className="container mx-auto max-w-3xl">
+          <div className="mb-8 space-y-4 text-center">
             <Link href="/">
-              <h1 className="text-5xl font-bold tracking-tight text-[#F9F8E4] hover:text-[#538D4E] transition-colors cursor-pointer">
+              <h1 className="cursor-pointer text-5xl font-bold tracking-tight text-[#F9F8E4] transition-colors hover:text-[#538D4E]">
                 Barkle
               </h1>
             </Link>
 
             {/* Modern Score Display */}
-            <div className="inline-flex items-center justify-center gap-4 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-4 border border-zinc-800">
+            <div className="inline-flex items-center justify-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-sm">
               <div className="flex items-center gap-4">
                 {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
                     className={cn(
-                      "w-8 h-10 rounded-full transition-all duration-300 relative flex items-center justify-center",
+                      "relative flex h-10 w-8 items-center justify-center rounded-full transition-all duration-300",
                       {
                         "bg-gradient-to-b from-[#58A84D] to-[#4A9341] shadow-lg shadow-[#58A84D]/20":
                           questionResults[i] === true,
                         "bg-gradient-to-b from-red-500 to-red-600 shadow-lg shadow-red-500/20":
                           questionResults[i] === false,
-                        "bg-zinc-800":
-                          questionResults[i] === undefined,
-                      }
+                        "bg-zinc-800": questionResults[i] === undefined,
+                      },
                     )}
                   >
                     <span className="text-[12px] text-white/90">
@@ -500,7 +433,7 @@ export default function DailyGame() {
                   </div>
                 ))}
               </div>
-              <div className="text-2xl font-bold text-zinc-400 pl-6 border-l border-zinc-800">
+              <div className="border-l border-zinc-800 pl-6 text-2xl font-bold text-zinc-400">
                 {gameState.score}/5
               </div>
             </div>
@@ -508,24 +441,24 @@ export default function DailyGame() {
 
           <div className="space-y-4">
             {gameState.isLoading && !gameState.currentBreed ? (
-              <Card className="overflow-hidden mb-8 border border-gray-500 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
-                <div className="w-full h-[300px] md:h-[350px] lg:h-[400px] bg-zinc-800/50 animate-pulse rounded-xl" />
+              <Card className="mb-8 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
+                <div className="h-[300px] w-full animate-pulse rounded-xl bg-zinc-800/50 md:h-[350px] lg:h-[400px]" />
               </Card>
             ) : gameState.currentBreed ? (
-              <Card className="overflow-hidden mb-8 border border-gray-500 rounded-xl bg-zinc-900/50 backdrop-blur-sm shadow-xl shadow-emerald-900/10">
-                <div className="relative w-full h-[300px] md:h-[350px] lg:h-[400px]">
+              <Card className="mb-8 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
+                <div className="relative h-[300px] w-full md:h-[350px] lg:h-[400px]">
                   <Image
                     src={gameState.currentBreed.imageUrl}
                     alt="Mystery dog"
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover hover:scale-105 transition-transform duration-500 rounded-xl bg-zinc-900/50"
+                    className="rounded-xl bg-zinc-900/50 object-cover transition-transform duration-500 hover:scale-105"
                     priority
                     quality={90}
                   />
                   {/* Show community badge immediately if it's a community submission */}
-                  {gameState.currentBreed.type === 'community' && (
-                    <div className="absolute top-4 right-4 bg-emerald-500/80 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                  {gameState.currentBreed.type === "community" && (
+                    <div className="absolute right-4 top-4 rounded-full bg-emerald-500/80 px-3 py-1 text-sm text-white backdrop-blur-sm">
                       Community Pup
                     </div>
                   )}
@@ -534,14 +467,14 @@ export default function DailyGame() {
             ) : null}
 
             {/* Show submitter after answering if it's the community dog */}
-            {answeredBreed && 
-              currentRoundIndex === 4 && 
-              gameState.currentBreed?.type === 'community' && 
+            {answeredBreed &&
+              currentRoundIndex === 4 &&
+              gameState.currentBreed?.type === "community" &&
               gameState.currentBreed.submittedBy && (
-                <p className="text-sm text-emerald-500 text-center mt-2">
+                <p className="mt-2 text-center text-sm text-emerald-500">
                   Submitted by: @{gameState.currentBreed.submittedBy}
                 </p>
-            )}
+              )}
 
             <div className="grid grid-cols-2 gap-4" key={currentRoundIndex}>
               {gameState.options.map((breed) => (
@@ -551,24 +484,27 @@ export default function DailyGame() {
                   disabled={gameState.gameOver || answeredBreed !== null}
                   className={cn(
                     // Base styles
-                    "p-4 text-md uppercase transition-all duration-200 rounded-xl shadow-lg shadow-emerald-900/10",
-                    "disabled:opacity-50 bg-zinc-900/50 text-zinc-100 border border-gray-500",
+                    "text-md rounded-xl p-4 uppercase shadow-lg shadow-emerald-900/10 transition-all duration-200",
+                    "border border-gray-500 bg-zinc-900/50 text-zinc-100 disabled:opacity-50",
                     "touch-none select-none",
                     // Hover state only on devices that support hover
                     {
-                      "[@media(hover:hover)]:hover:border-emerald-500/50": !answeredBreed,
+                      "[@media(hover:hover)]:hover:border-emerald-500/50":
+                        !answeredBreed,
                       // Correct answer
-                      "!bg-green-500/10 !border-green-500 !text-green-500":
-                        answeredBreed && breed === gameState.currentBreed?.breed,
+                      "!border-green-500 !bg-green-500/10 !text-green-500":
+                        answeredBreed &&
+                        breed === gameState.currentBreed?.breed,
                       // Wrong answer selected
-                      "!bg-red-500/10 !border-red-500 !text-red-500":
-                        answeredBreed === breed && breed !== gameState.currentBreed?.breed,
-                      // Other options when answer is selected
-                      "opacity-0 pointer-events-none":
-                        answeredBreed && 
-                        answeredBreed !== breed && 
+                      "!border-red-500 !bg-red-500/10 !text-red-500":
+                        answeredBreed === breed &&
                         breed !== gameState.currentBreed?.breed,
-                    }
+                      // Other options when answer is selected
+                      "pointer-events-none opacity-0":
+                        answeredBreed &&
+                        answeredBreed !== breed &&
+                        breed !== gameState.currentBreed?.breed,
+                    },
                   )}
                   variant="outline"
                 >

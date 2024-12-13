@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { DogSubmissionModal } from "./components/DogSubmissionModal";
 import { api } from "~/trpc/react";
 import { NewUserDialog } from "./components/NewUserDialog";
+import { useTempId } from "~/hooks/useTempId";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -22,7 +23,7 @@ const roboto = Roboto({
 });
 
 export default function Home() {
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showNewUserDialog, setShowNewUserDialog] = useState(false);
@@ -35,12 +36,6 @@ export default function Home() {
   }, [searchParams]);
 
   const { data: gamesCount } = api.score.getTodayGames.useQuery();
-  const { data: profile, isLoading: isProfileLoading } =
-    api.user.getProfile.useQuery(undefined, {
-      enabled: !!session?.user,
-      retry: false,
-      staleTime: 0,
-    });
 
   const { data: usernameCheck } = api.user.needsUsername.useQuery(undefined, {
     enabled: !!session?.user,
@@ -52,15 +47,10 @@ export default function Home() {
     }
   }, [usernameCheck]);
 
+  const tempId = useTempId();
+
   // Generic sign-in function you can use throughout your app
   const handleSignIn = () => {
-    let tempId = localStorage.getItem("barkle_temp_id");
-
-    if (!tempId) {
-      tempId = crypto.randomUUID();
-      localStorage.setItem("barkle_temp_id", tempId);
-    }
-
     void signIn("google", {
       prompt: "select_account",
       callbackUrl: window.location.href,
