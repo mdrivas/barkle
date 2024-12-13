@@ -26,23 +26,21 @@ export default function Home() {
   const searchParams = useSearchParams();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showNewUserDialog, setShowNewUserDialog] = useState(false);
-  
+
   useEffect(() => {
-    if (searchParams.get('showLeaderboard') === 'true') {
+    if (searchParams.get("showLeaderboard") === "true") {
       setShowLeaderboard(true);
-      window.history.replaceState({}, '', '/');
+      window.history.replaceState({}, "", "/");
     }
   }, [searchParams]);
 
   const { data: gamesCount } = api.score.getTodayGames.useQuery();
-  const { data: profile, isLoading: isProfileLoading } = api.user.getProfile.useQuery(
-    undefined, 
-    { 
+  const { data: profile, isLoading: isProfileLoading } =
+    api.user.getProfile.useQuery(undefined, {
       enabled: !!session?.user,
       retry: false,
       staleTime: 0,
-    }
-  );
+    });
 
   const { data: usernameCheck } = api.user.needsUsername.useQuery(undefined, {
     enabled: !!session?.user,
@@ -56,30 +54,44 @@ export default function Home() {
 
   // Generic sign-in function you can use throughout your app
   const handleSignIn = () => {
+    let tempId = localStorage.getItem("barkle_temp_id");
+
+    if (!tempId) {
+      tempId = crypto.randomUUID();
+      localStorage.setItem("barkle_temp_id", tempId);
+    }
+
     void signIn("google", {
       prompt: "select_account",
-      callbackUrl: window.location.href
+      callbackUrl: window.location.href,
+      tempId: tempId,
     });
   };
 
   return (
-    <main className={`flex min-h-screen flex-col items-center bg-[#121213] text-zinc-50 font-sans ${roboto.variable}`}>
+    <main
+      className={`flex min-h-screen flex-col items-center bg-[#121213] font-sans text-zinc-50 ${roboto.variable}`}
+    >
       <NavigationBar />
 
       {/* Account Area */}
       {session?.user ? (
-        <div className="w-full max-w-4xl mx-auto px-4 py-2">
+        <div className="mx-auto w-full max-w-4xl px-4 py-2">
           <div className="flex items-center justify-end gap-3">
             <Link href="/account">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="flex items-center gap-2 text-base text-zinc-400 hover:text-zinc-200"
               >
                 <div className="flex flex-col items-end">
-                  <span className="font-medium text-base">{session.user.name}</span>
-                  <span className="text-sm text-zinc-500">{session.user.email}</span>
+                  <span className="text-base font-medium">
+                    {session.user.name}
+                  </span>
+                  <span className="text-sm text-zinc-500">
+                    {session.user.email}
+                  </span>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
                   {session.user.image ? (
                     <Image
                       src={session.user.image}
@@ -99,7 +111,7 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <div className="w-full max-w-4xl mx-auto px-4 py-2">
+        <div className="mx-auto w-full max-w-4xl px-4 py-2">
           <div className="flex justify-end">
             <Button
               onClick={handleSignIn}
@@ -113,9 +125,9 @@ export default function Home() {
       )}
 
       {/* Main Content */}
-      <div className="flex flex-col items-center justify-center gap-1 px-4 py-2 max-w-2xl mx-auto w-full">
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center gap-1 px-4 py-2">
         {/* Logo */}
-        <div className="w-56 h-56 relative flex items-center justify-center">
+        <div className="relative flex h-56 w-56 items-center justify-center">
           <Image
             src="/barklelogo.png"
             alt="Barkle Logo"
@@ -127,46 +139,51 @@ export default function Home() {
         </div>
 
         {/* Title */}
-        <h1 className="text-5xl font-bold tracking-[0.15em] text-zinc-50 font-roboto">
+        <h1 className="font-roboto text-5xl font-bold tracking-[0.15em] text-zinc-50">
           BARKLE
         </h1>
 
         {/* Description */}
-        <p className="text-center text-zinc-300 text-lg px-6 max-w-[400px] font-roboto">
-          5 chances to guess different dog breeds from their photos. A new set of pups every day!
+        <p className="font-roboto max-w-[400px] px-6 text-center text-lg text-zinc-300">
+          5 chances to guess different dog breeds from their photos. A new set
+          of pups every day!
         </p>
 
         {/* Games Counter */}
-        <Card className="bg-[#C4A484] text-black px-6 py-2 rounded-full text-sm mt-8">
+        <Card className="mt-8 rounded-full bg-[#C4A484] px-6 py-2 text-sm text-black">
           <p className="font-medium">
-            🐾 {gamesCount === undefined ? "..." : `${gamesCount} ${gamesCount === 1 ? 'Game' : 'Games'}`} Played Today 🐾
+            🐾{" "}
+            {gamesCount === undefined
+              ? "..."
+              : `${gamesCount} ${gamesCount === 1 ? "Game" : "Games"}`}{" "}
+            Played Today 🐾
           </p>
         </Card>
 
         {/* Game Buttons and Submit Link */}
-        <div className="flex flex-col items-center gap-2 w-full max-w-lg px-4 mt-2">
-          <div className="flex gap-4 w-full">
+        <div className="mt-2 flex w-full max-w-lg flex-col items-center gap-2 px-4">
+          <div className="flex w-full gap-4">
             <GameModeModal />
-            <Button 
+            <Button
               onClick={() => setShowLeaderboard(true)}
-              className="w-full py-7 text-xl font-bold bg-amber-700 hover:bg-amber-800 text-zinc-50 rounded-2xl shadow-lg transform transition-all active:scale-95 border border-zinc-600/20"
+              className="w-full transform rounded-2xl border border-zinc-600/20 bg-amber-700 py-7 text-xl font-bold text-zinc-50 shadow-lg transition-all hover:bg-amber-800 active:scale-95"
             >
               LEADERBOARD
             </Button>
-            <LeaderboardModal 
-              open={showLeaderboard} 
+            <LeaderboardModal
+              open={showLeaderboard}
               onOpenChange={setShowLeaderboard}
             />
           </div>
-          <DogSubmissionModal 
-            className="w-full py-4 mt-2 text-lg font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-xl border border-zinc-700/50 shadow-lg transform transition-all active:scale-95 flex items-center justify-center gap-2"
+          <DogSubmissionModal
+            className="mt-2 flex w-full transform items-center justify-center gap-2 rounded-xl border border-zinc-700/50 bg-zinc-800 py-4 text-lg font-medium text-zinc-100 shadow-lg transition-all hover:bg-zinc-700 active:scale-95"
             variant="default"
           />
         </div>
       </div>
 
-      <NewUserDialog 
-        isOpen={showNewUserDialog} 
+      <NewUserDialog
+        isOpen={showNewUserDialog}
         onClose={() => setShowNewUserDialog(false)}
       />
     </main>

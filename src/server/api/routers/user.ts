@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { users, scores } from "~/server/db/schema";
+import { users, scores, profiles } from "~/server/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { env } from "~/env";
@@ -33,12 +33,18 @@ export const userRouter = createTRPCRouter({
     }),
   getProfile: protectedProcedure
     .query(async ({ ctx }) => {
-      // Get user data
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.id, ctx.session.user.id),
+      // Get profile data with user image
+      const profile = await ctx.db.query.profiles.findFirst({
+        where: eq(profiles.userId, ctx.session.user.id),
+        with: {
+          user: {
+            columns: {
+              image: true,
+            },
+          },
+        },
         columns: {
           username: true,
-          image: true,
           currentDailyStreak: true,
           highestDailyStreak: true,
           currentGuessStreak: true,
@@ -56,21 +62,16 @@ export const userRouter = createTRPCRouter({
         .from(scores)
         .where(eq(scores.userId, ctx.session.user.id));
 
-      // Get latest score to verify streaks
-      const latestScore = await ctx.db.query.scores.findFirst({
-        where: eq(scores.userId, ctx.session.user.id),
-        orderBy: (scores, { desc }) => [desc(scores.playedAt)],
-      });
-
       return {
-        ...user,
+        ...profile,
+        image: profile?.user?.image,
         gamesPlayed: gamesCount.length,
-        currentGuessStreak: user?.currentGuessStreak ?? 0,
-        highestGuessStreak: user?.highestGuessStreak ?? 0,
-        currentDailyStreak: user?.currentDailyStreak ?? 0,
-        highestDailyStreak: user?.highestDailyStreak ?? 0,
-        highestPawsistenceStreak: user?.highestPawsistenceStreak ?? 0,
-        pawsistencePlaysToday: user?.pawsistencePlaysToday ?? 0,
+        currentGuessStreak: profile?.currentGuessStreak ?? 0,
+        highestGuessStreak: profile?.highestGuessStreak ?? 0,
+        currentDailyStreak: profile?.currentDailyStreak ?? 0,
+        highestDailyStreak: profile?.highestDailyStreak ?? 0,
+        highestPawsistenceStreak: profile?.highestPawsistenceStreak ?? 0,
+        pawsistencePlaysToday: profile?.pawsistencePlaysToday ?? 0,
       };
     }),
   updateProfileImage: protectedProcedure
@@ -106,8 +107,8 @@ export const userRouter = createTRPCRouter({
  
   needsUsername: protectedProcedure
     .query(async ({ ctx }) => {
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.id, ctx.session.user.id),
+      const profile = await ctx.db.query.profiles.findFirst({
+        where: eq(profiles.userId, ctx.session.user.id),
         columns: {
           username: true,
           lastPlayedAt: true,
@@ -115,8 +116,8 @@ export const userRouter = createTRPCRouter({
       });
       
       return {
-        needsUsername: !user?.username,
-        isNewUser: !user?.lastPlayedAt
+        needsUsername: !profile?.username,
+        isNewUser: !profile?.lastPlayedAt
       };
     }),
 }); 

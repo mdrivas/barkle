@@ -353,34 +353,93 @@ export default function DailyGame() {
     }
   }, [session?.user, tempId, searchParams]);
 
-  // Handle username submission
-  const onUsernameSubmit = async () => {
-    const urlScore = searchParams.get("score");
-    const urlResults = searchParams.get("results");
-
-    if (urlScore && urlResults && tempId) {
-      await saveScoreMutation.mutateAsync({
-        score: parseInt(urlScore),
-        tempId,
-        results: urlResults,
-        currentGuessStreak: 0,
-      });
-      
-      // Clean up URL and localStorage
-      window.history.replaceState({}, '', window.location.pathname);
-      localStorage.removeItem('barkle_temp_id');
+  // Add new profile query and mutation
+  const profileQuery = api.profile.getProfile.useQuery(
+    {
+      tempId: !session?.user ? localTempId ?? undefined : undefined,
+    },
+    {
+      enabled: !!localTempId || !!session?.user,
     }
+  );
 
-    setShowUsernameDialog(false);
-    setShowGameResults(true);
+  const createProfileMutation = api.profile.createTempProfile.useMutation();
+
+  // Add state to track migration status
+  const [isMigrating, setIsMigrating] = useState(false);
+
+  // Update the auth return effect
+  useEffect(() => {
+    if (session?.user && tempId) {
+      setIsMigrating(true); // Set migrating status
+      const urlScore = searchParams.get("score");
+      const urlResults = searchParams.get("results");
+
+      // Migrate the profile first
+      void migrateProfileMutation.mutateAsync(
+        { tempId },
+        {
+          onSuccess: () => {
+            if (urlScore && urlResults) {
+              setGameState(prev => ({
+                ...prev,
+                score: parseInt(urlScore),
+                gameOver: true,
+                hasSavedScore: true,
+              }));
+              setQuestionResults(urlResults.split(",").map(r => r === "1"));
+              setShowGameResults(true);
+            }
+            void todayScoreQuery.refetch();
+            void canPlayQuery.refetch();
+            void profileQuery.refetch();
+          },
+          onSettled: () => {
+            setIsMigrating(false);
+          }
+        }
+      );
+    }
+  }, [session?.user, tempId, searchParams]);
+
+  // Update the instructions effect to check migration status
+  useEffect(() => {
+    if (canPlayQuery.data?.canPlay && !isReturningFromAuth && !showGameResults && !isMigrating) {
+      if (!profileQuery.data && !session?.user) {
+        setShowInstructions(true);
+      } else {
+        setShowInstructions(true);
+      }
+    }
+  }, [canPlayQuery.data?.canPlay, isReturningFromAuth, showGameResults, profileQuery.data, session?.user, isMigrating]);
+
+  // Update handleInstructionsClose to check migration status
+  const handleInstructionsClose = () => {
+    setShowInstructions(false);
+    if (!profileQuery.data && !session?.user && !isMigrating) {
+      setTimeout(() => {
+        setShowUsernameDialog(true);
+      }, 100);
+    }
   };
 
-  // Update the instructions effect to check isReturningFromAuth
-  useEffect(() => {
-    if (canPlayQuery.data?.canPlay && !isReturningFromAuth && !showGameResults) {
-      setShowInstructions(true);
+  // Update username submit handler
+  const onUsernameSubmit = async (username: string) => {
+    try {
+      if (!session?.user && localTempId) {
+        await createProfileMutation.mutateAsync({
+          username,
+          tempId: localTempId,
+        });
+        
+        // Refetch profile data
+        void profileQuery.refetch();
+      }
+      setShowUsernameDialog(false);
+    } catch (error) {
+      throw error; // Let the dialog component handle the error toast
     }
-  }, [canPlayQuery.data?.canPlay, isReturningFromAuth, showGameResults]);
+  };
 
   // Single todayScoreQuery
   const todayScoreQuery = api.score.getTodayScore.useQuery(
@@ -391,6 +450,9 @@ export default function DailyGame() {
       enabled: (!canPlayQuery.data?.canPlay && (!!localTempId || !!session?.user)) || gameState.gameOver,
     }
   );
+
+  // Add at the top with other hooks
+  const migrateProfileMutation = api.profile.migrateProfile.useMutation();
 
   // Show loading until canPlayQuery is settled
   if (canPlayQuery.isLoading) {
@@ -544,7 +606,7 @@ export default function DailyGame() {
 
       <DailyInstructions
         isOpen={showInstructions}
-        onClose={() => setShowInstructions(false)}
+        onClose={handleInstructionsClose}
       />
 
       {showUsernameDialog && (

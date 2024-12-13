@@ -9,37 +9,19 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
-import { api } from "~/trpc/react";
 import { useToast } from "~/hooks/use-toast";
 
 interface UsernameDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: () => Promise<void>;
+  onSubmit?: (username: string) => Promise<void>;
 }
 
 export function UsernameDialog({ isOpen, onClose, onSubmit }: UsernameDialogProps) {
   const [username, setUsername] = useState("");
   const { toast } = useToast();
-  const setUsernameMutation = api.user.setUsername.useMutation({
-    onSuccess: async () => {
-      toast({
-        title: "Username set!",
-        description: "Welcome to Barkle! 🐾",
-      });
-      onClose();
-      await onSubmit?.();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (username.length < 3) {
       toast({
@@ -49,7 +31,21 @@ export function UsernameDialog({ isOpen, onClose, onSubmit }: UsernameDialogProp
       });
       return;
     }
-    setUsernameMutation.mutate({ username });
+
+    try {
+      await onSubmit?.(username);
+      toast({
+        title: "Username set!",
+        description: "Welcome to Barkle! 🐾",
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to set username",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -81,9 +77,8 @@ export function UsernameDialog({ isOpen, onClose, onSubmit }: UsernameDialogProp
           <Button
             type="submit"
             className="w-full bg-emerald-600 hover:bg-emerald-700"
-            disabled={setUsernameMutation.isPending}
           >
-            {setUsernameMutation.isPending ? "Setting..." : "Set Username"}
+            Set Username
           </Button>
         </form>
       </DialogContent>
