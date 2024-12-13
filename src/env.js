@@ -31,6 +31,7 @@ export const env = createEnv({
     GOOGLE_CLOUD_PRIVATE_KEY: z.string(),
     GOOGLE_CLOUD_CLIENT_EMAIL: z.string(),
     GOOGLE_CLOUD_BUCKET_NAME: z.string(),
+    GCS_INSTAGRAM_STORIES_BUCKET: z.string(),
   },
 
   /**
@@ -60,6 +61,7 @@ export const env = createEnv({
     GOOGLE_CLOUD_PRIVATE_KEY: process.env.GOOGLE_CLOUD_PRIVATE_KEY,
     GOOGLE_CLOUD_CLIENT_EMAIL: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
     GOOGLE_CLOUD_BUCKET_NAME: process.env.GOOGLE_CLOUD_BUCKET_NAME,
+    GCS_INSTAGRAM_STORIES_BUCKET: process.env.GCS_INSTAGRAM_STORIES_BUCKET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

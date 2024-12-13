@@ -138,3 +138,10 @@
   );
   background-size: 200% 200%;
 }
+
+/* Add these to optimize canvas rendering */
+.instagram-card-wrapper {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000;
+} 

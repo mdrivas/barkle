@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "~/components/ui/dialog";
 import { cn } from "~/lib/utils";
-import { Check, Share2, Home } from "lucide-react";
+import { Check, Share2, Home, Instagram } from "lucide-react";
+import html2canvas from "html2canvas";
+import { ShareableCard } from "./ShareableCard";
+import { useToast } from "~/hooks/use-toast";
 
 interface ShareResultsDialogProps {
   score: number;
@@ -20,17 +22,23 @@ interface ShareResultsDialogProps {
   mode?: "daily" | "pawsistence";
 }
 
+
+
 export function ShareResultsDialog({
   score,
-  questionResults = Array(5).fill(false),
+  questionResults = Array(5).fill(false) as boolean[],
   isOpen,
   onOpenChange,
   mode,
 }: ShareResultsDialogProps) {
   const [copied, setCopied] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const shareableCardRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const safeResults = questionResults ?? Array(5).fill(false);
-  const correctCount = safeResults.filter((r) => r).length;
+
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   const getDogAscii = (score: number) => {
     if (score >= 4) {
@@ -106,12 +114,59 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
     }
   };
 
+  const handleInstagramShare = async () => {
+    if (!shareableCardRef.current) return;
+    
+    setIsGeneratingImage(true);
+    try {
+      // 1. Generate the image
+      const canvas = await html2canvas(shareableCardRef.current, {
+        scale: 2,
+        backgroundColor: "#18181B",
+        logging: false,
+      });
+
+      // 2. Convert to blob for upload
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/png', 1.0);
+      });
+
+      // 3. Upload to GCS
+      const formData = new FormData();
+      formData.append('file', blob, 'share.png');
+
+      const response = await fetch('/api/share/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+      
+      // 4. Get URL and open Instagram
+      const { imageUrl } = await response.json() as { imageUrl: string };
+      window.location.href = `instagram://story-camera?media=${encodeURIComponent(imageUrl)}`;
+      
+      toast({
+        description: "Opening Instagram...",
+        className: "bg-zinc-800 border-zinc-700 text-zinc-50",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        description: "Failed to share to Instagram",
+      });
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900/95 text-zinc-50 sm:w-full sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold">
-            Share Your Score! {mode === "pawsistence" ? "🔥" : "🎯"}
+            Share Your Score! {mode === "pawsistence" ? "🔥" : ""}
           </DialogTitle>
         </DialogHeader>
 
@@ -168,6 +223,28 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
                 <Home className="h-4 w-4" /> Return Home
               </span>
             </Button>
+            {isMobile && (
+              <Button
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                onClick={handleInstagramShare}
+                disabled={isGeneratingImage}
+              >
+                <span className="flex items-center gap-2">
+                  <Instagram className="h-4 w-4" />
+                  {isGeneratingImage ? "Generating..." : "Share to Instagram"}
+                </span>
+              </Button>
+            )}
+          </div>
+
+          <div className="hidden">
+            <div ref={shareableCardRef}>
+              <ShareableCard
+                score={score}
+                questionResults={questionResults}
+                mode={mode}
+              />
+            </div>
           </div>
         </div>
       </DialogContent>
