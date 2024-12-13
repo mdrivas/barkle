@@ -42,7 +42,7 @@ export default function PawsistenceGame() {
 
   const { data: gameData } = api.pawsistence.getInitialState.useQuery(
     {
-      tempId: !session?.user ? localTempId ?? undefined : undefined,
+      tempId: !session?.user ? (localTempId ?? undefined) : undefined,
     },
     {
       refetchOnWindowFocus: false,
@@ -169,13 +169,13 @@ export default function PawsistenceGame() {
       saveGameResult({
         streak: gameState.currentStreak,
         isNewHighScore: true,
-        tempId: !session?.user ? localTempId ?? undefined : undefined,
+        tempId: !session?.user ? (localTempId ?? undefined) : undefined,
       });
     } else {
       saveGameResult({
         streak: gameState.currentStreak,
         isNewHighScore: false,
-        tempId: !session?.user ? localTempId ?? undefined : undefined,
+        tempId: !session?.user ? (localTempId ?? undefined) : undefined,
       });
     }
   }, [gameState.currentStreak, gameData?.highestStreak, saveGameResult]);
@@ -216,7 +216,7 @@ export default function PawsistenceGame() {
       saveGameResult({
         streak: newStreak,
         isNewHighScore,
-        tempId: !session?.user ? localTempId ?? undefined : undefined,
+        tempId: !session?.user ? (localTempId ?? undefined) : undefined,
       });
 
       setTimeout(() => {
@@ -232,14 +232,15 @@ export default function PawsistenceGame() {
 
       // Increment plays for both logged-in and temporary users
       incrementPlays({
-        tempId: !session?.user ? localTempId ?? undefined : undefined,
+        tempId: !session?.user ? (localTempId ?? undefined) : undefined,
       });
 
       if (!session?.user) {
         // Show sign-in toast for temporary users
         toast({
           title: "Want to secure your progress?",
-          description: "Sign in to protect your stats, submit dog photos, and unlock more features!",
+          description:
+            "Sign in to protect your stats, submit dog photos, and unlock more features!",
           action: (
             <Button
               onClick={handleSignIn}
@@ -324,7 +325,7 @@ export default function PawsistenceGame() {
     },
     {
       enabled: !session?.user,
-    }
+    },
   );
 
   const createProfileMutation = api.profile.createTempProfile.useMutation();
@@ -333,7 +334,7 @@ export default function PawsistenceGame() {
   useEffect(() => {
     if (!session?.user) {
       const storedTempId = localStorage.getItem("barkle_temp_id");
-      
+
       if (storedTempId) {
         setLocalTempId(storedTempId);
       } else {
@@ -341,7 +342,7 @@ export default function PawsistenceGame() {
         const newTempId = crypto.randomUUID();
         localStorage.setItem("barkle_temp_id", newTempId);
         setLocalTempId(newTempId);
-        
+
         // Create a temporary profile
         void createProfileMutation.mutateAsync({
           tempId: newTempId,
@@ -376,7 +377,12 @@ export default function PawsistenceGame() {
         setShowUsernameDialog(true);
       }
     }
-  }, [session?.user, localTempId, profileQuery.data?.username, profileQuery.isLoading]);
+  }, [
+    session?.user,
+    localTempId,
+    profileQuery.data?.username,
+    profileQuery.isLoading,
+  ]);
 
   // Add migrateProfile mutation
   const migrateProfileMutation = api.profile.migrateProfile.useMutation();
@@ -396,7 +402,7 @@ export default function PawsistenceGame() {
     // Only run migration if we have both session and tempId
     if (session?.user && tempId && !hasMigrated) {
       hasMigrated = true; // Prevent multiple migrations
-      
+
       void migrateProfileMutation.mutateAsync(
         { tempId },
         {
@@ -405,10 +411,10 @@ export default function PawsistenceGame() {
               void profileQuery.refetch();
               void gameDataQuery.refetch();
               // Clear tempId from URL
-              window.history.replaceState({}, '', window.location.pathname);
+              window.history.replaceState({}, "", window.location.pathname);
             }
           },
-        }
+        },
       );
     }
 

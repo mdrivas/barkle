@@ -18,20 +18,22 @@ import {
 const faqs = [
   {
     question: "How do I play?",
-    answer: "You get 5 chances each day to guess different dog breeds from their photos. Each correct guess adds to your score!"
+    answer:
+      "You get 5 chances each day to guess different dog breeds from their photos. Each correct guess adds to your score!",
   },
   {
     question: "When do new puzzles come out?",
-    answer: "New dog breeds are available every day at midnight PST."
+    answer: "New dog breeds are available every day at midnight PST.",
   },
   {
     question: "How are scores calculated?",
-    answer: "You get 1 point for each correct breed guess. Try to build up your streak by playing daily!"
+    answer:
+      "You get 1 point for each correct breed guess. Try to build up your streak by playing daily!",
   },
   {
     question: "Can I lose my guessing streak playing yesterday's puzzle?",
-    answer: "No, yesterday's puzzle won't affect your guessing streak."
-  }
+    answer: "No, yesterday's puzzle won't affect your guessing streak.",
+  },
 ];
 
 export function FAQSheet() {
@@ -39,10 +41,13 @@ export function FAQSheet() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger className="text-green-500 hover:text-green-400 transition-colors">
+      <SheetTrigger className="text-green-500 transition-colors hover:text-green-400">
         FAQ
       </SheetTrigger>
-      <SheetContent side="bottom" className="h-[80vh] bg-zinc-900 border-zinc-800">
+      <SheetContent
+        side="bottom"
+        className="h-[80vh] border-zinc-800 bg-zinc-900"
+      >
         <SheetHeader>
           <SheetTitle className="text-2xl font-bold text-zinc-50">
             Frequently Asked Questions
@@ -63,4 +68,4 @@ export function FAQSheet() {
       </SheetContent>
     </Sheet>
   );
-} 
+}

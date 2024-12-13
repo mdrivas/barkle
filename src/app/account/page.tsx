@@ -9,15 +9,15 @@ import Image from "next/image";
 import { useState } from "react";
 import { api } from "~/trpc/react";
 import { Skeleton } from "../../components/ui/skeleton";
-import { 
-  Trophy, 
-  Flame, 
-  GamepadIcon, 
-  Camera, 
-  ArrowLeft, 
-  LogOut, 
-  Share2, 
-  Check 
+import {
+  Trophy,
+  Flame,
+  GamepadIcon,
+  Camera,
+  ArrowLeft,
+  LogOut,
+  Share2,
+  Check,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { useToast } from "~/hooks/use-toast";
@@ -59,12 +59,15 @@ export default function AccountPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const { data: userData, isLoading } = api.user.getProfile.useQuery(undefined, {
-    enabled: !!session?.user,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 30,
-    refetchOnWindowFocus: false,
-  });
+  const { data: userData, isLoading } = api.user.getProfile.useQuery(
+    undefined,
+    {
+      enabled: !!session?.user,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
+      refetchOnWindowFocus: false,
+    },
+  );
 
   const utils = api.useUtils();
   const { mutate: updateImage } = api.user.updateProfileImage.useMutation({
@@ -86,22 +89,22 @@ export default function AccountPage() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("type", "profile");
-      
+
       // Upload to your preferred service
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
-      
+
       if (!response.ok) {
-        throw new Error('Upload failed');
+        throw new Error("Upload failed");
       }
 
       const { url } = await response.json();
-      
+
       // Update user profile with new image URL
       await updateImage({ imageUrl: url });
-      
+
       // Clear file state but keep preview
       setImageFile(null);
     } catch (error) {
@@ -113,76 +116,79 @@ export default function AccountPage() {
     }
   };
 
-  const StatCard = ({ 
-    title, 
-    value, 
-    icon: Icon, 
-    color, 
-    isLoading 
-  }: { 
-    title: string; 
-    value: number; 
-    icon: any; 
+  const StatCard = ({
+    title,
+    value,
+    icon: Icon,
+    color,
+    isLoading,
+  }: {
+    title: string;
+    value: number;
+    icon: any;
     color: keyof typeof STAT_CARD_STYLES;
     isLoading: boolean;
   }) => {
     const styles = STAT_CARD_STYLES[color];
-    
+
     return (
-      <Card className={cn(
-        "relative overflow-hidden p-4 transition-all duration-200 hover:scale-[1.02]",
-        styles.background,
-        "ring-1 ring-white/10",
-        "shadow-lg hover:shadow-xl",
-      )}>
+      <Card
+        className={cn(
+          "relative overflow-hidden p-4 transition-all duration-200 hover:scale-[1.02]",
+          styles.background,
+          "ring-1 ring-white/10",
+          "shadow-lg hover:shadow-xl",
+        )}
+      >
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className={cn(
-              "rounded-xl p-2.5",
-              styles.icon,
-              "ring-1 ring-white/10"
-            )}>
+            <div
+              className={cn(
+                "rounded-xl p-2.5",
+                styles.icon,
+                "ring-1 ring-white/10",
+              )}
+            >
               <Icon className="h-5 w-5" />
             </div>
             <div>
               {isLoading ? (
                 <Skeleton className="h-7 w-16" />
               ) : (
-                <p className={cn(
-                  "text-2xl font-bold tracking-tight",
-                  styles.highlight
-                )}>
+                <p
+                  className={cn(
+                    "text-2xl font-bold tracking-tight",
+                    styles.highlight,
+                  )}
+                >
                   {value}
                 </p>
               )}
-              <p className={cn(
-                "text-sm font-medium",
-                styles.text
-              )}>
-                {title}
-              </p>
+              <p className={cn("text-sm font-medium", styles.text)}>{title}</p>
             </div>
           </div>
         </div>
         {/* Decorative corner gradient */}
-        <div className={cn(
-          "absolute -right-4 -top-4 h-24 w-24 rounded-full blur-2xl",
-          styles.icon,
-          "opacity-20"
-        )} />
+        <div
+          className={cn(
+            "absolute -right-4 -top-4 h-24 w-24 rounded-full blur-2xl",
+            styles.icon,
+            "opacity-20",
+          )}
+        />
       </Card>
     );
   };
 
-  const { data: barkleStats, isLoading: isBarkleLoading } = api.score.getBarkleStats.useQuery(
-    undefined,
-    { enabled: !!session?.user?.id }
-  );
+  const { data: barkleStats, isLoading: isBarkleLoading } =
+    api.score.getBarkleStats.useQuery(undefined, {
+      enabled: !!session?.user?.id,
+    });
 
-  const { data: pawsistenceStats, isLoading: isPawsistenceLoading } = api.score.getPawsistenceStats.useQuery(
-    undefined,
-    { enabled: !!session?.user?.id }
-  );
+  const { data: pawsistenceStats, isLoading: isPawsistenceLoading } =
+    api.score.getPawsistenceStats.useQuery(undefined, {
+      enabled: !!session?.user?.id,
+    });
 
   const { toast } = useToast();
 
@@ -217,7 +223,7 @@ export default function AccountPage() {
         });
       }
     } catch (error) {
-      console.error('Error sharing:', error);
+      console.error("Error sharing:", error);
     }
   };
 
@@ -225,7 +231,9 @@ export default function AccountPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#121213] p-4">
         <Card className="w-full max-w-sm space-y-8 bg-zinc-900/50 p-8">
-          <h1 className="text-center text-2xl font-bold text-zinc-50">Welcome to Barkle</h1>
+          <h1 className="text-center text-2xl font-bold text-zinc-50">
+            Welcome to Barkle
+          </h1>
           <button
             onClick={() => void signIn("google")}
             className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-6 py-3 text-black transition-colors hover:bg-gray-50"
@@ -234,7 +242,10 @@ export default function AccountPage() {
             Continue with Google
           </button>
           <Link href="/" className="block text-center">
-            <Button variant="ghost" className="text-zinc-400 hover:text-zinc-200">
+            <Button
+              variant="ghost"
+              className="text-zinc-400 hover:text-zinc-200"
+            >
               Return Home
             </Button>
           </Link>
@@ -249,13 +260,16 @@ export default function AccountPage() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <Link href="/">
-            <Button variant="ghost" className="text-zinc-400 hover:text-zinc-200">
+            <Button
+              variant="ghost"
+              className="text-zinc-400 hover:text-zinc-200"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
           </Link>
-          <Button 
-            onClick={() => void signOut({ callbackUrl: '/' })} 
+          <Button
+            onClick={() => void signOut({ callbackUrl: "/" })}
             variant="destructive"
             size="sm"
             className="bg-red-600 hover:bg-red-700"
@@ -280,10 +294,10 @@ export default function AccountPage() {
                   />
                 )}
               </div>
-              <label 
+              <label
                 className={cn(
                   "absolute bottom-0 right-0 cursor-pointer",
-                  isUploading && "pointer-events-none"
+                  isUploading && "pointer-events-none",
                 )}
               >
                 <input
@@ -293,12 +307,12 @@ export default function AccountPage() {
                   onChange={handleImageChange}
                   disabled={isUploading}
                 />
-                <div 
+                <div
                   className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center",
-                    isUploading 
-                      ? "bg-gray-500" 
-                      : "bg-green-500 hover:bg-green-600"
+                    "flex h-8 w-8 items-center justify-center rounded-full",
+                    isUploading
+                      ? "bg-gray-500"
+                      : "bg-green-500 hover:bg-green-600",
                   )}
                 >
                   {isUploading ? (
@@ -309,13 +323,13 @@ export default function AccountPage() {
                 </div>
               </label>
             </div>
-            
+
             <div className="text-center">
               {isLoading ? (
                 <Skeleton className="h-8 w-32" />
               ) : (
                 <p className="text-2xl font-bold text-zinc-50">
-                  {userData?.username ?? 'User'}
+                  {userData?.username ?? "User"}
                 </p>
               )}
             </div>
@@ -326,8 +340,10 @@ export default function AccountPage() {
         <div className="space-y-6">
           {/* Daily Barkle Section */}
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-zinc-200">Daily Barkle</h2>
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <h2 className="mb-4 text-xl font-semibold text-zinc-200">
+              Daily Barkle
+            </h2>
+            <div className="mb-4 grid grid-cols-2 gap-4">
               <StatCard
                 title="Games Played"
                 value={barkleStats?.gamesPlayed ?? 0}
@@ -363,7 +379,9 @@ export default function AccountPage() {
 
           {/* Pawsistence Section */}
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-zinc-200">Pawsistence</h2>
+            <h2 className="mb-4 text-xl font-semibold text-zinc-200">
+              Pawsistence
+            </h2>
             <div className="grid grid-cols-2 gap-4">
               <StatCard
                 title="Plays Today"
@@ -386,7 +404,7 @@ export default function AccountPage() {
         <div className="mt-8">
           <Button
             onClick={handleShare}
-            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg shadow-emerald-700/20 transition-all duration-200 hover:shadow-emerald-700/40"
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-700/20 transition-all duration-200 hover:from-emerald-700 hover:to-emerald-600 hover:shadow-emerald-700/40"
             size="lg"
           >
             <Share2 className="mr-2 h-5 w-5" />
@@ -396,4 +414,4 @@ export default function AccountPage() {
       </div>
     </div>
   );
-} 
+}

@@ -8,7 +8,7 @@ import { dogSubmissionsBucket } from "~/lib/gcs-config";
 interface DogBreed {
   breed: string;
   imageUrl: string;
-  type: 'api' | 'community';
+  type: "api" | "community";
   submittedBy?: string;
 }
 
@@ -24,15 +24,15 @@ interface DogImageResponse {
 
 async function generateDailyBreeds() {
   const pstDate = new Date(
-    new Date().toLocaleString("en-US", { 
+    new Date().toLocaleString("en-US", {
       timeZone: "America/Los_Angeles",
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    })
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }),
   );
-  
-  const today = pstDate.toISOString().split('T')[0];
+
+  const today = pstDate.toISOString().split("T")[0];
 
   if (!today) {
     throw new Error("Failed to generate date");
@@ -53,19 +53,20 @@ async function generateDailyBreeds() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const verifiedDogs = await db.query.dogSubmissions.findMany({
-    where: (dogs) => and(
-      eq(dogs.status, 'verified'),
-      or(
-        sql`${dogs.lastFeaturedAt} IS NULL`,
-        sql`${dogs.lastFeaturedAt} < ${sevenDaysAgo.toISOString()}`
-      )
-    ),
+    where: (dogs) =>
+      and(
+        eq(dogs.status, "verified"),
+        or(
+          sql`${dogs.lastFeaturedAt} IS NULL`,
+          sql`${dogs.lastFeaturedAt} < ${sevenDaysAgo.toISOString()}`,
+        ),
+      ),
     with: {
       user: {
         columns: {
           username: true,
-        }
-      }
+        },
+      },
     },
   });
 
@@ -85,14 +86,14 @@ async function generateDailyBreeds() {
 
     if (!usedBreeds.has(breed!) && breed) {
       const imageResponse = await fetch(
-        `https://dog.ceo/api/breed/${breed}/images/random`
+        `https://dog.ceo/api/breed/${breed}/images/random`,
       );
       const imageData = (await imageResponse.json()) as DogImageResponse;
 
       selectedBreeds.push({
         breed,
         imageUrl: imageData.message,
-        type: 'api'
+        type: "api",
       });
       usedBreeds.add(breed);
     }
@@ -102,16 +103,17 @@ async function generateDailyBreeds() {
   if (verifiedDogs.length > 0) {
     const communityDogIndex = Math.floor(rng() * verifiedDogs.length);
     const communityDog = verifiedDogs[communityDogIndex];
-    
+
     if (communityDog) {
       selectedBreeds.push({
         breed: communityDog.breed,
         imageUrl: `https://storage.googleapis.com/${dogSubmissionsBucket.name}/${communityDog.imagePath}`,
-        type: 'community',
-        submittedBy: communityDog.user?.username ?? 'Anonymous'
+        type: "community",
+        submittedBy: communityDog.user?.username ?? "Anonymous",
       });
 
-      await db.update(dogSubmissions)
+      await db
+        .update(dogSubmissions)
         .set({ lastFeaturedAt: new Date() })
         .where(eq(dogSubmissions.id, communityDog.id));
     }
@@ -123,14 +125,14 @@ async function generateDailyBreeds() {
 
       if (!usedBreeds.has(breed!) && breed) {
         const imageResponse = await fetch(
-          `https://dog.ceo/api/breed/${breed}/images/random`
+          `https://dog.ceo/api/breed/${breed}/images/random`,
         );
         const imageData = (await imageResponse.json()) as DogImageResponse;
 
         selectedBreeds.push({
           breed,
           imageUrl: imageData.message,
-          type: 'api'
+          type: "api",
         });
         usedBreeds.add(breed);
       }
@@ -146,31 +148,32 @@ async function generateDailyBreeds() {
 
 async function previewTomorrowBreeds() {
   const tomorrow = new Date(
-    new Date().toLocaleString("en-US", { 
+    new Date().toLocaleString("en-US", {
       timeZone: "America/Los_Angeles",
-    })
+    }),
   );
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowString = tomorrow.toISOString().split('T')[0];
+  const tomorrowString = tomorrow.toISOString().split("T")[0];
 
   // Get available community dogs
   const sevenDaysAgo = new Date(tomorrow);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const verifiedDogs = await db.query.dogSubmissions.findMany({
-    where: (dogs) => and(
-      eq(dogs.status, 'verified'),
-      or(
-        sql`${dogs.lastFeaturedAt} IS NULL`,
-        sql`${dogs.lastFeaturedAt} < ${sevenDaysAgo.toISOString()}`
-      )
-    ),
+    where: (dogs) =>
+      and(
+        eq(dogs.status, "verified"),
+        or(
+          sql`${dogs.lastFeaturedAt} IS NULL`,
+          sql`${dogs.lastFeaturedAt} < ${sevenDaysAgo.toISOString()}`,
+        ),
+      ),
     with: {
       user: {
         columns: {
           username: true,
-        }
-      }
+        },
+      },
     },
   });
 
@@ -189,14 +192,14 @@ async function previewTomorrowBreeds() {
 
     if (!usedBreeds.has(breed!) && breed) {
       const imageResponse = await fetch(
-        `https://dog.ceo/api/breed/${breed}/images/random`
+        `https://dog.ceo/api/breed/${breed}/images/random`,
       );
       const imageData = (await imageResponse.json()) as DogImageResponse;
 
       selectedBreeds.push({
         breed,
         imageUrl: imageData.message,
-        type: 'api'
+        type: "api",
       });
       usedBreeds.add(breed);
     }
@@ -206,13 +209,13 @@ async function previewTomorrowBreeds() {
   if (verifiedDogs.length > 0) {
     const communityDogIndex = Math.floor(rng() * verifiedDogs.length);
     const communityDog = verifiedDogs[communityDogIndex];
-    
+
     if (communityDog) {
       selectedBreeds.push({
         breed: communityDog.breed,
         imageUrl: `https://storage.googleapis.com/${dogSubmissionsBucket.name}/${communityDog.imagePath}`,
-        type: 'community',
-        submittedBy: communityDog.user?.username ?? 'Anonymous'
+        type: "community",
+        submittedBy: communityDog.user?.username ?? "Anonymous",
       });
     }
   } else {
@@ -223,14 +226,14 @@ async function previewTomorrowBreeds() {
 
       if (!usedBreeds.has(breed!) && breed) {
         const imageResponse = await fetch(
-          `https://dog.ceo/api/breed/${breed}/images/random`
+          `https://dog.ceo/api/breed/${breed}/images/random`,
         );
         const imageData = (await imageResponse.json()) as DogImageResponse;
 
         selectedBreeds.push({
           breed,
           imageUrl: imageData.message,
-          type: 'api'
+          type: "api",
         });
         usedBreeds.add(breed);
       }
@@ -241,19 +244,19 @@ async function previewTomorrowBreeds() {
   return {
     date: tomorrowString,
     breeds: selectedBreeds,
-    preview: true
+    preview: true,
   };
 }
 
 // Add this function to help with testing
 async function generateTomorrowBreeds() {
   const tomorrow = new Date(
-    new Date().toLocaleString("en-US", { 
+    new Date().toLocaleString("en-US", {
       timeZone: "America/Los_Angeles",
-    })
+    }),
   );
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowString = tomorrow.toISOString().split('T')[0];
+  const tomorrowString = tomorrow.toISOString().split("T")[0];
 
   if (!tomorrowString) {
     throw new Error("Failed to generate date");
@@ -261,7 +264,7 @@ async function generateTomorrowBreeds() {
 
   // Get the preview data
   const previewData = await previewTomorrowBreeds();
-  
+
   // Add type check before insert
   if (!previewData?.breeds) {
     throw new Error("Failed to generate breeds data");
@@ -278,7 +281,7 @@ async function generateTomorrowBreeds() {
 // Add a new test endpoint
 export async function PUT(request: Request) {
   try {
-    if (process.env.NODE_ENV !== 'development') {
+    if (process.env.NODE_ENV !== "development") {
       return new NextResponse("Not available in production", { status: 403 });
     }
 
@@ -286,14 +289,20 @@ export async function PUT(request: Request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("Failed to generate tomorrow's breeds:", error);
-    return NextResponse.json({ error: "Failed to generate breeds" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate breeds" },
+      { status: 500 },
+    );
   }
 }
 
 export async function GET(request: Request) {
   try {
     // Match Vercel's exact authorization check
-    if (request.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (
+      request.headers.get("Authorization") !==
+      `Bearer ${process.env.CRON_SECRET}`
+    ) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -307,14 +316,19 @@ export async function GET(request: Request) {
 
 export async function POST(_request: Request) {
   try {
-    if (process.env.NODE_ENV !== 'development') {
-      return new NextResponse("Preview not available in production", { status: 403 });
+    if (process.env.NODE_ENV !== "development") {
+      return new NextResponse("Preview not available in production", {
+        status: 403,
+      });
     }
 
     const preview = await previewTomorrowBreeds();
     return NextResponse.json(preview);
   } catch (error) {
     console.error("Preview generation failed:", error);
-    return NextResponse.json({ error: "Failed to generate preview" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate preview" },
+      { status: 500 },
+    );
   }
-} 
+}

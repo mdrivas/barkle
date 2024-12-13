@@ -78,8 +78,7 @@ export type NewUser = InferInsertModel<typeof users>;
 
 export const profiles = createTable("profile", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id", { length: 255 })
-    .references(() => users.id),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
   username: varchar("username", { length: 30 }).unique(),
   tempId: varchar("temp_id", { length: 255 }).unique().$type<string | null>(),
   isAdmin: boolean("is_admin").default(false).notNull(),

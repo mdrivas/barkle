@@ -67,7 +67,12 @@ export function GameFinishedDialog({
 
   // Add effect to handle auth return
   useEffect(() => {
-    if (isReturningFromAuth && session?.user && tempId && !hasHandledAuthReturn) {
+    if (
+      isReturningFromAuth &&
+      session?.user &&
+      tempId &&
+      !hasHandledAuthReturn
+    ) {
       void migrateProfileMutation.mutateAsync(
         { tempId },
         {
@@ -84,7 +89,7 @@ export function GameFinishedDialog({
               variant: "destructive",
             });
           },
-        }
+        },
       );
     }
   }, [isReturningFromAuth, session?.user, tempId, hasHandledAuthReturn]);
