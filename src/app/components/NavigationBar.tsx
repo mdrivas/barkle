@@ -41,6 +41,10 @@ export function NavigationBar() {
                 Admin
               </Link>
               <span className="text-green-800">|</span>
+              <Link href="/preview" className="text-[10px] font-normal">
+                QR Code
+              </Link>
+              <span className="text-green-800">|</span>
             </>
           )}
           {navItems.map(({ Component }, index) => (

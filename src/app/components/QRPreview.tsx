@@ -2,18 +2,18 @@ import { QRCodeSVG } from 'qrcode.react';
 
 export function QRPreview() {
   return (
-    <div className="min-h-screen bg-zinc-900 flex flex-col items-center justify-center p-8">
+    <div className="min-h-screen bg-zinc-900 flex flex-col items-center justify-center p-8 mb-[300px]">
       {/* Header */}
       <div className="w-full flex flex-col items-center space-y-4 mb-12">
         <h1 className="text-6xl font-bold text-[#FFD700]">Barkle</h1>
-        <p className="text-xl text-zinc-400 tracking-wide">Test your trivia skills 🐾 🐶</p>
+        <p className="text-xl text-zinc-400 tracking-wide">Test your pup knowledge 🐾 🐶</p>
       </div>
 
       {/* QR Code */}
       <div className="bg-white p-8 rounded-3xl shadow-2xl border-4 border-[#4CAF50]">
         <QRCodeSVG 
           value="https://barkle.vercel.app"
-          size={300}
+          size={200}
           level="H"
           includeMargin={true}
         />
