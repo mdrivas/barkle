@@ -24,6 +24,11 @@ export function NewUserDialog({
   const { toast } = useToast();
   const utils = api.useUtils();
 
+  const handleOpenChange = (): void => {
+    // This dialog cannot be closed by user interaction
+    void 0;
+  };
+
   const setUsernameMutation = api.profile.setUsername.useMutation({
     onSuccess: async () => {
       toast({
@@ -56,9 +61,9 @@ export function NewUserDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}} modal={true}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange} modal={true}>
       <DialogContent 
-        className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900/95 text-zinc-50 sm:w-full sm:max-w-[400px]"
+        className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900/95 text-zinc-50 sm:w-full sm:max-w-[400px] [&>button]:hidden"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
       >
