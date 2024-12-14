@@ -119,15 +119,11 @@ export function GameFinishedDialog({
     ? todayScoreQuery.data.results.split(",").map((r) => r === "1")
     : questionResults;
 
-  // Replace shareResults component with button - Updated for authenticated users
+  // Replace shareResults component with button
   const shareResults = (
     <Button
       onClick={() => setIsShareDialogOpen(true)}
-      className={`flex w-full items-center justify-center gap-2 rounded-xl ${
-        session 
-          ? "bg-emerald-900 text-emerald-100" 
-          : "bg-emerald-900/80 text-emerald-100/90"
-      } py-2 text-base font-medium transition-all duration-200 hover:bg-emerald-800`}
+      className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-900 text-emerald-100 transition-all duration-200 hover:bg-emerald-800 py-2 text-base font-medium"
     >
       Share Results
       <Share2 className="h-5 w-5" />
@@ -137,11 +133,7 @@ export function GameFinishedDialog({
   const leaderboardButton = (
     <Button
       onClick={handleViewLeaderboard}
-      className={`flex w-full items-center justify-center gap-2 rounded-xl ${
-        session 
-          ? "bg-amber-900 text-amber-100" 
-          : "bg-amber-900/80 text-amber-100/90"
-      } py-2 text-base font-medium transition-all duration-200 hover:bg-amber-800`}
+      className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-900 text-amber-100 transition-all duration-200 hover:bg-amber-800 py-2 text-base font-medium"
     >
       View Leaderboard 🏆
     </Button>
@@ -151,11 +143,7 @@ export function GameFinishedDialog({
     <Button
       variant="outline"
       onClick={() => router.push("/")}
-      className={`flex w-full items-center justify-center gap-2 rounded-xl border-zinc-800 ${
-        session 
-          ? "bg-transparent text-zinc-200" 
-          : "bg-transparent text-zinc-400"
-      } py-2 text-base font-medium hover:bg-zinc-800/50`}
+      className="flex w-full items-center justify-center gap-2 rounded-xl border-zinc-800 bg-transparent text-zinc-200 hover:bg-zinc-800/50 py-2 text-base font-medium"
     >
       <Home className="h-5 w-5" /> Return Home
     </Button>
@@ -164,7 +152,7 @@ export function GameFinishedDialog({
   // Session-specific components
   const SignInPrompt = () => (
     <div className="mt-4 space-y-4 text-center">
-      <h3 className="text-2xl font-bold text-zinc-100">Save your score!</h3>
+      <h3 className="text-xl font-bold text-zinc-100">Save your score!</h3>
       <div className="mb-4 flex justify-center gap-4 text-[10px] text-zinc-300">
         <div className="flex items-center gap-1">
           <div className="flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500/20">
@@ -205,7 +193,7 @@ export function GameFinishedDialog({
           <span className="w-full border-t border-zinc-700" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-zinc-950 px-2 text-zinc-500">Continue with</span>
+          <span className="bg-zinc-950 px-2 text-zinc-500">Share & Continue</span>
         </div>
       </div>
       {shareResults}
@@ -248,8 +236,8 @@ export function GameFinishedDialog({
           </DialogHeader>
           <div className="mt-4 flex flex-col items-center gap-4">
             <div className="text-center">
-              <h2 className="mb-4 text-2xl font-bold text-zinc-100 sm:text-2xl">
-                {session ? "Daily Barkle Complete!" : "Today's Score"}
+              <h2 className="mb-4 text-3xl font-bold text-zinc-100">
+                Daily Barkle
               </h2>
               <p className="mb-2 text-4xl font-bold">
                 <span className="text-emerald-500">{displayScore}/5</span>

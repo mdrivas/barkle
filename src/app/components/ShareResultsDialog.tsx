@@ -202,18 +202,6 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
                 </span>
               )}
             </Button>
-            {isMobile && (
-              <Button
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                onClick={handleInstagramShare}
-                disabled={isGeneratingImage}
-              >
-                <span className="flex items-center gap-2">
-                  <Instagram className="h-4 w-4" />
-                  {isGeneratingImage ? "Generating..." : "Share to Instagram"}
-                </span>
-              </Button>
-            )}
           </div>
         </div>
       </DialogContent>
