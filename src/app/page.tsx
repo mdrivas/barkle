@@ -29,6 +29,19 @@ export default function Home() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showNewUserDialog, setShowNewUserDialog] = useState(false);
   const { handleGoogleSignIn } = useSignIn();
+  const [tempId, setTempId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedTempId = localStorage.getItem("barkle_temp_id");   
+    setTempId(storedTempId);
+  }, []);
+
+  const { data: tempProfile } = api.profile.getProfile.useQuery(
+    { tempId },
+    {
+      enabled: !session?.user && !!tempId,
+    }
+  );
 
   useEffect(() => {
     if (searchParams.get("showLeaderboard") === "true") {
@@ -52,7 +65,6 @@ export default function Home() {
     }
   }, [usernameCheck]);
 
-  // Generic sign-in function you can use throughout your app
   const handleSignIn = () => {
     void handleGoogleSignIn();
   };
@@ -65,47 +77,63 @@ export default function Home() {
       >
         {/* Account Area - Moved inside main content area */}
         <div className="w-full max-w-4xl px-4 py-2">
-          <div className="flex justify-end">
-            {session?.user ? (
-              <Link href="/account">
-                <Button
-                  variant="ghost"
-                  className="flex items-center gap-2 text-base text-zinc-400 hover:text-zinc-200"
-                >
-                  <div className="flex flex-col items-end">
-                    <span className="text-base font-medium">
-                      {session.user.name}
-                    </span>
-                    <span className="text-sm text-zinc-500">
-                      {session.user.email}
-                    </span>
-                  </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
-                    {session.user.image ? (
-                      <Image
-                        src={session.user.image}
-                        alt="Profile"
-                        width={40}
-                        height={40}
-                        className="rounded-full"
-                      />
-                    ) : (
-                      <span className="text-base">
-                        {session.user.name?.[0]?.toUpperCase() ?? "?"}
+          <div className="flex justify-between">
+            {/* Left side - Temp Username */}
+            <div className="flex items-center">
+              {!session?.user && tempProfile?.username ? (
+                <span className="text-sm font-medium text-emerald-400">
+                  Playing as: <span className="text-emerald-300">{tempProfile.username}</span>
+                </span>
+              ) : (
+                <span className="text-base text-zinc-400">
+                  {/* Empty span to maintain layout */}
+                </span>
+              )}
+            </div>
+            
+            {/* Right side - Sign In/Account */}
+            <div>
+              {session?.user ? (
+                <Link href="/account">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-2 text-base text-zinc-400 hover:text-zinc-200"
+                  >
+                    <div className="flex flex-col items-end">
+                      <span className="text-base font-medium">
+                        {session.user.name}
                       </span>
-                    )}
-                  </div>
+                      <span className="text-sm text-zinc-500">
+                        {session.user.email}
+                      </span>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
+                      {session.user.image ? (
+                        <Image
+                          src={session.user.image}
+                          alt="Profile"
+                          width={40}
+                          height={40}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        <span className="text-base">
+                          {session.user.name?.[0]?.toUpperCase() ?? "?"}
+                        </span>
+                      )}
+                    </div>
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  onClick={handleSignIn}
+                  variant="ghost"
+                  className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-zinc-200"
+                >
+                  Sign in with Google
                 </Button>
-              </Link>
-            ) : (
-              <Button
-                onClick={handleSignIn}
-                variant="ghost"
-                className="text-lg font-medium text-zinc-400 hover:text-zinc-200"
-              >
-                Sign In
-              </Button>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
