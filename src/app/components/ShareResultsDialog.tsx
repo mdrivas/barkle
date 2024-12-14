@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -9,9 +9,8 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { cn } from "~/lib/utils";
-import { Check, Share2, Home, Instagram } from "lucide-react";
-import domtoimage from 'dom-to-image-more';
-import { ShareableCard } from "./ShareableCard";
+import { Check, Share2, Instagram } from "lucide-react";
+import { generateShareImage } from '~/lib/generateShareImage';
 import { useToast } from "~/hooks/use-toast";
 
 interface ShareResultsDialogProps {
@@ -24,8 +23,8 @@ interface ShareResultsDialogProps {
 
 interface UploadResponse {
   imageUrl?: string;
+  instagramUrl?: string;
   error?: string;
-  details?: string;
 }
 
 export function ShareResultsDialog({
@@ -37,7 +36,6 @@ export function ShareResultsDialog({
 }: ShareResultsDialogProps) {
   const [copied, setCopied] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const shareableCardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const safeResults = questionResults ?? Array(5).fill(false);
@@ -121,16 +119,9 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
   };
 
   const handleInstagramShare = async () => {
-    if (!shareableCardRef.current) return;
-    
     setIsGeneratingImage(true);
     try {
-      const dataUrl = await domtoimage.toPng(shareableCardRef.current, {
-        width: 500,
-        height: 500,
-        bgcolor: '#18181B'
-      });
-
+      const dataUrl = await generateShareImage(score, questionResults, mode);
       const blobResponse = await fetch(dataUrl);
       const blob = await blobResponse.blob();
       
@@ -142,12 +133,11 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
         body: formData,
       });
 
-      const data = await response.json() as UploadResponse;
+      const data = (await response.json()) as UploadResponse;
       if (!response.ok) throw new Error(data.error || "Upload failed");
+      if (!data.instagramUrl) throw new Error("No Instagram URL received");
       
-      if (!data.imageUrl) throw new Error("No image URL received");
-      window.location.href = `instagram://story-camera?media=${encodeURIComponent(data.imageUrl)}`;
-      
+      window.location.href = data.instagramUrl;
     } catch (error) {
       console.error("Error:", error);
       toast({
@@ -212,28 +202,6 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
                 </span>
               )}
             </Button>
-            {isMobile && (
-              <Button
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                onClick={handleInstagramShare}
-                disabled={isGeneratingImage}
-              >
-                <span className="flex items-center gap-2">
-                  <Instagram className="h-4 w-4" />
-                  {isGeneratingImage ? "Generating..." : "Share to Instagram"}
-                </span>
-              </Button>
-            )}
-          </div>
-
-          <div className="hidden">
-            <div ref={shareableCardRef}>
-              <ShareableCard
-                score={score}
-                questionResults={questionResults}
-                mode={mode}
-              />
-            </div>
           </div>
         </div>
       </DialogContent>

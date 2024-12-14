@@ -11,7 +11,6 @@ import { Suspense } from "react";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { GoogleAnalytics } from "./components/GoogleAnalytics"; // Add this import
 import { ProfileProvider } from "./components/ProfileProvider";
-import { NavigationBar } from "./components/NavigationBar";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -69,7 +68,6 @@ export default function RootLayout({
             <TRPCReactProvider>
               <ProfileProvider>
                 <div className="flex min-h-screen flex-col">
-                  <NavigationBar />
                   <main className="flex-1 pb-8">
                     <Suspense
                       fallback={

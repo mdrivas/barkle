@@ -59,6 +59,7 @@ export default function Home() {
 
   return (
     <div>
+      <NavigationBar />
       <main
         className={`flex flex-col items-center bg-[#121213] font-sans text-zinc-50 ${roboto.variable}`}
       >
@@ -111,15 +112,14 @@ export default function Home() {
         {/* Main Content - Centered in the available space */}
         <div className="flex flex-1 flex-col items-center justify-center">
           <div className="flex w-full max-w-2xl flex-col items-center gap-4 px-4">
-            {/* Logo */}
-            <div className="relative flex h-40 w-40 items-center justify-center sm:h-56 sm:w-56">
+            {/* Logo - Updated for better circular fit */}
+            <div className="relative aspect-square h-52 sm:h-72">
               <Image
-                src="/barklelogo.png"
+                src="/barklelogo.webp"
                 alt="Barkle Logo"
-                width={320}
-                height={320}
+                fill
                 priority
-                className="rounded-full object-contain"
+                className="rounded-full object-cover"
               />
             </div>
 
