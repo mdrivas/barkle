@@ -7,7 +7,7 @@
     }
   ],
   "functions": {
-    "api/cron/daily-breeds": {
+    "/app/api/cron/daily-breeds/route": {
       "maxDuration": 60
     }
   }
