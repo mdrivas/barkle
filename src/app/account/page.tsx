@@ -17,11 +17,14 @@ import {
   ArrowLeft,
   LogOut,
   Share2,
+  Pencil,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { useToast } from "~/hooks/use-toast";
 import { useSignIn } from "~/hooks/useSignIn";
 import { useProfileContext } from "../components/ProfileProvider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Input } from "~/components/ui/input";
 const STAT_CARD_STYLES = {
   sky: {
     background: "bg-gradient-to-br from-sky-500/20 to-sky-600/10",
@@ -80,6 +83,38 @@ export default function AccountPage() {
       void refetchProfile();
     },
   });
+
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const { toast } = useToast();
+
+  const updateUsernameMutation = api.profile.updateUsername.useMutation({
+    onSuccess: () => {
+      setIsEditingUsername(false);
+      void refetchProfile();
+      toast({
+        title: "Username updated!",
+        description: "Your new username has been saved.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUsernameUpdate = async () => {
+    if (!newUsername) return;
+    
+    try {
+      await updateUsernameMutation.mutateAsync({ username: newUsername });
+    } catch (error) {
+      // Error handling is done in onError above
+    }
+  };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -193,8 +228,6 @@ export default function AccountPage() {
     api.score.getBarkleStats.useQuery(undefined, {
       enabled: !!session?.user?.id,
     });
-
-  const { toast } = useToast();
 
   const handleShare = async () => {
     const statsText = `🐕 MY BARKLE STATS 🐕
@@ -334,9 +367,20 @@ export default function AccountPage() {
               {isLoading ? (
                 <Skeleton className="h-8 w-32" />
               ) : (
-                <p className="text-2xl font-bold text-zinc-50">
-                  {userData?.username ?? "User"}
-                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-2xl font-bold text-zinc-50">
+                    {userData?.username ?? "User"}
+                  </p>
+                  <button
+                    onClick={() => {
+                      setNewUsername(userData?.username ?? "");
+                      setIsEditingUsername(true);
+                    }}
+                    className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -418,6 +462,37 @@ export default function AccountPage() {
           </Button>
         </div>
       </div>
+
+      {/* Add Username Edit Dialog */}
+      <Dialog open={isEditingUsername} onOpenChange={setIsEditingUsername}>
+        <DialogContent className="bg-zinc-900 text-zinc-50">
+          <DialogHeader>
+            <DialogTitle>Edit Username</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
+              placeholder="New username"
+              className="bg-zinc-800 text-zinc-50"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setIsEditingUsername(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUsernameUpdate}
+                disabled={updateUsernameMutation.isPending}
+              >
+                {updateUsernameMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

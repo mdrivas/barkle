@@ -8,7 +8,7 @@ import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { cn } from "~/lib/utils";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Timer, AlertCircle } from "lucide-react";
 import { api } from "~/trpc/react";
 import { PawsistenceFinishedDialog } from "./components/PawsistenceFinishedDialog";
 import { IncorrectGuessDialog } from "./components/IncorrectGuessDialog";
@@ -28,12 +28,16 @@ interface GameState {
   gameOver: boolean;
   playsRemaining: number;
   highestStreak: number;
+  timeRemaining: number;
 }
 
 interface BreedsResponse {
   message: Record<string, string[]>;
   status: string;
 }
+
+const TOTAL_TIME = 30;
+const WARNING_TIME = 5;
 
 export default function PawsistenceGame() {
   const { data: session } = useSession();
@@ -93,6 +97,7 @@ export default function PawsistenceGame() {
     gameOver: false,
     playsRemaining: gameData?.playsRemaining ?? 3,
     highestStreak: gameData?.highestStreak ?? 0,
+    timeRemaining: TOTAL_TIME,
   });
 
   const happyBarkRef = useRef<HTMLAudioElement | null>(null);
@@ -258,6 +263,7 @@ export default function PawsistenceGame() {
     hasGameBeenSaved.current = false;
     setShowIncorrectDialog(false);
     setAnsweredBreed(null);
+    setShowTimeWarning(false);
 
     // Reset game state and fetch new round
     setGameState((prev) => ({
@@ -267,6 +273,7 @@ export default function PawsistenceGame() {
       isLoading: true,
       currentStreak: 0,
       gameOver: false,
+      timeRemaining: TOTAL_TIME,
     }));
 
     void fetchNewRound();
@@ -361,6 +368,45 @@ export default function PawsistenceGame() {
     profileQuery.isLoading,
   ]);
 
+  const [showTimeWarning, setShowTimeWarning] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (gameState.currentBreed && !answeredBreed && !gameState.gameOver) {
+      // Always show timer at start of new round
+      setGameState(prev => ({ ...prev, timeRemaining: TOTAL_TIME }));
+      
+      const timer = setInterval(() => {
+        setGameState(prev => {
+          const newTime = prev.timeRemaining - 1;
+          
+          if (newTime === WARNING_TIME) {
+            setShowTimeWarning(true);
+          }
+          
+          if (newTime <= 0) {
+            clearInterval(timer);
+            void angryBarkRef.current?.play();
+            incrementPlays({ tempId });
+            setShowIncorrectDialog(true);
+            return { ...prev, timeRemaining: 0 };
+          }
+          
+          return { ...prev, timeRemaining: newTime };
+        });
+      }, 1000);
+      
+      timerRef.current = timer;
+      
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+        setShowTimeWarning(false);
+      };
+    }
+  }, [gameState.currentBreed, answeredBreed, gameState.gameOver]);
+
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-50">
       <div className="container mx-auto max-w-4xl">
@@ -380,34 +426,81 @@ export default function PawsistenceGame() {
             Pawsistence
           </h1>
 
-          {/* Smaller Centered Streak Display */}
+          {/* Streak Display */}
           <div className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/50 p-1 backdrop-blur-sm">
             <div className="text-lg font-bold text-[#FFD700]">
               Current Streak: {gameState.currentStreak}
             </div>
           </div>
+
+          {/* Timer Display - Floating Overlay */}
+          {!answeredBreed && gameState.currentBreed && !gameState.gameOver && (
+            <div
+              className={cn(
+                "fixed left-1/2 top-18 z-50 -translate-x-1/2 transform",
+                "pointer-events-none transition-all duration-300",
+                {
+                  "translate-y-0 opacity-100": 
+                    gameState.timeRemaining >= 28 || // Show for 30-28 seconds
+                    gameState.timeRemaining <= WARNING_TIME, // Show for 5-0 seconds
+                  "translate-y-[-1rem] opacity-0": 
+                    gameState.timeRemaining < 28 && gameState.timeRemaining > WARNING_TIME,
+                }
+              )}
+            >
+              <div
+                className={cn(
+                  "flex items-center gap-2 rounded-lg px-4 py-2",
+                  "text-sm font-medium shadow-lg backdrop-blur-sm",
+                  {
+                    "bg-zinc-900/90 text-zinc-100": gameState.timeRemaining >= 28,
+                    "bg-red-900/80 text-red-100": gameState.timeRemaining <= WARNING_TIME,
+                  }
+                )}
+              >
+                {gameState.timeRemaining === TOTAL_TIME ? (
+                  <>
+                    <Timer className="h-4 w-4" />
+                    <span>{TOTAL_TIME}s to answer</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="tabular-nums">{gameState.timeRemaining}s left!</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Game Board */}
         <div className="rounded-xl p-4">
           {gameState.isLoading && !gameState.currentBreed ? (
-            <Card className="mb-6 overflow-hidden rounded-xl border-0 bg-zinc-900/50 shadow-xl backdrop-blur-sm">
-              <div className="h-[300px] w-full animate-pulse bg-zinc-800/50 md:h-[350px] lg:h-[400px]" />
-            </Card>
+            <div className="relative">
+              <Card className="mb-6 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
+                <div className="h-[300px] w-full animate-pulse bg-zinc-800/50 md:h-[350px] lg:h-[400px]" />
+              </Card>
+            </div>
           ) : gameState.currentBreed ? (
-            <Card className="mb-6 overflow-hidden rounded-xl border-0 bg-zinc-900/50 shadow-xl backdrop-blur-sm">
-              <div className="relative h-[300px] w-full md:h-[350px] lg:h-[400px]">
-                <Image
-                  src={gameState.currentBreed.imageUrl}
-                  alt="Mystery dog"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover transition-transform duration-500 hover:scale-105"
-                  priority
-                  quality={90}
-                />
-              </div>
-            </Card>
+            <div className="relative">
+              <Card className="mb-6 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
+                <div className="relative h-[300px] w-full bg-zinc-900 md:h-[350px] lg:h-[400px]">
+                  <Image
+                    src={gameState.currentBreed.imageUrl}
+                    alt="Mystery dog"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className={cn(
+                      "rounded-xl transition-transform duration-500",
+                      "object-cover md:object-contain md:scale-105 md:p-2"
+                    )}
+                    priority
+                    quality={90}
+                  />
+                </div>
+              </Card>
+            </div>
           ) : null}
 
           <div className="grid grid-cols-2 gap-4">

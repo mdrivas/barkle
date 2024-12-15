@@ -546,13 +546,17 @@ export default function DailyGame() {
               </Card>
             ) : gameState.currentBreed ? (
               <Card className="mb-8 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
-                <div className="relative h-[300px] w-full md:h-[350px] lg:h-[400px]">
+                <div className="relative h-[300px] w-full bg-zinc-900 md:h-[350px] lg:h-[400px]">
                   <Image
                     src={gameState.currentBreed.imageUrl}
                     alt="Mystery dog"
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="rounded-xl bg-zinc-900/50 object-cover transition-transform duration-500 hover:scale-105"
+                    className={cn(
+                      "rounded-xl transition-transform duration-500",
+                      // Mobile: cover, Desktop: contain and scaled up by default
+                      "object-cover md:object-contain md:scale-105 md:p-2"
+                    )}
                     priority
                     quality={90}
                   />

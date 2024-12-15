@@ -77,6 +77,7 @@ export const profiles = createTable("profile", {
   tempId: varchar("temp_id", { length: 255 }).unique().$type<string | null>(),
   profileImageUrl: varchar("profile_image_url", { length: 255 }),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  isVerified: boolean("is_verified").default(false).notNull(),
   currentDailyStreak: integer("current_daily_streak").default(0),
   highestDailyStreak: integer("highest_daily_streak").default(0),
   currentGuessStreak: integer("current_guess_streak").default(0),
