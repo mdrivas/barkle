@@ -14,36 +14,20 @@ export const feedbackRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        console.log("Feedback submission attempt:", {
-          message: input.message,
-          userId: input.userId,
-          tempId: input.tempId,
-        });
-
-        const result = await ctx.db.insert(feedback).values({
+        await ctx.db.insert(feedback).values({
           message: input.message,
           userId: input.userId ?? null,
           tempId: input.tempId ?? null,
         });
-
-        console.log("Insert result:", result);
 
         return {
           success: true,
           message: "Feedback submitted successfully",
         };
       } catch (error) {
-        console.error("Detailed error in feedback submission:", {
-          error,
-          input,
-          userId: input.userId,
-          tempId: input.tempId,
-        });
-
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to submit feedback",
-          cause: error,
         });
       }
     }),
