@@ -19,15 +19,26 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Barkle",
-  description: "The Daily Dog Breed Game",
-  icons: {
-    icon: [
-      { url: "/favicon.ico" },
-      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
-      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  title: "Barkle - The Daily Dog Breed Game",
+  description: "Test your dog breed knowledge with Barkle, a daily puzzle game featuring dog breeds from around the world. Play daily challenges and compete on the leaderboard!",
+  metadataBase: new URL('https://barkle.vercel.app'),
+  keywords: ["dog breeds", "dog game", "daily puzzle", "breed quiz", "dog breeds game", "Barkle", "dog breed quiz", "Worde for dogs"],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: "your-google-verification-code", // Get this from Google Search Console
+  },
+  alternates: {
+    canonical: 'https://barkle.vercel.app',
   },
   openGraph: {
     type: "website",
@@ -62,6 +73,10 @@ export default function RootLayout({
         <meta 
           name="google-adsense-account"
           content="ca-pub-8788092045781561"
+        />
+        <meta 
+          name="google-site-verification" 
+          content="XPs4Q8Krq-JDjZPb_UHTJA33SYJ6HRLNuTlYkbimI9Y" 
         />
       </head>
       <body className="min-h-screen bg-[#121213]">
