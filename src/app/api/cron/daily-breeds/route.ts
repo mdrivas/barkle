@@ -155,7 +155,10 @@ async function generateDailyBreeds() {
   console.log("\n=== Community Dog Selection ===");
   console.log(`Found ${verifiedDogs.length} eligible community dogs:`);
   verifiedDogs.forEach(dog => {
-    console.log(`- ID: ${dog.id}, Breed: ${dog.breed}, User: ${dog.profile?.username ?? 'Anonymous'}, Last Featured: ${dog.lastFeaturedAt ?? 'Never'}`);
+    const lastFeatured = dog.lastFeaturedAt 
+      ? new Date(dog.lastFeaturedAt).toISOString() 
+      : 'Never';
+    console.log(`- ID: ${dog.id}, Breed: ${dog.breed}, User: ${dog.profile?.username ?? 'Anonymous'}, Last Featured: ${lastFeatured}`);
   });
 
   // Then add community dog as the 5th dog if available
@@ -168,11 +171,14 @@ async function generateDailyBreeds() {
     const communityDog = sortedDogs[communityDogIndex];
 
     if (communityDog) {
+      const lastFeatured = communityDog.lastFeaturedAt 
+        ? new Date(communityDog.lastFeaturedAt).toISOString() 
+        : 'Never';
       console.log(`\nSelected community dog:`);
       console.log(`- ID: ${communityDog.id}`);
       console.log(`- Breed: ${communityDog.breed}`);
       console.log(`- Submitted by: ${communityDog.profile?.username ?? 'Anonymous'}`);
-      console.log(`- Last featured: ${communityDog.lastFeaturedAt ?? 'Never'}`);
+      console.log(`- Last featured: ${lastFeatured}`);
 
       selectedBreeds.push({
         breed: communityDog.breed,
