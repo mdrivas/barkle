@@ -7,7 +7,7 @@
   ],
   "functions": {
     "/api/cron/daily-breeds": {
-      "maxDuration": 300
+      "maxDuration": 60
     }
   }
 }
