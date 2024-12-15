@@ -542,33 +542,26 @@ export default function DailyGame() {
 
           <div className="space-y-4">
             {gameState.isLoading && !gameState.currentBreed ? (
-              <Card className="mb-8 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
-                <div className="h-[300px] w-full animate-pulse rounded-xl bg-zinc-800/50 md:h-[350px] lg:h-[400px]" />
-              </Card>
+              <div className="relative mb-8 aspect-square w-full animate-pulse rounded-xl bg-zinc-800/50 sm:aspect-[4/3] md:aspect-video" />
             ) : gameState.currentBreed ? (
-              <Card className="mb-8 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
-                <div className="relative h-[300px] w-full bg-zinc-900 md:h-[350px] lg:h-[400px]">
+              <div className="relative mb-8 mx-auto w-full max-w-[600px]">
+                <div className="relative rounded-xl overflow-hidden">
                   <Image
                     src={gameState.currentBreed.imageUrl}
                     alt="Mystery dog"
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    width={600}
+                    height={600}
                     className={cn(
+                      "rounded-xl w-full h-auto",
+                      "max-h-[250px] sm:max-h-[300px] md:max-h-[400px]",
                       "rounded-xl transition-transform duration-500",
-                      // Mobile: cover, Desktop: contain and scaled up by default
-                      "object-cover md:object-contain md:scale-105 md:p-2"
+                      "object-contain"
                     )}
                     priority
                     quality={90}
                   />
-                  {/* Show community badge immediately if it's a community submission */}
-                  {gameState.currentBreed.type === "community" && (
-                    <div className="absolute right-4 top-4 rounded-full bg-emerald-500/80 px-3 py-1 text-sm text-white backdrop-blur-sm">
-                      Community Pup
-                    </div>
-                  )}
                 </div>
-              </Card>
+              </div>
             ) : null}
 
             {/* Show submitter after answering if it's the community dog */}
@@ -581,7 +574,15 @@ export default function DailyGame() {
                 </p>
               )}
 
-            <div className="grid grid-cols-2 gap-4" key={currentRoundIndex}>
+            <div 
+              className="mx-auto grid grid-cols-2 gap-4
+                w-full
+                sm:max-w-[500px]
+                md:max-w-[500px]
+                lg:max-w-[600px]
+              " 
+              key={currentRoundIndex}
+            >
               {gameState.options.map((breed) => (
                 <Button
                   key={breed}
