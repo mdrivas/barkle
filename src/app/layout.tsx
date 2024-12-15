@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-verification-code", // Get this from Google Search Console
+    google: "XPs4Q8Krq-JDjZPb_UHTJA33SYJ6HRLNuTlYkbimI9Y",
   },
   alternates: {
     canonical: 'https://barkle.vercel.app',
