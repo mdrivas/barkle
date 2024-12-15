@@ -5,7 +5,6 @@ import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 import { useProfileContext } from "~/app/components/ProfileProvider";
 import { useSession } from "next-auth/react";
-import { CheckCircle } from "lucide-react";
 
 // Base type for common properties
 interface BaseLeaderboardEntry {
@@ -211,7 +210,7 @@ const UserScoreSection = ({
           )
         )
       ) : (
-        <div className="text-zinc-400">You haven't played yet!</div>
+        <div className="text-zinc-400">You haven&apos;t played yet!</div>
       )}
     </div>
   </div>

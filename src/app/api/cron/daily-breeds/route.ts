@@ -298,15 +298,26 @@ export async function PUT(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    // Match Vercel's exact authorization check
-    if (
-      request.headers.get("Authorization") !==
-      `Bearer ${process.env.CRON_SECRET}`
-    ) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    const authHeader = request.headers.get("Authorization");
+    const cronSecret = process.env.CRON_SECRET;
+
+    // Add debug logging (will show in Vercel logs)
+    console.log("Cron job triggered");
+    console.log("Auth header present:", !!authHeader);
+    console.log("CRON_SECRET present:", !!cronSecret);
+
+    if (!authHeader || !cronSecret) {
+      console.error("Missing authorization header or CRON_SECRET");
+      return new NextResponse("Missing auth credentials", { status: 401 });
+    }
+
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      console.error("Invalid authorization header");
+      return new NextResponse("Invalid authorization", { status: 401 });
     }
 
     await generateDailyBreeds();
+    console.log("Daily breeds generated successfully");
     return new NextResponse("Success", { status: 200 });
   } catch (error) {
     console.error("CRON job failed:", error);
