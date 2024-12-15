@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "~/trpc/react";
 import {
   Dialog,
   DialogContent,
@@ -11,25 +12,62 @@ import {
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/hooks/use-toast";
+import { useSession } from "next-auth/react";
 
 export function FeedbackSheet() {
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [tempId, setTempId] = useState<string | null>(null);
+  const { data: session } = useSession();
   const { toast } = useToast();
   const maxLength = 500;
 
-  const handleSubmit = async () => {
-    if (!feedback.trim()) return;
+  useEffect(() => {
+    const storedTempId = localStorage.getItem("barkle_temp_id");
+    setTempId(storedTempId);
+  }, []);
 
-    toast({
-      title: "Pawsome! 🐾",
-      description:
-        "Your feedback has been received. Thank you for helping us improve!",
-      duration: 3000,
+  const { data: tempProfile } = api.profile.getProfile.useQuery(
+    { tempId },
+    {
+      enabled: !!tempId && !session?.user,
+    }
+  );
+
+  const submitFeedback = api.feedback.submit.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Pawsome! 🐾",
+        description: "Your feedback has been received. Thank you for helping us improve!",
+        duration: 3000,
+      });
+      setFeedback("");
+      setOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Uh oh! 🐾",
+        description: error.message || "Something went wrong. Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!feedback.trim() || submitFeedback.isPending) return;
+
+    const identificationData = session?.user?.id
+      ? { userId: session.user.id }
+      : tempProfile && tempId
+      ? { tempId }
+      : {};
+
+    console.log('Submitting feedback with:', { ...identificationData });
+
+    submitFeedback.mutate({
+      message: feedback,
+      ...identificationData,
     });
-
-    setFeedback("");
-    setOpen(false);
   };
 
   return (
@@ -66,10 +104,12 @@ export function FeedbackSheet() {
             </span>
             <Button
               onClick={handleSubmit}
-              disabled={!feedback.trim()}
+              disabled={!feedback.trim() || submitFeedback.isPending}
               className="group relative overflow-hidden rounded-xl bg-[#4A6741] px-6 py-2 text-white hover:bg-[#3d5635]"
             >
-              <span className="relative z-10">Submit Feedback</span>
+              <span className="relative z-10">
+                {submitFeedback.isPending ? "Submitting..." : "Submit Feedback"}
+              </span>
               <span className="absolute inset-0 bg-gradient-to-r from-green-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></span>
             </Button>
           </div>

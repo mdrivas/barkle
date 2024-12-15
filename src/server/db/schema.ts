@@ -230,3 +230,31 @@ export const dogSubmissionsRelations = relations(dogSubmissions, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const feedback = createTable("feedback", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 })
+    .$type<string | null>()
+    .references(() => profiles.userId, { onDelete: "set null" }),
+  tempId: varchar("temp_id", { length: 255 })
+    .$type<string | null>()
+    .references(() => profiles.tempId, { onDelete: "set null" }),
+  message: varchar("message", { length: 500 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export type Feedback = InferSelectModel<typeof feedback>;
+export type NewFeedback = InferInsertModel<typeof feedback>;
+
+export const feedbackRelations = relations(feedback, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [feedback.userId],
+    references: [profiles.userId],
+  }),
+  tempProfile: one(profiles, {
+    fields: [feedback.tempId],
+    references: [profiles.tempId],
+  }),
+}));
