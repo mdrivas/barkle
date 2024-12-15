@@ -8,6 +8,7 @@ import { scores } from "~/server/db/schema";
 import { eq, and, sql, isNotNull, desc, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { profiles } from "~/server/db/schema";
+import { toPST, isConsecutiveDay } from "~/lib/streaks";
 
 export const scoreRouter = createTRPCRouter({
   canPlayToday: publicProcedure
@@ -29,7 +30,9 @@ export const scoreRouter = createTRPCRouter({
 
       if (!profile) return { canPlay: true };
 
-      // Check scores with either userId or tempId
+      // Use PST for date comparison
+      const now = toPST(new Date());
+      
       const score = await ctx.db
         .select({
           playedAt: scores.playedAt,
@@ -47,11 +50,11 @@ export const scoreRouter = createTRPCRouter({
         )
         .limit(1);
 
+      const nextGameTime = now.startOf('day').plus({ days: 1 }).toJSDate();
+
       return {
         canPlay: !score.length,
-        nextGameTime: !score.length
-          ? null
-          : new Date(new Date().setHours(24, 0, 0, 0)),
+        nextGameTime: !score.length ? null : nextGameTime,
       };
     }),
   // TODO: Allow temp id users to save stats like current guess streak, daily streak, etc.
@@ -84,6 +87,20 @@ export const scoreRouter = createTRPCRouter({
           });
         }
 
+        const now = new Date();
+        const lastPlayed = profile.lastPlayedAt;
+
+        // Check if this is a consecutive day using our utility function
+        const isConsecutive = isConsecutiveDay(lastPlayed, now);
+        const newDailyStreak = isConsecutive 
+          ? (profile.currentDailyStreak ?? 0) + 1 
+          : 1;
+
+        const newHighestDailyStreak = Math.max(
+          newDailyStreak,
+          profile.highestDailyStreak ?? 0,
+        );
+
         // If user is logged in and tempId exists, try to update existing score
         if (ctx.session?.user?.id && input.tempId) {
           // First try to find and update existing score with tempId
@@ -104,30 +121,6 @@ export const scoreRouter = createTRPCRouter({
 
           // If we found and updated a score, update profile stats
           if (existingScore.length > 0) {
-            const now = new Date();
-            const lastPlayed = profile.lastPlayedAt;
-
-            const isConsecutiveDay = lastPlayed
-              ? new Date(lastPlayed).toLocaleDateString("en-US", {
-                  timeZone: "America/Los_Angeles",
-                }) ===
-                new Date(now.getTime() - 86400000).toLocaleDateString("en-US", {
-                  timeZone: "America/Los_Angeles",
-                })
-              : false;
-
-            const newDailyStreak = isConsecutiveDay
-              ? (profile.currentDailyStreak ?? 0) + 1
-              : 1;
-            const newHighestDailyStreak = Math.max(
-              newDailyStreak,
-              profile.highestDailyStreak ?? 0,
-            );
-            const newHighestGuessStreak = Math.max(
-              input.highestGuessStreak,
-              profile.highestGuessStreak ?? 0,
-            );
-
             await tx
               .update(profiles)
               .set({
@@ -135,7 +128,10 @@ export const scoreRouter = createTRPCRouter({
                 currentDailyStreak: newDailyStreak,
                 highestDailyStreak: newHighestDailyStreak,
                 currentGuessStreak: input.currentGuessStreak,
-                highestGuessStreak: newHighestGuessStreak,
+                highestGuessStreak: Math.max(
+                  input.highestGuessStreak,
+                  profile.highestGuessStreak ?? 0,
+                ),
               })
               .where(eq(profiles.id, profile.id));
 
@@ -153,30 +149,6 @@ export const scoreRouter = createTRPCRouter({
         });
 
         // Update profile stats for all users (including temp users)
-        const now = new Date();
-        const lastPlayed = profile.lastPlayedAt;
-
-        const isConsecutiveDay = lastPlayed
-          ? new Date(lastPlayed).toLocaleDateString("en-US", {
-              timeZone: "America/Los_Angeles",
-            }) ===
-            new Date(now.getTime() - 86400000).toLocaleDateString("en-US", {
-              timeZone: "America/Los_Angeles",
-            })
-          : false;
-
-        const newDailyStreak = isConsecutiveDay
-          ? (profile.currentDailyStreak ?? 0) + 1
-          : 1;
-        const newHighestDailyStreak = Math.max(
-          newDailyStreak,
-          profile.highestDailyStreak ?? 0,
-        );
-        const newHighestGuessStreak = Math.max(
-          input.highestGuessStreak,
-          profile.highestGuessStreak ?? 0,
-        );
-
         await tx
           .update(profiles)
           .set({
@@ -184,7 +156,10 @@ export const scoreRouter = createTRPCRouter({
             currentDailyStreak: newDailyStreak,
             highestDailyStreak: newHighestDailyStreak,
             currentGuessStreak: input.currentGuessStreak,
-            highestGuessStreak: newHighestGuessStreak,
+            highestGuessStreak: Math.max(
+              input.highestGuessStreak,
+              profile.highestGuessStreak ?? 0,
+            ),
           })
           .where(eq(profiles.id, profile.id));
       });

@@ -6,6 +6,123 @@ import { TestWrapper } from "../utils/TestWrapper";
 // Mock the tRPC hooks
 vi.mock("~/trpc/react", () => ({
   api: {
+    profile: {
+      migrateOrCreateProfile: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isLoading: false
+        })
+      },
+      getProfile: {
+        useQuery: () => ({
+          data: null,
+          isLoading: false,
+          isFetched: true,
+          refetch: vi.fn()
+        })
+      },
+      createTempProfile: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isLoading: false
+        })
+      },
+      attachUserId: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isLoading: false
+        })
+      },
+      setUsername: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isLoading: false
+        })
+      },
+      updateUsername: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isLoading: false
+        })
+      },
+      updateProfileImage: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isLoading: false
+        })
+      },
+      isAdmin: {
+        useQuery: () => ({
+          data: false,
+          isLoading: false
+        })
+      },
+      needsUsername: {
+        useQuery: () => ({
+          data: { needsUsername: false, isNewUser: false },
+          isLoading: false
+        })
+      }
+    },
+    score: {
+      canPlayToday: {
+        useQuery: () => ({
+          data: { canPlay: true },
+          isLoading: false
+        })
+      },
+      saveScore: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isLoading: false
+        })
+      },
+      getTodayScore: {
+        useQuery: () => ({
+          data: null,
+          isLoading: false
+        })
+      },
+      getCurrentStreak: {
+        useQuery: () => ({
+          data: 0,
+          isLoading: false
+        })
+      },
+      getDailyLeaderboard: {
+        useQuery: () => ({
+          data: [],
+          isLoading: false
+        })
+      },
+      getPawsistenceLeaderboard: {
+        useQuery: () => ({
+          data: [],
+          isLoading: false
+        })
+      },
+      getBarkleStats: {
+        useQuery: () => ({
+          data: {
+            gamesPlayed: 0,
+            dailyStreak: 0,
+            currentGuessStreak: 0,
+            highestGuessStreak: 0
+          },
+          isLoading: false
+        })
+      },
+      getPawsistenceStats: {
+        useQuery: () => ({
+          data: {
+            currentStreak: 0,
+            bestStreak: 0,
+            playsToday: 0
+          },
+          isLoading: false
+        })
+      }
+    },
     game: {
       getDailyBreeds: {
         useQuery: () => ({
@@ -15,36 +132,10 @@ vi.mock("~/trpc/react", () => ({
             ]),
           },
           isLoading: false,
-        }),
-      },
-    },
-    score: {
-      canPlayToday: {
-        useQuery: () => ({
-          data: { canPlay: true },
-          isLoading: false,
-        }),
-      },
-      getCurrentStreak: {
-        useQuery: () => ({
-          data: 0,
-          isLoading: false,
-        }),
-      },
-      saveScore: {
-        useMutation: () => ({
-          mutateAsync: vi.fn(),
-          isLoading: false,
-        }),
-      },
-      getTodayScore: {
-        useQuery: () => ({
-          data: null,
-          isLoading: false,
-        }),
-      },
-    },
-  },
+        })
+      }
+    }
+  }
 }));
 
 vi.mock("next-auth/react", () => ({
