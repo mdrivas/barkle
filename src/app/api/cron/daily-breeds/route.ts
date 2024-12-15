@@ -279,7 +279,7 @@ async function generateTomorrowBreeds() {
 }
 
 // Add a new test endpoint
-export async function PUT(request: Request) {
+export async function PUT(_request: Request) {
   try {
     if (process.env.NODE_ENV !== "development") {
       return new NextResponse("Not available in production", { status: 403 });
@@ -296,31 +296,18 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const authHeader = request.headers.get("Authorization");
-    const cronSecret = process.env.CRON_SECRET;
-
-    // Add debug logging (will show in Vercel logs)
-    console.log("Cron job triggered");
-    console.log("Auth header present:", !!authHeader);
-    console.log("CRON_SECRET present:", !!cronSecret);
-
-    if (!authHeader || !cronSecret) {
-      console.error("Missing authorization header or CRON_SECRET");
-      return new NextResponse("Missing auth credentials", { status: 401 });
-    }
-
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      console.error("Invalid authorization header");
-      return new NextResponse("Invalid authorization", { status: 401 });
-    }
+    console.log("=== Cron Job Debug ===");
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("Starting daily breeds generation...");
 
     await generateDailyBreeds();
+    
     console.log("Daily breeds generated successfully");
     return new NextResponse("Success", { status: 200 });
   } catch (error) {
-    console.error("CRON job failed:", error);
+    console.error("Cron job failed:", error);
     return new NextResponse("Failed", { status: 500 });
   }
 }
