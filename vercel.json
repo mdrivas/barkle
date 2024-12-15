@@ -2,7 +2,7 @@
   "version": 2,
   "crons": [
     {
-      "path": "api/cron/daily-breeds",
+      "path": "/api/cron/daily-breeds",
       "schedule": "15 3 * * *"
     }
   ],
