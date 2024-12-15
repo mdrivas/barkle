@@ -114,10 +114,11 @@ export function GameFinishedDialog({
   );
 
   // Use the actual score from props or query
-  const displayScore = todayScoreQuery.data?.score ?? score;
-  const displayResults = todayScoreQuery.data?.results
-    ? todayScoreQuery.data.results.split(",").map((r) => r === "1")
-    : questionResults;
+  const displayScore = score ?? todayScoreQuery.data?.score ?? 0;
+  const displayResults = questionResults ?? 
+    (todayScoreQuery.data?.results 
+      ? todayScoreQuery.data.results.split(",").map((r) => r === "1")
+      : []);
 
   // Replace shareResults component with button
   const shareResults = (
@@ -221,6 +222,7 @@ export function GameFinishedDialog({
       </div>
     </>
   );
+
 
   return (
     <>

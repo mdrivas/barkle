@@ -32,6 +32,7 @@ interface GameState {
   gameOver: boolean;
   hasSavedScore: boolean;
   currentGuessStreak: number;
+  highestGuessStreak: number;
 }
 
 interface BreedsResponse {
@@ -187,6 +188,7 @@ export default function DailyGame() {
       gameOver: false,
       hasSavedScore: false,
       currentGuessStreak: currentStreakQuery.data ?? 0,
+      highestGuessStreak: 0,
     };
   });
 
@@ -293,37 +295,38 @@ export default function DailyGame() {
   const saveScoreMutation = api.score.saveScore.useMutation();
 
   const handleGuess = async (breed: string) => {
-    if (gameState.isLoading || gameState.gameOver || answeredBreed !== null)
-      return;
+    if (gameState.isLoading || gameState.gameOver || answeredBreed !== null) return;
 
     const isCorrect = breed === gameState.currentBreed?.breed;
-    const newScore = isCorrect ? gameState.score + 1 : gameState.score;
+    
+    // Calculate new score based on all results including the current one
+    const newResults = [...questionResults, isCorrect];
+    const newScore = newResults.filter(result => result).length; // Count all correct answers
+    
     const newGuessesRemaining = gameState.guessesRemaining - 1;
     const newGameOver = newGuessesRemaining === 0;
 
-    // Update guess streak - increment if correct, reset if wrong
+    // Calculate new streak before potentially resetting it
     const newGuessStreak = isCorrect ? gameState.currentGuessStreak + 1 : 0;
-
-    // Update game state
+    
     setGameState((prev) => ({
       ...prev,
-      score: newScore,
+      score: newScore, // Use the newly calculated total score
       guessesRemaining: newGuessesRemaining,
       gameOver: newGameOver,
       currentGuessStreak: newGuessStreak,
+      highestGuessStreak: Math.max(newGuessStreak, prev.highestGuessStreak || 0)
     }));
 
     setAnsweredBreed(breed);
-    setQuestionResults((prev) => {
-      const newResults = [...prev, isCorrect];
-      // Save state after updating results
-      saveGameState({
-        currentRoundIndex: currentRoundIndex + 1,
-        score: newScore,
-        questionResults: newResults,
-        isCompleted: newGameOver,
-      });
-      return newResults;
+    setQuestionResults(newResults); // Use the new results array
+
+    // Save state after updating results
+    saveGameState({
+      currentRoundIndex: currentRoundIndex + 1,
+      score: newScore,
+      questionResults: newResults,
+      isCompleted: newGameOver,
     });
 
     // Play sound effects
@@ -353,6 +356,8 @@ export default function DailyGame() {
             .join(","),
           tempId,
           currentGuessStreak: newGuessStreak,
+          // Send the highest streak reached during the game
+          highestGuessStreak: Math.max(newGuessStreak, gameState.highestGuessStreak || 0)
         });
 
         // Mark the game as completed in localStorage
@@ -398,19 +403,17 @@ export default function DailyGame() {
 
   useEffect(() => {
     if (session?.user && tempId) {
-      // Get the stored game state
       const storedState = getStoredGameState();
       
       if (storedState?.isCompleted) {
-        // If there's a completed game state, update the score with the new user
         saveScoreMutation.mutate({
           score: storedState.score,
           results: storedState.questionResults.map(r => r ? "1" : "0").join(","),
-          tempId, // This will handle migrating the score to the new user
+          tempId,
           currentGuessStreak: gameState.currentGuessStreak,
+          highestGuessStreak: gameState.highestGuessStreak,
         });
 
-        // Show the results dialog with the stored score
         setGameState(prev => ({
           ...prev,
           score: storedState.score,
@@ -418,12 +421,10 @@ export default function DailyGame() {
         }));
         setQuestionResults(storedState.questionResults);
         setShowGameResults(true);
+        localStorage.removeItem(GAME_STATE_KEY);
       }
-
-      // Clear the stored state after migration
-      localStorage.removeItem(GAME_STATE_KEY);
     }
-  }, [session?.user, tempId]);
+  }, [session?.user, tempId, gameState.currentGuessStreak, gameState.highestGuessStreak, saveScoreMutation]);
 
   // Add new profile query and mutation
   const {
@@ -511,7 +512,7 @@ export default function DailyGame() {
             {/* Modern Score Display */}
             <div className="inline-flex items-center justify-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-sm">
               <div className="flex items-center gap-4">
-                {[...Array(5)].map((_, i) => (
+                {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
                     className={cn(

@@ -62,6 +62,7 @@ export const scoreRouter = createTRPCRouter({
         tempId: z.string().uuid().nullable(),
         results: z.string(),
         currentGuessStreak: z.number(),
+        highestGuessStreak: z.number(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -123,7 +124,7 @@ export const scoreRouter = createTRPCRouter({
               profile.highestDailyStreak ?? 0,
             );
             const newHighestGuessStreak = Math.max(
-              input.currentGuessStreak,
+              input.highestGuessStreak,
               profile.highestGuessStreak ?? 0,
             );
 
@@ -172,7 +173,7 @@ export const scoreRouter = createTRPCRouter({
           profile.highestDailyStreak ?? 0,
         );
         const newHighestGuessStreak = Math.max(
-          input.currentGuessStreak,
+          input.highestGuessStreak,
           profile.highestGuessStreak ?? 0,
         );
 
