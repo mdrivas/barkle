@@ -5,12 +5,14 @@ import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 import { useProfileContext } from "~/app/components/ProfileProvider";
 import { useSession } from "next-auth/react";
+import { CheckCircle } from "lucide-react";
 
 // Base type for common properties
 interface BaseLeaderboardEntry {
   username: string | null;
   userId: string | null;
   tempId: string | null;
+  isVerified: boolean;
 }
 
 // Specific types for each leaderboard mode
@@ -106,11 +108,13 @@ export function LeaderboardContent({
       return dailyLeaderboard?.map((entry) => ({
         ...entry,
         mode: "daily" as const,
+        isVerified: entry.isVerified ?? false
       }));
     }
     return pawsistenceLeaderboard?.map((entry) => ({
       ...entry,
       mode: "pawsistence" as const,
+      isVerified: entry.isVerified ?? false
     }));
   }, [mode, dailyLeaderboard, pawsistenceLeaderboard]);
 
@@ -217,7 +221,7 @@ const HeadersSection = ({ isPawsistence }: { isPawsistence: boolean }) => (
   <div
     className={cn(
       "grid h-min gap-2 rounded-lg bg-zinc-800/50 p-2 text-xs font-medium text-zinc-400",
-      isPawsistence ? "grid-cols-3" : "grid-cols-5",
+      isPawsistence ? "grid-cols-3" : "grid-cols-[12%_28%_18%_18%_18%]"
     )}
   >
     <div className="text-center">Rank</div>
@@ -247,7 +251,7 @@ const ScoresList = ({
         key={`${entry.username}-${i}`}
         className={cn(
           "grid items-center gap-2 rounded-lg border p-2 text-xs shadow-lg",
-          isPawsistence ? "grid-cols-3" : "grid-cols-5",
+          isPawsistence ? "grid-cols-3" : "grid-cols-[12%_28%_18%_18%_18%]",
           {
             "bg-gold animate-medal-shine": i === 0,
             "bg-silver animate-medal-shine": i === 1,
@@ -257,12 +261,10 @@ const ScoresList = ({
         )}
       >
         <div className="text-center font-bold text-green-500">#{i + 1}</div>
-        <div
-          className={cn("truncate text-zinc-100", {
-            "font-semibold": i < 3,
-          })}
-        >
-          {entry.username}
+        <div className="flex items-center gap-1">
+          <span className={cn("truncate text-zinc-100", { "font-semibold": i < 3 })}>
+            {entry.username}
+          </span>
         </div>
         {renderScore(entry)}
       </div>

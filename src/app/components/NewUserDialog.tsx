@@ -24,6 +24,11 @@ export function NewUserDialog({
   const { toast } = useToast();
   const utils = api.useUtils();
 
+  const handleOpenChange = (): void => {
+    // This dialog cannot be closed by user interaction
+    void 0;
+  };
+
   const setUsernameMutation = api.profile.setUsername.useMutation({
     onSuccess: async () => {
       toast({
@@ -55,16 +60,13 @@ export function NewUserDialog({
     setUsernameMutation.mutate({ username });
   };
 
-  // Prevent closing if it's the first time
-  const handleOpenChange = (open: boolean) => {
-    if (open) return; // Don't do anything when opening
-    if (!username) return; // Don't allow closing if no username set
-    onClose();
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900/95 text-zinc-50 sm:w-full sm:max-w-[400px]">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange} modal={true}>
+      <DialogContent 
+        className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900/95 text-zinc-50 sm:w-full sm:max-w-[400px] [&>button]:hidden"
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold">
             Welcome to Barkle! 🐕
@@ -86,6 +88,7 @@ export function NewUserDialog({
               pattern="[a-zA-Z0-9_-]+"
               title="Letters, numbers, underscores, and hyphens only"
               autoFocus
+              required
             />
             <p className="text-xs text-zinc-400">
               Letters, numbers, underscores, and hyphens only

@@ -268,6 +268,7 @@ export const scoreRouter = createTRPCRouter({
         dailyStreak: profiles.currentDailyStreak,
         userId: scores.userId,
         tempId: scores.tempId,
+        isVerified: profiles.isVerified,
       })
       .from(scores)
       .leftJoin(
@@ -299,6 +300,7 @@ export const scoreRouter = createTRPCRouter({
         highestStreak: profiles.highestPawsistenceStreak,
         userId: profiles.userId,
         tempId: profiles.tempId,
+        isVerified: profiles.isVerified,
       })
       .from(profiles)
       .where(

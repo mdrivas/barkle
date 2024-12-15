@@ -59,6 +59,10 @@ export default function RootLayout({
     <html lang="en" className={`${GeistSans.variable} ${poppins.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <meta 
+          name="google-adsense-account"
+          content="ca-pub-8788092045781561"
+        />
       </head>
       <body className="min-h-screen bg-[#121213]">
         {process.env.NODE_ENV === "production" && <GoogleAnalytics />}

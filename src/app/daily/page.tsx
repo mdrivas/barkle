@@ -52,6 +52,62 @@ interface BreedImagesResponse {
   status: string;
 }
 
+// Add these new state management functions
+const GAME_STATE_KEY = "barkle_daily_state";
+
+interface StoredGameState {
+  currentRoundIndex: number;
+  score: number;
+  questionResults: boolean[];
+  lastPlayedDate: string;
+  isCompleted: boolean;
+}
+
+// Add helper function to check if it's a new day in PST
+const isPacificTime = (date: Date) => {
+  return date.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
+};
+
+// Add this function to save state
+const saveGameState = (state: Partial<StoredGameState>) => {
+  const currentState = loadGameState() ?? {
+    currentRoundIndex: 0,
+    score: 0,
+    questionResults: [],
+    lastPlayedDate: isPacificTime(new Date()).split(',')[0], // Save in Pacific Time
+    isCompleted: false,
+  };
+
+  localStorage.setItem(GAME_STATE_KEY, JSON.stringify({
+    ...currentState,
+    ...state,
+  }));
+};
+
+// Add this function to load state
+const loadGameState = (): StoredGameState | null => {
+  const stored = localStorage.getItem(GAME_STATE_KEY);
+  if (!stored) return null;
+  
+  const state = JSON.parse(stored) as StoredGameState;
+  
+  // Check against Pacific Time
+  const pacificDate = isPacificTime(new Date()).split(',')[0]; // Get just the date part
+  if (state.lastPlayedDate !== pacificDate || state.isCompleted) {
+    localStorage.removeItem(GAME_STATE_KEY);
+    return null;
+  }
+  
+  return state;
+};
+
+// Add a function to get stored game state without clearing it
+const getStoredGameState = (): StoredGameState | null => {
+  const stored = localStorage.getItem(GAME_STATE_KEY);
+  if (!stored) return null;
+  return JSON.parse(stored) as StoredGameState;
+};
+
 export default function DailyGame() {
   const { data: session } = useSession();
   const { toast } = useToast();
@@ -108,16 +164,30 @@ export default function DailyGame() {
     enabled: !!session?.user,
   });
 
-  // Update the initial game state
-  const [gameState, setGameState] = useState<GameState>({
-    currentBreed: null,
-    options: [],
-    isLoading: true,
-    score: 0,
-    guessesRemaining: 5,
-    gameOver: false,
-    hasSavedScore: false,
-    currentGuessStreak: currentStreakQuery.data ?? 0, // Initialize with the user's current streak
+  // In your component, update the initial states
+  const [currentRoundIndex, setCurrentRoundIndex] = useState<number>(() => {
+    const savedState = loadGameState();
+    return savedState?.currentRoundIndex ?? 0;
+  });
+
+  const [questionResults, setQuestionResults] = useState<boolean[]>(() => {
+    const savedState = loadGameState();
+    return savedState?.questionResults ?? [];
+  });
+
+  // Update gameState initialization
+  const [gameState, setGameState] = useState<GameState>(() => {
+    const savedState = loadGameState();
+    return {
+      currentBreed: null,
+      options: [],
+      isLoading: true,
+      score: savedState?.score ?? 0,
+      guessesRemaining: 5 - (savedState?.questionResults.length ?? 0),
+      gameOver: false,
+      hasSavedScore: false,
+      currentGuessStreak: currentStreakQuery.data ?? 0,
+    };
   });
 
   // Add an effect to update the streak when the query loads
@@ -131,9 +201,6 @@ export default function DailyGame() {
   }, [currentStreakQuery.data]);
 
   const [answeredBreed, setAnsweredBreed] = useState<string | null>(null);
-
-  // New state to track the current round index
-  const [currentRoundIndex, setCurrentRoundIndex] = useState<number>(0);
 
   const happyBarkRef = useRef<HTMLAudioElement | null>(null);
   const angryBarkRef = useRef<HTMLAudioElement | null>(null);
@@ -222,9 +289,6 @@ export default function DailyGame() {
     }
   }, [fetchNewRound, dailyBreedsQuery.data, currentRoundIndex]);
 
-  // Add state to track correct/incorrect answers
-  const [questionResults, setQuestionResults] = useState<Array<boolean>>([]);
-
   // Add the mutation hook at component level
   const saveScoreMutation = api.score.saveScore.useMutation();
 
@@ -250,7 +314,17 @@ export default function DailyGame() {
     }));
 
     setAnsweredBreed(breed);
-    setQuestionResults((prev) => [...prev, isCorrect]);
+    setQuestionResults((prev) => {
+      const newResults = [...prev, isCorrect];
+      // Save state after updating results
+      saveGameState({
+        currentRoundIndex: currentRoundIndex + 1,
+        score: newScore,
+        questionResults: newResults,
+        isCompleted: newGameOver,
+      });
+      return newResults;
+    });
 
     // Play sound effects
     if (isCorrect) {
@@ -281,6 +355,14 @@ export default function DailyGame() {
           currentGuessStreak: newGuessStreak,
         });
 
+        // Mark the game as completed in localStorage
+        saveGameState({
+          currentRoundIndex: currentRoundIndex + 1,
+          score: newScore,
+          questionResults: [...questionResults, isCorrect],
+          isCompleted: true,
+        });
+
         // Invalidate the queries to force a refresh
         void todayScoreQuery.refetch();
         void canPlayQuery.refetch();
@@ -295,6 +377,13 @@ export default function DailyGame() {
         });
       }
     } else {
+      // Regular save for in-progress game
+      saveGameState({
+        currentRoundIndex: currentRoundIndex + 1,
+        score: newScore,
+        questionResults: [...questionResults, isCorrect],
+      });
+      
       // Fetch next round after delay
       setTimeout(() => {
         setAnsweredBreed(null);
@@ -309,21 +398,32 @@ export default function DailyGame() {
 
   useEffect(() => {
     if (session?.user && tempId) {
-      // Get the score from URL if available
-      const urlScore = searchParams.get("score");
-      const urlResults = searchParams.get("results");
+      // Get the stored game state
+      const storedState = getStoredGameState();
+      
+      if (storedState?.isCompleted) {
+        // If there's a completed game state, update the score with the new user
+        saveScoreMutation.mutate({
+          score: storedState.score,
+          results: storedState.questionResults.map(r => r ? "1" : "0").join(","),
+          tempId, // This will handle migrating the score to the new user
+          currentGuessStreak: gameState.currentGuessStreak,
+        });
 
-      if (urlScore && urlResults) {
-        // Just update game state, don't show results yet
-        setGameState((prev) => ({
+        // Show the results dialog with the stored score
+        setGameState(prev => ({
           ...prev,
-          score: parseInt(urlScore),
+          score: storedState.score,
           gameOver: true,
         }));
-        setQuestionResults(urlResults.split(",").map((r) => r === "1"));
+        setQuestionResults(storedState.questionResults);
+        setShowGameResults(true);
       }
+
+      // Clear the stored state after migration
+      localStorage.removeItem(GAME_STATE_KEY);
     }
-  }, [session?.user, tempId, searchParams]);
+  }, [session?.user, tempId]);
 
   // Add new profile query and mutation
   const {
@@ -411,7 +511,7 @@ export default function DailyGame() {
             {/* Modern Score Display */}
             <div className="inline-flex items-center justify-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-sm">
               <div className="flex items-center gap-4">
-                {[...Array<undefined>(5)].map((_, i) => (
+                {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
                     className={cn(
@@ -442,17 +542,21 @@ export default function DailyGame() {
           <div className="space-y-4">
             {gameState.isLoading && !gameState.currentBreed ? (
               <Card className="mb-8 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
-                <div className="h-[250px] w-full animate-pulse rounded-xl bg-zinc-800/50 md:h-[300px] lg:h-[350px]" />
+                <div className="h-[300px] w-full animate-pulse rounded-xl bg-zinc-800/50 md:h-[350px] lg:h-[400px]" />
               </Card>
             ) : gameState.currentBreed ? (
               <Card className="mb-8 overflow-hidden rounded-xl border border-gray-500 bg-zinc-900/50 shadow-xl shadow-emerald-900/10 backdrop-blur-sm">
-                <div className="relative h-[250px] w-full md:h-[300px] lg:h-[350px]">
+                <div className="relative h-[300px] w-full bg-zinc-900 md:h-[350px] lg:h-[400px]">
                   <Image
                     src={gameState.currentBreed.imageUrl}
                     alt="Mystery dog"
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="rounded-xl bg-zinc-900/50 object-cover transition-transform duration-500 hover:scale-105"
+                    className={cn(
+                      "rounded-xl transition-transform duration-500",
+                      // Mobile: cover, Desktop: contain and scaled up by default
+                      "object-cover md:object-contain md:scale-105 md:p-2"
+                    )}
                     priority
                     quality={90}
                   />

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
 import { profiles } from "~/server/db/schema";
-import { eq, or } from "drizzle-orm";
+import { eq, or, and, not } from "drizzle-orm";
 import { scores } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 
@@ -64,6 +64,36 @@ export const profileRouter = createTRPCRouter({
 
       return { success: true };
     }),
+
+    updateUsername: protectedProcedure
+  .input(
+    z.object({
+      username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/),
+    }),
+  )
+  .mutation(async ({ ctx, input }) => {
+    // Check if username is taken by another user
+    const existing = await ctx.db.query.profiles.findFirst({
+      where: and(
+        eq(profiles.username, input.username),
+        not(eq(profiles.userId, ctx.session.user.id))
+      ),
+    });
+
+    if (existing) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "Username already taken",
+      });
+    }
+
+    await ctx.db
+      .update(profiles)
+      .set({ username: input.username })
+      .where(eq(profiles.userId, ctx.session.user.id));
+
+    return { success: true };
+  }),
 
   // Create profile for non-authenticated users
   createTempProfile: publicProcedure
