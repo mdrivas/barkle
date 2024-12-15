@@ -4,5 +4,10 @@
       "path": "/api/cron/daily-breeds",
       "schedule": "15 3 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "/api/cron/daily-breeds": {
+      "maxDuration": 300
+    }
+  }
 }
