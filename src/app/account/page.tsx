@@ -269,6 +269,8 @@ export default function AccountPage() {
     }
   };
 
+  const [showAllAchievements, setShowAllAchievements] = useState(false);
+
   if (!session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#121213] p-4">
@@ -394,11 +396,25 @@ export default function AccountPage() {
         <div className="space-y-6">
           {/* Achievements Section */}
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-zinc-200">
-              Achievements
-            </h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-zinc-200">
+                Achievements
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllAchievements(!showAllAchievements)}
+                className="text-zinc-400 hover:text-zinc-200"
+              >
+                {showAllAchievements ? 'Show Less' : 'View All'}
+              </Button>
+            </div>
             <Achievements 
-              achievements={barkleStats?.achievements ?? []} 
+              achievements={
+                showAllAchievements 
+                  ? (barkleStats?.achievements ?? [])
+                  : (barkleStats?.achievements ?? []).slice(0, 3)
+              }
               isLoading={isBarkleLoading} 
             />
           </div>

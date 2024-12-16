@@ -113,7 +113,7 @@ const getAchievementDetails = (type: string) => {
   const details = {
     'STREAK': {
       name: 'Pawfect Streak',
-      description: 'Reached a 10-guess streak'
+      description: 'Reached a 10-guess streak on daily'
     },
     'DAILY': {
       name: 'Furry Regular',

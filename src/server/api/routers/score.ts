@@ -10,6 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { profiles } from "~/server/db/schema";
 import { toPST, isConsecutiveDay } from "~/lib/streaks";
 import { achievements, userAchievements } from "~/server/db/schema";
+import { dogSubmissions } from "~/server/db/schema";
 
 export const scoreRouter = createTRPCRouter({
   canPlayToday: publicProcedure
@@ -329,6 +330,7 @@ export const scoreRouter = createTRPCRouter({
           highestDailyStreak: true,
           currentGuessStreak: true,
           highestGuessStreak: true,
+          highestPawsistenceStreak: true,
         },
       });
 
@@ -338,6 +340,14 @@ export const scoreRouter = createTRPCRouter({
         columns: {
           id: true,
         },
+      });
+
+      // Check for dog submissions
+      const dogSubmission = await tx.query.dogSubmissions.findFirst({
+        where: and(
+          eq(dogSubmissions.userId, ctx.session.user.id),
+          eq(dogSubmissions.status, "verified"), // Only count verified submissions
+        ),
       });
 
       // Check and award achievements
@@ -355,7 +365,20 @@ export const scoreRouter = createTRPCRouter({
           requirement: 4,
           value: profile?.currentDailyStreak ?? 0,
           name: "Furry Regular"
-        }
+        },
+        // Community Contributor achievement
+        {
+          type: "COMMUNITY" as const,
+          requirement: 1,
+          value: dogSubmission ? 1 : 0,
+          name: "Community Contributor"
+        },
+        {
+          type: "PAWSISTENCE" as const,
+          requirement: 15,
+          value: profile?.highestPawsistenceStreak ?? 0,
+          name: "Paw Pro"
+        },
       ];
 
 
@@ -382,8 +405,20 @@ export const scoreRouter = createTRPCRouter({
         }
       }
 
-      // Get all achievements with unlock status
-      const allAchievements = await tx.query.achievements.findMany();
+      // Get all achievements with unlock status, ordered by rarity
+      const allAchievements = await tx.query.achievements.findMany({
+        orderBy: [
+          // Custom rarity order: legendary > rare > common
+          sql`CASE 
+            WHEN ${achievements.rarity} = 'legendary' THEN 1
+            WHEN ${achievements.rarity} = 'rare' THEN 2
+            ELSE 3
+          END`,
+          // Then by name within each rarity level
+          achievements.name,
+        ],
+      });
+
       const userAchievementsList = await tx.query.userAchievements.findMany({
         where: eq(userAchievements.userId, ctx.session.user.id),
       });

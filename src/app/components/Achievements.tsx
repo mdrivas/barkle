@@ -12,6 +12,36 @@ type Achievement = {
   unlockedAt?: Date;
 };
 
+export const ACHIEVEMENT_TYPES = {
+  STREAK: 'streak',
+  DAILY: 'daily',
+  SOCIAL: 'social',
+  COMMUNITY: 'community',
+  PAWSISTENCE: 'pawsistence', // Add new type
+} as const;
+
+const getAchievementIcon = (type: string) => {
+  const icons = {
+    'STREAK': '⚡',
+    'DAILY': '⭐',
+    'SOCIAL': '📢',
+    'COMMUNITY': '📸',
+    'PAWSISTENCE': '🎯', // Add new icon
+  };
+  return icons[type as keyof typeof icons] ?? '🏆';
+};
+
+const getAchievementColor = (type: string) => {
+  const colors = {
+    'STREAK': 'yellow',
+    'DAILY': 'blue',
+    'SOCIAL': 'green',
+    'COMMUNITY': 'purple',
+    'PAWSISTENCE': 'red', // Add new color
+  };
+  return colors[type as keyof typeof colors] ?? 'gray';
+};
+
 export function Achievements({ 
   achievements, 
   isLoading 
@@ -27,62 +57,92 @@ export function Achievements({
     </div>;
   }
 
+  // Group achievements by rarity
+  const groupedAchievements = achievements.reduce((acc, achievement) => {
+    const rarity = achievement.rarity ?? 'common';
+    if (!acc[rarity]) acc[rarity] = [];
+    acc[rarity].push(achievement);
+    return acc;
+  }, {} as Record<string, Achievement[]>);
+
+  // Define rarity order
+  const rarityOrder = ['legendary', 'rare', 'common'];
+
+  // Flatten achievements while maintaining rarity order
+  const orderedAchievements = rarityOrder.flatMap(rarity => 
+    groupedAchievements[rarity] ?? []
+  );
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {achievements.map((achievement) => (
-        <Card
-          key={achievement.id}
-          className={cn(
-            "relative overflow-hidden p-4 transition-all",
-            achievement.isUnlocked
-              ? "bg-zinc-800/50 ring-1 ring-zinc-700"
-              : "bg-zinc-900/50 opacity-50"
-          )}
-        >
-          <div className="flex items-start gap-4">
-            <div className={cn(
-              "rounded-lg p-2",
-              achievement.isUnlocked ? "bg-zinc-700" : "bg-zinc-800"
-            )}>
-              <Trophy className={cn(
-                "h-6 w-6",
-                achievement.isUnlocked ? "text-yellow-500" : "text-zinc-500"
-              )} />
-            </div>
-            <div>
-              <h3 className={cn(
-                "font-medium",
-                achievement.isUnlocked ? "text-zinc-100" : "text-zinc-400"
+      {orderedAchievements.map((achievement) => {
+        const rarity = achievement.rarity ?? 'common';
+        return (
+          <Card
+            key={achievement.id}
+            className={cn(
+              "relative overflow-hidden p-4 transition-all",
+              achievement.isUnlocked
+                ? "bg-zinc-800/50 ring-1 ring-zinc-700"
+                : "bg-zinc-900/50 opacity-50",
+              // Add subtle glow effect based on rarity
+              {
+                "shadow-lg shadow-purple-500/10": rarity === 'legendary',
+                "shadow-md shadow-yellow-500/10": rarity === 'rare',
+              }
+            )}
+          >
+            <div className="flex items-start gap-4">
+              <div className={cn(
+                "rounded-lg p-2",
+                achievement.isUnlocked ? "bg-zinc-700" : "bg-zinc-800"
               )}>
-                {achievement.name}
-              </h3>
-              <p className={cn(
-                "text-sm",
-                achievement.isUnlocked ? "text-zinc-300" : "text-zinc-500"
-              )}>
-                {achievement.description}
-              </p>
-              {achievement.isUnlocked && (
-                <p className="mt-1 text-xs text-zinc-500">
-                  Unlocked {achievement.unlockedAt?.toLocaleDateString()}
+                <Trophy className={cn(
+                  "h-6 w-6",
+                  achievement.isUnlocked 
+                    ? {
+                        "text-purple-400": rarity === 'legendary',
+                        "text-yellow-500": rarity === 'rare',
+                        "text-zinc-400": rarity === 'common',
+                      }
+                    : "text-zinc-500"
+                )} />
+              </div>
+              <div>
+                <h3 className={cn(
+                  "font-medium",
+                  achievement.isUnlocked ? "text-zinc-100" : "text-zinc-400"
+                )}>
+                  {achievement.name}
+                </h3>
+                <p className={cn(
+                  "text-sm",
+                  achievement.isUnlocked ? "text-zinc-300" : "text-zinc-500"
+                )}>
+                  {achievement.description}
                 </p>
-              )}
+                {achievement.isUnlocked && (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Unlocked {achievement.unlockedAt?.toLocaleDateString()}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-          {achievement.rarity !== 'common' && (
             <div className="absolute right-2 top-2">
               <span className={cn(
                 "rounded-full px-2 py-0.5 text-xs",
-                achievement.rarity === 'rare' 
-                  ? "bg-yellow-500/10 text-yellow-500"
-                  : "bg-purple-500/10 text-purple-500"
+                {
+                  "bg-purple-500/10 text-purple-400": rarity === 'legendary',
+                  "bg-yellow-500/10 text-yellow-500": rarity === 'rare',
+                  "bg-zinc-500/10 text-zinc-400": rarity === 'common',
+                }
               )}>
-                {achievement.rarity}
+                {rarity}
               </span>
             </div>
-          )}
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
     </div>
   );
 }

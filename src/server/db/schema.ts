@@ -264,6 +264,8 @@ export const ACHIEVEMENT_TYPES = {
   STREAK: 'streak',
   DAILY: 'daily',
   SOCIAL: 'social',
+  COMMUNITY: 'community',
+  PAWSISTENCE: 'pawsistence',
 } as const;
 
 // Achievement definitions table
