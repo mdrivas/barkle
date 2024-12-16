@@ -175,20 +175,26 @@ const UserScoreSection = ({
   userRank: number | undefined;
   isPawsistence: boolean;
 }) => (
-  <div className="rounded-lg border border-green-900/30 bg-green-900/20 p-3">
+  <div className="rounded-lg border border-green-900/30 bg-green-900/20 p-2">
     <div className="mb-2 text-xs font-medium text-green-500">
       {isPawsistence ? "Your Best Score" : "Your Score Today"}
     </div>
     <div
       className={cn(
-        "grid items-center",
-        isPawsistence ? "grid-cols-3 gap-2" : "grid-cols-5 gap-2",
+        "grid items-center gap-2 text-xs",
+        isPawsistence 
+          ? "grid-cols-3" 
+          : "grid-cols-[12%_28%_18%_18%_18%]"
       )}
     >
       <div className="text-center font-bold text-green-500">
         {userRank !== undefined ? `#${userRank + 1}` : "N/A"}
       </div>
-      <div className="truncate text-zinc-100">{userScore?.username}</div>
+      <div className="flex items-center gap-1">
+        <span className="truncate text-zinc-100">
+          {userScore?.username}
+        </span>
+      </div>
       {userScore ? (
         isPawsistence && isPawsistenceEntry(userScore) ? (
           <div className="text-center text-amber-500">

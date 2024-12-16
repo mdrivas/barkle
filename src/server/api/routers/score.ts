@@ -337,16 +337,30 @@ export const scoreRouter = createTRPCRouter({
     };
   }),
   // Need temp id optional if user is temp id , check first session, if doesnt exist user
-  getCurrentStreak: publicProcedure.query(async ({ ctx }) => {
-    if (!ctx.session?.user?.id) return 0;
+  getCurrentStreak: publicProcedure
+    .input(
+      z.object({
+        tempId: z.string().uuid().nullable(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // First find the profile to get both userId and tempId
+      const profile = await ctx.db.query.profiles.findFirst({
+        where: or(
+          ctx.session?.user?.id
+            ? eq(profiles.userId, ctx.session.user.id)
+            : undefined,
+          input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
+        ),
+        columns: {
+          currentGuessStreak: true,
+          highestGuessStreak: true,
+        },
+      });
 
-    const user = await ctx.db.query.profiles.findFirst({
-      where: eq(profiles.userId, ctx.session.user.id),
-      columns: {
-        currentGuessStreak: true,
-      },
-    });
-
-    return user?.currentGuessStreak ?? 0;
-  }),
+      return {
+        currentStreak: profile?.currentGuessStreak ?? 0,
+        highestStreak: profile?.highestGuessStreak ?? 0,
+      };
+    }),
 });

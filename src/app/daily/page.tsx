@@ -161,9 +161,14 @@ export default function DailyGame() {
   }, [canPlayQuery.data, toast, canPlayQuery.data?.canPlay, hasShownToast]);
 
   // Add the new query
-  const currentStreakQuery = api.score.getCurrentStreak.useQuery(undefined, {
-    enabled: !!session?.user,
-  });
+  const currentStreakQuery = api.score.getCurrentStreak.useQuery(
+    {
+      tempId,
+    },
+    {
+      enabled: !!tempId || !!session?.user,
+    }
+  );
 
   // In your component, update the initial states
   const [currentRoundIndex, setCurrentRoundIndex] = useState<number>(() => {
@@ -187,17 +192,18 @@ export default function DailyGame() {
       guessesRemaining: 5 - (savedState?.questionResults.length ?? 0),
       gameOver: false,
       hasSavedScore: false,
-      currentGuessStreak: currentStreakQuery.data ?? 0,
-      highestGuessStreak: 0,
+      currentGuessStreak: currentStreakQuery.data?.currentStreak ?? 0,
+      highestGuessStreak: currentStreakQuery.data?.highestStreak ?? 0,
     };
   });
 
   // Add an effect to update the streak when the query loads
   useEffect(() => {
-    if (currentStreakQuery.data !== undefined) {
+    if (currentStreakQuery.data) {
       setGameState((prev) => ({
         ...prev,
-        currentGuessStreak: currentStreakQuery.data,
+        currentGuessStreak: currentStreakQuery.data.currentStreak,
+        highestGuessStreak: currentStreakQuery.data.highestStreak,
       }));
     }
   }, [currentStreakQuery.data]);
@@ -299,23 +305,27 @@ export default function DailyGame() {
 
     const isCorrect = breed === gameState.currentBreed?.breed;
     
-    // Calculate new score based on all results including the current one
+    // Calculate new score and streaks
     const newResults = [...questionResults, isCorrect];
-    const newScore = newResults.filter(result => result).length; // Count all correct answers
+    const newScore = newResults.filter(result => result).length;
     
     const newGuessesRemaining = gameState.guessesRemaining - 1;
     const newGameOver = newGuessesRemaining === 0;
 
-    // Calculate new streak before potentially resetting it
+    // Calculate new streak
     const newGuessStreak = isCorrect ? gameState.currentGuessStreak + 1 : 0;
-    
+    const newHighestGuessStreak = Math.max(
+      newGuessStreak,
+      gameState.highestGuessStreak
+    );
+
     setGameState((prev) => ({
       ...prev,
-      score: newScore, // Use the newly calculated total score
+      score: newScore,
       guessesRemaining: newGuessesRemaining,
       gameOver: newGameOver,
       currentGuessStreak: newGuessStreak,
-      highestGuessStreak: Math.max(newGuessStreak, prev.highestGuessStreak || 0)
+      highestGuessStreak: newHighestGuessStreak
     }));
 
     setAnsweredBreed(breed);
@@ -356,8 +366,7 @@ export default function DailyGame() {
             .join(","),
           tempId,
           currentGuessStreak: newGuessStreak,
-          // Send the highest streak reached during the game
-          highestGuessStreak: Math.max(newGuessStreak, gameState.highestGuessStreak || 0)
+          highestGuessStreak: newHighestGuessStreak
         });
 
         // Mark the game as completed in localStorage
