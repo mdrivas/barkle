@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "XPs4Q8Krq-JDjZPb_UHTJA33SYJ6HRLNuTlYkbimI9Y",
+    google: "BOk0h2uB-ocZxKI2KqFTpqqn2gSftKMfvbVbXmAH7yI",
   },
   alternates: {
     canonical: 'https://barkle.vercel.app',
@@ -76,7 +76,7 @@ export default function RootLayout({
         />
         <meta 
           name="google-site-verification" 
-          content="XPs4Q8Krq-JDjZPb_UHTJA33SYJ6HRLNuTlYkbimI9Y" 
+          content="BOk0h2uB-ocZxKI2KqFTpqqn2gSftKMfvbVbXmAH7yI" 
         />
       </head>
       <body className="min-h-screen bg-[#121213]">
