@@ -5,7 +5,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { scores } from "~/server/db/schema";
-import { eq, and, sql, isNotNull, desc, or } from "drizzle-orm";
+import { eq, and, sql, isNotNull, desc, or, gt } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { profiles } from "~/server/db/schema";
 import { toPST, isConsecutiveDay } from "~/lib/streaks";
@@ -308,6 +308,9 @@ export const scoreRouter = createTRPCRouter({
       .leftJoin(
         achievements,
         eq(achievements.id, userAchievements.achievementId)
+      )
+      .where(
+        gt(profiles.highestPawsistenceStreak, 0)
       )
       .groupBy(
         profiles.username,
