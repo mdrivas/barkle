@@ -187,6 +187,10 @@ export function GameFinishedDialog({
     </button>
   );
 
+  const handlePlayPawsistence = () => {
+    router.push("/pawsistence");
+  };
+
   const authenticatedContent = (
     <div className="flex w-full flex-col gap-4">
       <div className="relative my-3">
@@ -197,6 +201,13 @@ export function GameFinishedDialog({
           <span className="bg-zinc-950 px-2 text-zinc-500">Share & Continue</span>
         </div>
       </div>
+      <Button
+        onClick={handlePlayPawsistence}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-900 text-indigo-100 transition-all duration-200 hover:bg-indigo-800 py-2 text-base font-medium"
+      >
+        Play Pawsistence
+        <span className="text-xl">🐾</span>
+      </Button>
       {shareResults}
       {leaderboardButton}
       {returnHomeButton}
@@ -216,6 +227,13 @@ export function GameFinishedDialog({
             <span className="bg-zinc-950 px-2 text-zinc-500">or</span>
           </div>
         </div>
+        <Button
+          onClick={handlePlayPawsistence}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-900 text-indigo-100 transition-all duration-200 hover:bg-indigo-800 py-2 text-base font-medium"
+        >
+          Play Pawsistence
+          <span className="text-xl">🐾</span>
+        </Button>
         {shareResults}
         {leaderboardButton}
         {returnHomeButton}

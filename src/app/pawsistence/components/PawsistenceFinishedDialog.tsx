@@ -9,7 +9,7 @@ import {
   DialogDescription,
 } from "~/components/ui/dialog";
 import { useSession } from "next-auth/react";
-import { Share2, Trophy, Home } from "lucide-react";
+import { Share2, Trophy, Home, Calendar } from "lucide-react";
 import { useState } from "react";
 import { ShareResultsDialog } from "~/app/components/ShareResultsDialog";
 import { LeaderboardModal } from "~/app/components/LeaderboardModal";
@@ -41,6 +41,10 @@ export function PawsistenceFinishedDialog({
     router.push("/?showLeaderboard=true");
   };
 
+  const handlePlayDaily = () => {
+    router.push("/daily");
+  };
+
   return (
     <>
       <Dialog
@@ -69,28 +73,36 @@ export function PawsistenceFinishedDialog({
               </div>
             </DialogHeader>
 
-            <div className="mt-6 flex w-full flex-col gap-3">
+            <div className="mt-6 flex w-full flex-col gap-4">
+              <Button
+                onClick={handlePlayDaily}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-900 text-indigo-100 transition-all duration-200 hover:bg-indigo-800 py-2 text-base font-medium"
+              >
+                Play Today's Barkle
+                <span className="text-xl">🎯</span>
+              </Button>
+
               <Button
                 onClick={() => setIsShareDialogOpen(true)}
-                className="w-full bg-emerald-600 text-zinc-100 hover:bg-emerald-700"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-900 text-emerald-100 transition-all duration-200 hover:bg-emerald-800 py-2 text-base font-medium"
               >
-                <Share2 className="mr-2 h-4 w-4" />
                 Share Results
+                <Share2 className="h-5 w-5" />
               </Button>
 
               <Button
                 onClick={handleViewLeaderboard}
-                className="w-full bg-amber-600 text-zinc-100 hover:bg-amber-700"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-900 text-amber-100 transition-all duration-200 hover:bg-amber-800 py-2 text-base font-medium"
               >
-                <Trophy className="mr-2 h-4 w-4" />
                 View Leaderboard
+                <span className="text-xl">🏆</span>
               </Button>
 
               <Button
-                onClick={() => (window.location.href = "/")}
-                className="w-full bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                onClick={() => router.push("/")}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-zinc-800 bg-transparent text-zinc-200 hover:bg-zinc-800/50 py-2 text-base font-medium"
               >
-                <Home className="mr-2 h-4 w-4" />
+                <Home className="h-5 w-5" />
                 Return Home
               </Button>
             </div>
