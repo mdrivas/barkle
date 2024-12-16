@@ -79,6 +79,13 @@ export default function Home() {
     }
   );
 
+  useEffect(() => {
+    const hasSeenAnnouncement = localStorage.getItem("achievements_announcement_seen");
+    if (!hasSeenAnnouncement) {
+      setShowAchievements(true);
+    }
+  }, []);
+
   return (
     <div>
       <NavigationBar />
@@ -152,7 +159,7 @@ export default function Home() {
 
             {/* Bottom row - Achievements for non-auth users */}
             {!session?.user && (
-              <div className="flex justify-end -mt-3">
+              <div className="flex justify-end">
                 <Button
                   onClick={() => setShowAchievements(true)}
                   variant="ghost"
