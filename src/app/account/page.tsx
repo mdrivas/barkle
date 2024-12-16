@@ -25,6 +25,7 @@ import { useSignIn } from "~/hooks/useSignIn";
 import { useProfileContext } from "../components/ProfileProvider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
+import { Achievements } from "../components/Achievements";
 const STAT_CARD_STYLES = {
   sky: {
     background: "bg-gradient-to-br from-sky-500/20 to-sky-600/10",
@@ -229,6 +230,8 @@ export default function AccountPage() {
       enabled: !!session?.user?.id,
     });
 
+  const { mutate: trackShare } = api.achievements.trackShare.useMutation();
+
   const handleShare = async () => {
     const statsText = `🐕 MY BARKLE STATS 🐕
 
@@ -251,8 +254,10 @@ export default function AccountPage() {
         await navigator.share({
           text: statsText,
         });
+        trackShare(); // Track successful share
       } else {
         await navigator.clipboard.writeText(statsText);
+        trackShare(); // Track successful copy
         toast({
           title: "Stats copied!",
           description: "Share your Barkle progress with friends!",
@@ -260,7 +265,6 @@ export default function AccountPage() {
         });
       }
     } catch (error) {
-      console.error("Error sharing:", error);
       console.error("Error sharing:", error);
     }
   };
@@ -388,6 +392,17 @@ export default function AccountPage() {
 
         {/* Stats Sections */}
         <div className="space-y-6">
+          {/* Achievements Section */}
+          <div>
+            <h2 className="mb-4 text-xl font-semibold text-zinc-200">
+              Achievements
+            </h2>
+            <Achievements 
+              achievements={barkleStats?.achievements ?? []} 
+              isLoading={isBarkleLoading} 
+            />
+          </div>
+
           {/* Daily Barkle Section */}
           <div>
             <h2 className="mb-4 text-xl font-semibold text-zinc-200">

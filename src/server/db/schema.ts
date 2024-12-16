@@ -258,3 +258,55 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
     references: [profiles.tempId],
   }),
 }));
+
+// Define achievement types
+export const ACHIEVEMENT_TYPES = {
+  STREAK: 'streak',
+  DAILY: 'daily',
+  SOCIAL: 'social',
+} as const;
+
+// Achievement definitions table
+export const achievements = createTable("achievement", {
+  id: serial("id").primaryKey(),
+  type: varchar("type", { length: 50 })
+    .notNull()
+    .$type<keyof typeof ACHIEVEMENT_TYPES>(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 255 }).notNull(),
+  requirement: integer("requirement").notNull(),
+  icon: varchar("icon", { length: 50 }).notNull(),
+  rarity: varchar("rarity", { length: 20 }).default('common'),
+});
+
+// User achievements junction table
+export const userAchievements = createTable(
+  "user_achievement",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => profiles.userId, { onDelete: "cascade" }),
+    achievementId: integer("achievement_id")
+      .notNull()
+      .references(() => achievements.id),
+    unlockedAt: timestamp("unlocked_at", { withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.achievementId] }),
+    userIdIdx: index("user_achievement_user_id_idx").on(table.userId),
+  })
+);
+
+// Add relations
+export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
+  user: one(profiles, {
+    fields: [userAchievements.userId],
+    references: [profiles.userId],
+  }),
+  achievement: one(achievements, {
+    fields: [userAchievements.achievementId],
+    references: [achievements.id],
+  }),
+}));

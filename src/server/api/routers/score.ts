@@ -9,6 +9,7 @@ import { eq, and, sql, isNotNull, desc, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { profiles } from "~/server/db/schema";
 import { toPST, isConsecutiveDay } from "~/lib/streaks";
+import { achievements, userAchievements } from "~/server/db/schema";
 
 export const scoreRouter = createTRPCRouter({
   canPlayToday: publicProcedure
@@ -245,6 +246,9 @@ export const scoreRouter = createTRPCRouter({
         userId: scores.userId,
         tempId: scores.tempId,
         isVerified: profiles.isVerified,
+        achievements: sql<string[]>`
+          array_remove(array_agg(distinct ${achievements.type}), null)::text[]
+        `,
       })
       .from(scores)
       .leftJoin(
@@ -254,12 +258,26 @@ export const scoreRouter = createTRPCRouter({
           and(isNotNull(scores.tempId), eq(scores.tempId, profiles.tempId)),
         ),
       )
+      .leftJoin(
+        userAchievements,
+        eq(userAchievements.userId, profiles.userId)
+      )
+      .leftJoin(
+        achievements,
+        eq(achievements.id, userAchievements.achievementId)
+      )
       .where(
-        and(
-          sql`date_trunc('day', ${scores.playedAt} AT TIME ZONE 'America/Los_Angeles') = 
-                date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`,
-          isNotNull(profiles.username),
-        ),
+        sql`date_trunc('day', ${scores.playedAt} AT TIME ZONE 'America/Los_Angeles') = 
+            date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`
+      )
+      .groupBy(
+        profiles.username,
+        scores.score,
+        profiles.currentGuessStreak,
+        profiles.currentDailyStreak,
+        scores.userId,
+        scores.tempId,
+        profiles.isVerified,
       )
       .orderBy(
         desc(scores.score),
@@ -273,51 +291,132 @@ export const scoreRouter = createTRPCRouter({
     return ctx.db
       .select({
         username: profiles.username,
-        highestStreak: profiles.highestPawsistenceStreak,
+        highestStreak: profiles.highestGuessStreak,
         userId: profiles.userId,
         tempId: profiles.tempId,
         isVerified: profiles.isVerified,
+        achievements: sql<string[]>`
+          array_remove(array_agg(distinct ${achievements.type}), null)::text[]
+        `,
       })
       .from(profiles)
-      .where(
-        and(
-          isNotNull(profiles.username),
-          isNotNull(profiles.highestPawsistenceStreak),
-          sql`${profiles.highestPawsistenceStreak} > 0`,
-          // Include either users with userId OR tempId
-          or(isNotNull(profiles.userId), isNotNull(profiles.tempId)),
-        ),
+      .leftJoin(
+        userAchievements,
+        eq(userAchievements.userId, profiles.userId)
       )
-      .orderBy(desc(profiles.highestPawsistenceStreak))
+      .leftJoin(
+        achievements,
+        eq(achievements.id, userAchievements.achievementId)
+      )
+      .groupBy(
+        profiles.username,
+        profiles.highestGuessStreak,
+        profiles.userId,
+        profiles.tempId,
+        profiles.isVerified,
+      )
+      .orderBy(desc(profiles.highestGuessStreak))
       .limit(100);
   }),
   // TODO: Take out userId from input, change to protected procedure
   getBarkleStats: protectedProcedure.query(async ({ ctx }) => {
-    // Get all stats from profile
-    const profile = await ctx.db.query.profiles.findFirst({
-      where: eq(profiles.userId, ctx.session.user.id),
-      columns: {
-        currentDailyStreak: true,
-        highestDailyStreak: true,
-        currentGuessStreak: true,
-        highestGuessStreak: true,
-      },
+    return await ctx.db.transaction(async (tx) => {
+      // Get user profile stats
+      const profile = await tx.query.profiles.findFirst({
+        where: eq(profiles.userId, ctx.session.user.id),
+        columns: {
+          currentDailyStreak: true,
+          highestDailyStreak: true,
+          currentGuessStreak: true,
+          highestGuessStreak: true,
+        },
+      });
+
+      // Count all games played
+      const barkleGames = await tx.query.scores.findMany({
+        where: eq(scores.userId, ctx.session.user.id),
+        columns: {
+          id: true,
+        },
+      });
+
+      // Check and remove daily streak achievement if requirement not met
+      const dailyStreakAchievement = await tx.query.achievements.findFirst({
+        where: and(
+          eq(achievements.type, "DAILY"),
+          eq(achievements.requirement, 4)
+        ),
+      });
+
+      if (dailyStreakAchievement && (profile?.currentDailyStreak ?? 0) < 4) {
+        // Remove the achievement if streak is lost
+        await tx
+          .delete(userAchievements)
+          .where(
+            and(
+              eq(userAchievements.userId, ctx.session.user.id),
+              eq(userAchievements.achievementId, dailyStreakAchievement.id)
+            )
+          );
+      }
+
+      // Check and award achievements
+      const achievementsToCheck = [
+        // Pawfect Streak - 10 guess streak
+        {
+          type: "STREAK" as const,
+          requirement: 10,
+          value: profile?.highestGuessStreak ?? 0,
+          name: "Pawfect Streak"
+        },
+        // Furry Regular - 4 day streak
+        {
+          type: "DAILY" as const,
+          requirement: 4,
+          value: profile?.currentDailyStreak ?? 0,
+          name: "Furry Regular"
+        }
+      ];
+
+      // Award any new achievements
+      for (const check of achievementsToCheck) {
+        if (check.value >= check.requirement) {
+          const achievement = await tx.query.achievements.findFirst({
+            where: and(
+              eq(achievements.type, check.type),
+              eq(achievements.requirement, check.requirement)
+            ),
+          });
+
+          if (achievement) {
+            await tx.insert(userAchievements)
+              .values({
+                userId: ctx.session.user.id,
+                achievementId: achievement.id,
+              })
+              .onConflictDoNothing();
+          }
+        }
+      }
+
+      // Get all achievements with unlock status
+      const allAchievements = await tx.query.achievements.findMany();
+      const userAchievementsList = await tx.query.userAchievements.findMany({
+        where: eq(userAchievements.userId, ctx.session.user.id),
+      });
+
+      return {
+        gamesPlayed: barkleGames.length,
+        dailyStreak: profile?.currentDailyStreak ?? 0,
+        currentGuessStreak: profile?.currentGuessStreak ?? 0,
+        highestGuessStreak: profile?.highestGuessStreak ?? 0,
+        achievements: allAchievements.map(achievement => ({
+          ...achievement,
+          isUnlocked: userAchievementsList.some(ua => ua.achievementId === achievement.id),
+          unlockedAt: userAchievementsList.find(ua => ua.achievementId === achievement.id)?.unlockedAt,
+        })),
+      };
     });
-
-    // Count all Barkle games played by this user
-    const barkleGames = await ctx.db
-      .select({
-        count: sql<number>`count(*)::int`,
-      })
-      .from(scores)
-      .where(eq(scores.userId, ctx.session.user.id));
-
-    return {
-      gamesPlayed: Number(barkleGames[0]?.count ?? 0),
-      dailyStreak: profile?.currentDailyStreak ?? 0,
-      currentGuessStreak: profile?.currentGuessStreak ?? 0,
-      highestGuessStreak: profile?.highestGuessStreak ?? 0,
-    };
   }),
   // TODO: Take out userId from input, change to protected procedure
   getPawsistenceStats: protectedProcedure.query(async ({ ctx }) => {

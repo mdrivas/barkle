@@ -12,6 +12,7 @@ interface BaseLeaderboardEntry {
   userId: string | null;
   tempId: string | null;
   isVerified: boolean;
+  achievements: string[];
 }
 
 // Specific types for each leaderboard mode
@@ -69,6 +70,64 @@ const renderScore = (entry: LeaderboardEntry) => {
   );
 };
 
+// Add achievement icons component
+const AchievementIcons = ({ achievements }: { achievements: string[] }) => {
+  const sortedAchievements = achievements.sort((a, b) => {
+    const priority = {
+      'STREAK': 3,
+      'DAILY': 2,
+      'SOCIAL': 1
+    };
+    return (priority[b as keyof typeof priority] || 0) - (priority[a as keyof typeof priority] || 0);
+  });
+
+  // Only show top 2 achievements, no remaining count
+  const displayAchievements = sortedAchievements.slice(0, 2);
+
+  return (
+    <div className="flex items-center gap-[1px]">
+      {displayAchievements.map((type) => {
+        const icon = {
+          'STREAK': '⚡',
+          'DAILY': '⭐',
+          'SOCIAL': '📢',
+        }[type];
+        
+        return (
+          <div
+            key={type}
+            className="group relative cursor-pointer"
+          >
+            <span className="text-[9px] opacity-75 hover:opacity-100">{icon}</span>
+            <div className="absolute bottom-full left-1/2 z-50 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-black/90 px-2 py-1 text-[10px] text-white shadow-lg group-hover:block">
+              {getAchievementDetails(type)}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const getAchievementDetails = (type: string) => {
+  const details = {
+    'STREAK': {
+      name: 'Pawfect Streak',
+      description: 'Reached a 10-guess streak'
+    },
+    'DAILY': {
+      name: 'Furry Regular',
+      description: 'Played 4 days in a row'
+    },
+    'SOCIAL': {
+      name: 'Top Dog Influencer',
+      description: 'Shared their account stats'
+    }
+  }[type] ?? { name: 'Unknown', description: 'Achievement' };
+
+  return `${details.name}: ${details.description}`;
+};
+
 export function LeaderboardContent({
   mode,
 }: {
@@ -107,13 +166,15 @@ export function LeaderboardContent({
       return dailyLeaderboard?.map((entry) => ({
         ...entry,
         mode: "daily" as const,
-        isVerified: entry.isVerified ?? false
+        isVerified: entry.isVerified ?? false,
+        achievements: entry.achievements ?? []
       }));
     }
     return pawsistenceLeaderboard?.map((entry) => ({
       ...entry,
       mode: "pawsistence" as const,
-      isVerified: entry.isVerified ?? false
+      isVerified: entry.isVerified ?? false,
+      achievements: entry.achievements ?? []
     }));
   }, [mode, dailyLeaderboard, pawsistenceLeaderboard]);
 
@@ -194,6 +255,9 @@ const UserScoreSection = ({
         <span className="truncate text-zinc-100">
           {userScore?.username}
         </span>
+        {userScore && (userScore.achievements?.length ?? 0) > 0 && (
+          <AchievementIcons achievements={userScore.achievements ?? []} />
+        )}
       </div>
       {userScore ? (
         isPawsistence && isPawsistenceEntry(userScore) ? (
@@ -270,6 +334,9 @@ const ScoresList = ({
           <span className={cn("truncate text-zinc-100", { "font-semibold": i < 3 })}>
             {entry.username}
           </span>
+          {entry.achievements?.length > 0 && (
+            <AchievementIcons achievements={entry.achievements} />
+          )}
         </div>
         {renderScore(entry)}
       </div>

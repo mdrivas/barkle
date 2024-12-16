@@ -14,6 +14,8 @@ import { useEffect, useState } from "react";
 import { DogSubmissionModal } from "./components/DogSubmissionModal";
 import { api } from "~/trpc/react";
 import { NewUserDialog } from "./components/NewUserDialog";
+import { FeatureAnnouncementModal } from "./components/FeatureAnnouncementModal";
+import { TrophyIcon } from "@heroicons/react/24/outline";
 
 import { useSignIn } from "~/hooks/useSignIn";
 
@@ -30,6 +32,7 @@ export default function Home() {
   const [showNewUserDialog, setShowNewUserDialog] = useState(false);
   const { handleGoogleSignIn } = useSignIn();
   const [tempId, setTempId] = useState<string | null>(null);
+  const [showAchievements, setShowAchievements] = useState(false);
 
   useEffect(() => {
     const storedTempId = localStorage.getItem("barkle_temp_id");   
@@ -69,6 +72,13 @@ export default function Home() {
     void handleGoogleSignIn();
   };
 
+  const { data: userProfile } = api.profile.getProfile.useQuery(
+    { tempId: null },
+    {
+      enabled: !!session?.user,
+    }
+  );
+
   return (
     <div>
       <NavigationBar />
@@ -77,50 +87,55 @@ export default function Home() {
       >
         {/* Account Area - Moved inside main content area */}
         <div className="w-full max-w-4xl px-4 py-2">
-          <div className="flex justify-between">
-            {/* Left side - Temp Username */}
-            <div className="flex items-center">
-              {!session?.user && tempProfile?.username ? (
-                <span className="text-sm font-medium text-emerald-400">
-                  Playing as: <span className="text-emerald-300">{tempProfile.username}</span>
-                </span>
-              ) : (
-                <span className="text-base text-zinc-400">
-                  {/* Empty span to maintain layout */}
-                </span>
-              )}
-            </div>
-            
-            {/* Right side - Sign In/Account */}
-            <div>
+          <div className="flex flex-col gap-1">
+            {/* Top row - Playing as and Sign in */}
+            <div className="flex items-center justify-between">
+              {/* Left side */}
+              <div className="flex items-center">
+                {session?.user ? (
+                  <Button
+                    onClick={() => setShowAchievements(true)}
+                    variant="ghost"
+                    className="flex items-center gap-1 text-sm text-amber-500/80 hover:text-amber-400"
+                  >
+                    <TrophyIcon className="h-4 w-4" />
+                    Achievements
+                  </Button>
+                ) : (
+                  tempProfile?.username && (
+                    <span className="text-sm font-medium text-emerald-400">
+                      Playing as: <span className="text-emerald-300">{tempProfile.username}</span>
+                    </span>
+                  )
+                )}
+              </div>
+              
+              {/* Right side - Sign In/Account */}
               {session?.user ? (
                 <Link href="/account">
                   <Button
                     variant="ghost"
                     className="flex items-center gap-2 text-base text-zinc-400 hover:text-zinc-200"
                   >
-                    <div className="flex flex-col items-end">
+                    <div className="flex items-center gap-2">
                       <span className="text-base font-medium">
-                        {session.user.name}
+                        {userProfile?.username ?? "Loading..."}
                       </span>
-                      <span className="text-sm text-zinc-500">
-                        {session.user.email}
-                      </span>
-                    </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
-                      {session.user.image ? (
-                        <Image
-                          src={session.user.image}
-                          alt="Profile"
-                          width={40}
-                          height={40}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <span className="text-base">
-                          {session.user.name?.[0]?.toUpperCase() ?? "?"}
-                        </span>
-                      )}
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
+                        {session.user.image ? (
+                          <Image
+                            src={session.user.image}
+                            alt="Profile"
+                            width={40}
+                            height={40}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          <span className="text-base">
+                            {userProfile?.username?.[0]?.toUpperCase() ?? "?"}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </Button>
                 </Link>
@@ -128,12 +143,26 @@ export default function Home() {
                 <Button
                   onClick={handleSignIn}
                   variant="ghost"
-                  className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-zinc-200"
+                  className="flex items-center gap-2 py-1 text-sm font-medium text-zinc-400 hover:text-zinc-200"
                 >
                   Sign in with Google
                 </Button>
               )}
             </div>
+
+            {/* Bottom row - Achievements for non-auth users */}
+            {!session?.user && (
+              <div className="flex justify-end -mt-3">
+                <Button
+                  onClick={() => setShowAchievements(true)}
+                  variant="ghost"
+                  className="flex items-center gap-1 py-1 text-xs text-amber-500/80 hover:text-amber-400"
+                >
+                  <TrophyIcon className="h-4 w-4" />
+                  Achievements
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -199,6 +228,10 @@ export default function Home() {
         <NewUserDialog
           isOpen={showNewUserDialog}
           onClose={() => setShowNewUserDialog(false)}
+        />
+        <FeatureAnnouncementModal 
+          open={showAchievements} 
+          onOpenChange={setShowAchievements}
         />
       </main>
     </div>
