@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,15 +27,12 @@ export function FeatureAnnouncementModal({
   const { handleGoogleSignIn } = useSignIn();
   const { data: session } = useSession();
   
-  useEffect(() => {
-    const hasSeenAnnouncement = localStorage.getItem("achievements_announcement_seen");
-    if (!hasSeenAnnouncement) {
-      setIsLocalOpen(true);
-    }
-  }, []);
-
   const markAsSeen = () => {
-    localStorage.setItem("achievements_announcement_seen", "true");
+    try {
+      localStorage.setItem("achievements_announcement_seen", "true");
+    } catch (error) {
+      console.error("Failed to set localStorage:", error);
+    }
     setIsLocalOpen(false);
     onOpenChange?.(false);
   };

@@ -80,10 +80,12 @@ export default function Home() {
   );
 
   useEffect(() => {
-    const hasSeenAnnouncement = localStorage.getItem("achievements_announcement_seen");
-    if (!hasSeenAnnouncement) {
-      setShowAchievements(true);
-    }
+    setTimeout(() => {
+      const hasSeenAnnouncement = localStorage.getItem("achievements_announcement_seen");
+      if (!hasSeenAnnouncement) {
+        setShowAchievements(true);
+      }
+    }, 500);
   }, []);
 
   return (
