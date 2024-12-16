@@ -291,7 +291,7 @@ export const scoreRouter = createTRPCRouter({
     return ctx.db
       .select({
         username: profiles.username,
-        highestStreak: profiles.highestGuessStreak,
+        highestStreak: profiles.highestPawsistenceStreak,
         userId: profiles.userId,
         tempId: profiles.tempId,
         isVerified: profiles.isVerified,
@@ -310,12 +310,12 @@ export const scoreRouter = createTRPCRouter({
       )
       .groupBy(
         profiles.username,
-        profiles.highestGuessStreak,
+        profiles.highestPawsistenceStreak,
         profiles.userId,
         profiles.tempId,
         profiles.isVerified,
       )
-      .orderBy(desc(profiles.highestGuessStreak))
+      .orderBy(desc(profiles.highestPawsistenceStreak))
       .limit(100);
   }),
   // TODO: Take out userId from input, change to protected procedure
@@ -340,26 +340,6 @@ export const scoreRouter = createTRPCRouter({
         },
       });
 
-      // Check and remove daily streak achievement if requirement not met
-      const dailyStreakAchievement = await tx.query.achievements.findFirst({
-        where: and(
-          eq(achievements.type, "DAILY"),
-          eq(achievements.requirement, 4)
-        ),
-      });
-
-      if (dailyStreakAchievement && (profile?.currentDailyStreak ?? 0) < 4) {
-        // Remove the achievement if streak is lost
-        await tx
-          .delete(userAchievements)
-          .where(
-            and(
-              eq(userAchievements.userId, ctx.session.user.id),
-              eq(userAchievements.achievementId, dailyStreakAchievement.id)
-            )
-          );
-      }
-
       // Check and award achievements
       const achievementsToCheck = [
         // Pawfect Streak - 10 guess streak
@@ -378,6 +358,7 @@ export const scoreRouter = createTRPCRouter({
         }
       ];
 
+
       // Award any new achievements
       for (const check of achievementsToCheck) {
         if (check.value >= check.requirement) {
@@ -388,7 +369,9 @@ export const scoreRouter = createTRPCRouter({
             ),
           });
 
+
           if (achievement) {
+            // Award if not already awarded
             await tx.insert(userAchievements)
               .values({
                 userId: ctx.session.user.id,
@@ -404,6 +387,7 @@ export const scoreRouter = createTRPCRouter({
       const userAchievementsList = await tx.query.userAchievements.findMany({
         where: eq(userAchievements.userId, ctx.session.user.id),
       });
+
 
       return {
         gamesPlayed: barkleGames.length,
