@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://barkle.vercel.app/sitemap.xml 

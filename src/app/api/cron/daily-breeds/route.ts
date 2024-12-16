@@ -117,36 +117,32 @@ async function generateDailyBreeds() {
   console.log("\nStarting breed selection...");
 
   // Select 4 API breeds, avoiding recently used ones if possible
+  const availableBreeds = allBreeds.filter(breed => !recentlyUsedBreeds.has(breed.toLowerCase()));
+  console.log("\nFiltered available breeds:", availableBreeds.length);
+
+  // Shuffle the available breeds array
+  const shuffledBreeds = [...availableBreeds].sort(() => rng() - 0.5);
+
   while (selectedBreeds.length < 4) {
-    const breedIndex = Math.floor(rng() * allBreeds.length);
-    const breed = allBreeds[breedIndex] as string;
+    // If we've run out of unused breeds, use any breed
+    const breedPool = selectedBreeds.length < availableBreeds.length ? shuffledBreeds : allBreeds;
+    const breed = breedPool[Math.floor(rng() * breedPool.length)];
     
-    // Skip if breed was used today or if it was recently used and we have other options
-    if (!usedBreeds.has(breed) && breed) {
-      const wasRecentlyUsed = recentlyUsedBreeds.has(breed.toLowerCase());
-      const haveOtherOptions = allBreeds.length - usedBreeds.size > 4 - selectedBreeds.length;
+    if (!usedBreeds.has(breed!) && breed) {
+      console.log(`\nSelected breed: ${breed}`);
+      console.log(`From ${selectedBreeds.length < availableBreeds.length ? 'unused' : 'all'} pool`);
       
-      console.log(`\nConsidering breed: ${breed}`);
-      console.log(`Recently used? ${wasRecentlyUsed}`);
-      console.log(`Have other options? ${haveOtherOptions}`);
+      const imageResponse = await fetch(
+        `https://dog.ceo/api/breed/${breed}/images/random`,
+      );
+      const imageData = (await imageResponse.json()) as DogImageResponse;
 
-      if (!wasRecentlyUsed || !haveOtherOptions) {
-        console.log(`Selected ${breed} ${wasRecentlyUsed ? "(reused due to limited options)" : ""}`);
-        
-        const imageResponse = await fetch(
-          `https://dog.ceo/api/breed/${breed}/images/random`,
-        );
-        const imageData = (await imageResponse.json()) as DogImageResponse;
-
-        selectedBreeds.push({
-          breed,
-          imageUrl: imageData.message,
-          type: "api",
-        });
-        usedBreeds.add(breed);
-      } else {
-        console.log(`Skipping ${breed} - recently used and have other options`);
-      }
+      selectedBreeds.push({
+        breed,
+        imageUrl: imageData.message,
+        type: "api",
+      });
+      usedBreeds.add(breed);
     }
   }
 
@@ -163,12 +159,11 @@ async function generateDailyBreeds() {
 
   // Then add community dog as the 5th dog if available
   if (verifiedDogs.length > 0) {
-    // Sort by ID to ensure consistent selection
+    // Sort by ID in ascending order to prioritize lower IDs
     const sortedDogs = [...verifiedDogs].sort((a, b) => a.id - b.id);
     
-    // Use RNG to select from available dogs but log the selection process
-    const communityDogIndex = Math.floor(rng() * sortedDogs.length);
-    const communityDog = sortedDogs[communityDogIndex];
+    // Select the first dog (lowest ID) instead of using RNG
+    const communityDog = sortedDogs[0];
 
     if (communityDog) {
       const lastFeatured = communityDog.lastFeaturedAt 

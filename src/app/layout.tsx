@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   title: "Barkle - The Daily Dog Breed Game",
   description: "Test your dog breed knowledge with Barkle, a daily puzzle game featuring dog breeds from around the world. Play daily challenges and compete on the leaderboard!",
   metadataBase: new URL('https://barkle.vercel.app'),
-  keywords: ["dog breeds", "dog game", "daily puzzle", "breed quiz", "dog breeds game", "Barkle", "dog breed quiz", "Worde for dogs"],
+  keywords: ["dog breeds", "dog game", "daily puzzle", "breed quiz", "dog breeds game", "Barkle", "dog breed quiz", "Wordle for dogs", "dog breed guessing game", "daily dog game"],
   robots: {
     index: true,
     follow: true,
@@ -43,23 +43,35 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://barkle.vercel.app",
-    title: "Barkle",
-    description: "The Daily Dog Breed Game",
+    title: "Barkle - The Daily Dog Breed Game",
+    description: "Test your dog breed knowledge with our daily puzzle game. New challenge every day!",
+    siteName: "Barkle",
+    locale: "en_US",
     images: [
       {
-        url: "/icon-512.png",
-        width: 1200,
-        height: 630,
+        url: "https://barkle.vercel.app/icon-512.png",
+        width: 512,
+        height: 512,
         alt: "Barkle Logo",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    site: "@yourtwitterhandle",
-    title: "Barkle",
-    description: "The Daily Dog Breed Game",
-    images: ["/icon-512.png"],
+    title: "Barkle - The Daily Dog Breed Game",
+    description: "Test your dog breed knowledge with our daily puzzle game. New challenge every day!",
+    images: ["https://barkle.vercel.app/icon-512.png"],
+  },
+  other: {
+    "msapplication-TileColor": "#121213",
+    "theme-color": "#121213",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black",
+    "apple-mobile-web-app-title": "Barkle",
+    "format-detection": "telephone=no",
+    "mobile-web-app-capable": "yes",
+    "revisit-after": "1 day",
+    "last-modified": "2024-12-15",
   },
 };
 
