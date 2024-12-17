@@ -351,11 +351,7 @@ export const scoreRouter = createTRPCRouter({
         eq(achievements.id, userAchievements.achievementId)
       )
       .where(
-        and(
-          gt(profiles.pawpulationHighScore, 0),
-          sql`date_trunc('day', ${profiles.lastPawpulationAt} AT TIME ZONE 'America/Los_Angeles') = 
-              date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`
-        )
+        gt(profiles.pawpulationHighScore, 0)
       )
       .groupBy(
         profiles.username,
