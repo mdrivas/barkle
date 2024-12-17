@@ -8,6 +8,7 @@ import { Terms } from "~/app/components/Terms";
 import { Privacy } from "~/app/components/Privacy";
 import { FAQSheet } from "~/app/components/FAQSheet";
 import { FeedbackSheet } from "~/app/components/FeedbackSheet";
+import { Instagram, TiktokIcon } from "~/app/components/icons";
 
 interface NavItem {
   Component: React.ComponentType;
@@ -19,18 +20,18 @@ export function NavigationBar() {
     enabled: !!session?.user,
   });
 
-  const navItems: NavItem[] = [
-    { Component: Privacy },
+  const navItems = [
     { Component: Terms },
+    { Component: Privacy },
     { Component: FAQSheet },
     { Component: FeedbackSheet },
-  ];
+  ] satisfies NavItem[];
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-green-900/30 bg-gradient-to-br from-[#1a1a1b] to-[#121213]">
       <div className="mx-auto max-w-7xl">
         <div className="flex w-full justify-end gap-2 px-3 py-1.5 text-[10px] text-green-500 [&>*]:transition-colors [&>*]:hover:text-green-400">
-          {isAdmin && (
+          {isAdmin ? (
             <>
               <Link href="/" className="text-[10px] font-normal">
                 Home
@@ -42,6 +43,25 @@ export function NavigationBar() {
               <span className="text-green-800">|</span>
               <Link href="/preview" className="text-[10px] font-normal">
                 QR Code
+              </Link>
+              <span className="text-green-800">|</span>
+            </>
+          ) : (
+            <>
+              <Link 
+                href="https://www.instagram.com/barkledailyy" 
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Instagram className="h-3 w-3" />
+              </Link>
+              <span className="text-green-800">|</span>
+              <Link 
+                href="https://www.tiktok.com/@barkleapp" 
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <TiktokIcon className="h-3 w-3" />
               </Link>
               <span className="text-green-800">|</span>
             </>
