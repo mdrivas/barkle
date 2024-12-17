@@ -8,6 +8,7 @@ import { adminRouter } from "./routers/admin";
 import { profileRouter } from "./routers/profile";
 import { feedbackRouter } from "./routers/feedback";
 import { achievementRouter } from "./routers/achievements";
+import { pawpulationRouter } from "./routers/pawpulation";
 
 /**
  * This is the primary router for your server.
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   profile: profileRouter,
   feedback: feedbackRouter,
   achievements: achievementRouter,
+  pawpulation: pawpulationRouter,
 });
 
 // export type definition of API

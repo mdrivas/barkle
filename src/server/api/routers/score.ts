@@ -214,7 +214,6 @@ export const scoreRouter = createTRPCRouter({
     }),
 
   getTodayGames: publicProcedure.query(async ({ ctx }) => {
-    // Count all games played today in PST
     const result = await ctx.db
       .select({
         count: sql<number>`
@@ -228,6 +227,12 @@ export const scoreRouter = createTRPCRouter({
             SELECT COALESCE(SUM(pawsistence_plays_today)::int, 0)
             FROM ${profiles}
             WHERE date_trunc('day', last_pawsistence_at AT TIME ZONE 'America/Los_Angeles') = 
+                  date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')
+          ) +
+          (
+            SELECT COALESCE(SUM(pawpulation_plays_today)::int, 0)
+            FROM ${profiles}
+            WHERE date_trunc('day', last_pawpulation_at AT TIME ZONE 'America/Los_Angeles') = 
                   date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')
           )
         `,
@@ -320,6 +325,47 @@ export const scoreRouter = createTRPCRouter({
         profiles.isVerified,
       )
       .orderBy(desc(profiles.highestPawsistenceStreak))
+      .limit(100);
+  }),
+
+  getPawpulationLeaderboard: publicProcedure.query(async ({ ctx }) => {
+    return ctx.db
+      .select({
+        username: profiles.username,
+        score: profiles.pawpulationHighScore,
+        totalPlays: profiles.pawpulationGamesPlayed,
+        userId: profiles.userId,
+        tempId: profiles.tempId,
+        isVerified: profiles.isVerified,
+        achievements: sql<string[]>`
+          array_remove(array_agg(distinct ${achievements.type}), null)::text[]
+        `,
+      })
+      .from(profiles)
+      .leftJoin(
+        userAchievements,
+        eq(userAchievements.userId, profiles.userId)
+      )
+      .leftJoin(
+        achievements,
+        eq(achievements.id, userAchievements.achievementId)
+      )
+      .where(
+        and(
+          gt(profiles.pawpulationHighScore, 0),
+          sql`date_trunc('day', ${profiles.lastPawpulationAt} AT TIME ZONE 'America/Los_Angeles') = 
+              date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`
+        )
+      )
+      .groupBy(
+        profiles.username,
+        profiles.pawpulationHighScore,
+        profiles.pawpulationGamesPlayed,
+        profiles.userId,
+        profiles.tempId,
+        profiles.isVerified,
+      )
+      .orderBy(desc(profiles.pawpulationHighScore))
       .limit(100);
   }),
   // TODO: Take out userId from input, change to protected procedure

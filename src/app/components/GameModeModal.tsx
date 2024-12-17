@@ -59,6 +59,27 @@ export function GameModeModal() {
               <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-orange-500/0 via-orange-500/50 to-orange-500/0 transition-transform group-hover:translate-x-1" />
             </div>
           </Link>
+
+          {/* Pawpulation Mode */}
+          <Link href="/pawpulation" className="block">
+            <div className="group relative rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all hover:bg-zinc-800/50">
+              <div className="relative mb-3 flex items-center justify-between">
+                <span className="mr-2 truncate text-lg font-bold text-purple-400 group-hover:text-purple-300">
+                  Pawpulation
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-purple-300 border border-purple-500/20">
+                    NEW
+                  </span>
+                  <span className="flex-shrink-0 text-2xl">🎲</span>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-400 group-hover:text-zinc-300">
+                Higher or lower? Test your knowledge of global breed populations!
+              </p>
+              <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-purple-500/0 via-purple-500/50 to-purple-500/0 transition-transform group-hover:translate-x-1" />
+            </div>
+          </Link>
         </div>
       </DialogContent>
     </Dialog>

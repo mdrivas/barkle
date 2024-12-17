@@ -28,8 +28,15 @@ interface DailyEntry extends BaseLeaderboardEntry {
   dailyStreak: number | null;
 }
 
+// Update PawpulationEntry type
+interface PawpulationEntry extends BaseLeaderboardEntry {
+  mode: "pawpulation";
+  score: number;
+  totalPlays: number;
+}
+
 // Union type for all possible entries
-type LeaderboardEntry = PawsistenceEntry | DailyEntry;
+type LeaderboardEntry = PawsistenceEntry | DailyEntry | PawpulationEntry;
 
 // Type guard to check if entry is pawsistence
 function isPawsistenceEntry(
@@ -43,6 +50,11 @@ function isDailyEntry(entry: LeaderboardEntry): entry is DailyEntry {
   return entry.mode === "daily";
 }
 
+// Type guard to check if entry is pawpulation
+function isPawpulationEntry(entry: LeaderboardEntry): entry is PawpulationEntry {
+  return entry.mode === "pawpulation";
+}
+
 // Helper function to check if an entry matches the current user
 const isCurrentUser = (
   entry: LeaderboardEntry,
@@ -54,13 +66,20 @@ const isCurrentUser = (
 };
 
 // Helper to render score based on entry type
-const renderScore = (entry: LeaderboardEntry) => {
+const renderScore = (entry: LeaderboardEntry, isPawpulation: boolean) => {
   if (isPawsistenceEntry(entry)) {
     return (
       <div className="text-center text-amber-500">{entry.highestStreak}🔥</div>
     );
   }
-
+  if (isPawpulationEntry(entry)) {
+    return (
+      <>
+        <div className="text-center text-amber-500">{entry.score}🎯</div>
+        <div className="text-center text-green-500">{entry.totalPlays}</div>
+      </>
+    );
+  }
   return (
     <>
       <div className="text-center text-amber-500">{entry.score}/5</div>
@@ -131,7 +150,7 @@ const getAchievementDetails = (type: string) => {
 export function LeaderboardContent({
   mode,
 }: {
-  mode: "daily" | "pawsistence";
+  mode: "daily" | "pawsistence" | "pawpulation";
 }) {
   const { tempId } = useProfileContext();
   const { data: session } = useSession();
@@ -139,6 +158,7 @@ export function LeaderboardContent({
 
   // Memoize this value to prevent unnecessary recalculations
   const isPawsistence = useMemo(() => mode === "pawsistence", [mode]);
+  const isPawpulation = useMemo(() => mode === "pawpulation", [mode]);
 
   // Optimize queries with proper options
   const { data: dailyLeaderboard, isLoading: dailyLeaderboardLoading } =
@@ -160,26 +180,53 @@ export function LeaderboardContent({
     gcTime: 5 * 60 * 1000,
   });
 
-  // Memoize the transformed data
+  // Add pawpulation leaderboard query
+  const {
+    data: pawpulationLeaderboard,
+    isLoading: pawpulationLeaderboardLoading,
+  } = api.score.getPawpulationLeaderboard.useQuery(undefined, {
+    enabled: mode === "pawpulation",
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  // Update data transformation to handle nulls
   const data = useMemo(() => {
     if (mode === "daily") {
       return dailyLeaderboard?.map((entry) => ({
         ...entry,
         mode: "daily" as const,
         isVerified: entry.isVerified ?? false,
-        achievements: entry.achievements ?? []
+        achievements: entry.achievements ?? [],
+        score: entry.score ?? 0,
+        currentStreak: entry.currentStreak ?? 0,
+        dailyStreak: entry.dailyStreak ?? 0
+      }));
+    }
+    if (mode === "pawpulation") {
+      return pawpulationLeaderboard?.map((entry) => ({
+        ...entry,
+        mode: "pawpulation" as const,
+        isVerified: entry.isVerified ?? false,
+        achievements: entry.achievements ?? [],
+        score: entry.score ?? 0,
+        totalPlays: entry.totalPlays ?? 0
       }));
     }
     return pawsistenceLeaderboard?.map((entry) => ({
       ...entry,
       mode: "pawsistence" as const,
       isVerified: entry.isVerified ?? false,
-      achievements: entry.achievements ?? []
+      achievements: entry.achievements ?? [],
+      highestStreak: entry.highestStreak ?? 0
     }));
-  }, [mode, dailyLeaderboard, pawsistenceLeaderboard]);
+  }, [mode, dailyLeaderboard, pawsistenceLeaderboard, pawpulationLeaderboard]);
 
-  const isLoading =
-    mode === "daily" ? dailyLeaderboardLoading : pawsistenceLeaderboardLoading;
+  // Update loading state to include pawpulation
+  const isLoading = 
+    mode === "daily" ? dailyLeaderboardLoading : 
+    mode === "pawpulation" ? pawpulationLeaderboardLoading :
+    pawsistenceLeaderboardLoading;
 
   // Memoize user-related calculations
   const { userScore, userRank } = useMemo(() => {
@@ -217,10 +264,11 @@ export function LeaderboardContent({
             userScore={userScore}
             userRank={userRank}
             isPawsistence={isPawsistence}
+            isPawpulation={isPawpulation}
           />
         )}
-        <HeadersSection isPawsistence={isPawsistence} />
-        <ScoresList data={data} isPawsistence={isPawsistence} />
+        <HeadersSection isPawsistence={isPawsistence} isPawpulation={isPawpulation} />
+        <ScoresList data={data} isPawsistence={isPawsistence} isPawpulation={isPawpulation} />
       </div>
     </div>
   );
@@ -231,21 +279,23 @@ const UserScoreSection = ({
   userScore,
   userRank,
   isPawsistence,
+  isPawpulation,
 }: {
   userScore: LeaderboardEntry | undefined;
   userRank: number | undefined;
   isPawsistence: boolean;
+  isPawpulation: boolean;
 }) => (
   <div className="rounded-lg border border-green-900/30 bg-green-900/20 p-2">
     <div className="mb-2 text-xs font-medium text-green-500">
-      {isPawsistence ? "Your Best Score" : "Your Score Today"}
+      {isPawsistence ? "Your Best Score" : isPawpulation ? "Your Best Score" : "Your Score Today"}
     </div>
     <div
       className={cn(
         "grid items-center gap-2 text-xs",
-        isPawsistence 
-          ? "grid-cols-3" 
-          : "grid-cols-[12%_28%_18%_18%_18%]"
+        isPawsistence ? "grid-cols-3" : 
+        isPawpulation ? "grid-cols-[12%_28%_30%_30%]" :
+        "grid-cols-[12%_28%_18%_18%_18%]"
       )}
     >
       <div className="text-center font-bold text-green-500">
@@ -264,6 +314,11 @@ const UserScoreSection = ({
           <div className="text-center text-amber-500">
             {userScore.highestStreak}🔥
           </div>
+        ) : isPawpulation && isPawpulationEntry(userScore) ? (
+          <>
+            <div className="text-center text-amber-500">{userScore.score}🎯</div>
+            <div className="text-center text-green-500">{userScore.totalPlays}</div>
+          </>
         ) : (
           isDailyEntry(userScore) && (
             <>
@@ -286,17 +341,27 @@ const UserScoreSection = ({
   </div>
 );
 
-const HeadersSection = ({ isPawsistence }: { isPawsistence: boolean }) => (
+const HeadersSection = ({ isPawsistence, isPawpulation }: { 
+  isPawsistence: boolean;
+  isPawpulation: boolean;
+}) => (
   <div
     className={cn(
       "grid h-min gap-2 rounded-lg bg-zinc-800/50 p-2 text-xs font-medium text-zinc-400",
-      isPawsistence ? "grid-cols-3" : "grid-cols-[12%_28%_18%_18%_18%]"
+      isPawsistence ? "grid-cols-3" : 
+      isPawpulation ? "grid-cols-[12%_28%_30%_30%]" :
+      "grid-cols-[12%_28%_18%_18%_18%]"
     )}
   >
     <div className="text-center">Rank</div>
     <div>Player</div>
     {isPawsistence ? (
       <div className="text-center">Best Streak</div>
+    ) : isPawpulation ? (
+      <>
+        <div className="text-center">Best Score</div>
+        <div className="text-center">Total Plays</div>
+      </>
     ) : (
       <>
         <div className="text-center">Score</div>
@@ -310,9 +375,11 @@ const HeadersSection = ({ isPawsistence }: { isPawsistence: boolean }) => (
 const ScoresList = ({
   data,
   isPawsistence,
+  isPawpulation,
 }: {
   data: LeaderboardEntry[];
   isPawsistence: boolean;
+  isPawpulation: boolean;
 }) => (
   <div className="scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800/50 max-h-[400px] space-y-1.5 overflow-y-auto pr-1">
     {data.map((entry, i) => (
@@ -320,7 +387,9 @@ const ScoresList = ({
         key={`${entry.username}-${i}`}
         className={cn(
           "grid items-center gap-2 rounded-lg border p-2 text-xs shadow-lg",
-          isPawsistence ? "grid-cols-3" : "grid-cols-[12%_28%_18%_18%_18%]",
+          isPawsistence ? "grid-cols-3" : 
+          isPawpulation ? "grid-cols-[12%_28%_30%_30%]" :
+          "grid-cols-[12%_28%_18%_18%_18%]",
           {
             "bg-gold animate-medal-shine": i === 0,
             "bg-silver animate-medal-shine": i === 1,
@@ -338,7 +407,7 @@ const ScoresList = ({
             <AchievementIcons achievements={entry.achievements} />
           )}
         </div>
-        {renderScore(entry)}
+        {renderScore(entry, isPawpulation)}
       </div>
     ))}
   </div>

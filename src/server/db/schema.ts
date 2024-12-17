@@ -86,6 +86,10 @@ export const profiles = createTable("profile", {
   highestPawsistenceStreak: integer("highest_pawsistence_streak").default(0),
   pawsistencePlaysToday: integer("pawsistence_plays_today").default(0),
   lastPawsistenceAt: timestamp("last_pawsistence_at", { withTimezone: true }),
+  pawpulationGamesPlayed: integer("pawpulation_games_played").default(0),
+  pawpulationHighScore: integer("pawpulation_high_score").default(0),
+  lastPawpulationAt: timestamp("last_pawpulation_at", { withTimezone: true }),
+  pawpulationPlaysToday: integer("pawpulation_plays_today").default(0),
 });
 
 export type Profile = InferSelectModel<typeof profiles>;
@@ -312,3 +316,18 @@ export const userAchievementsRelations = relations(userAchievements, ({ one }) =
     references: [achievements.id],
   }),
 }));
+
+// New table for breed population data
+export const breedPopulations = createTable("breed_population", {
+  id: serial("id").primaryKey(),
+  breed: varchar("breed", { length: 100 }).notNull().unique(),
+  population: integer("population").notNull(),
+  countryOrigin: varchar("country_origin", { length: 100 }),
+  yearEstimate: integer("year_estimate"),
+  source: varchar("source", { length: 255 }),
+  imageUrl: varchar("image_url", { length: 255 }),
+  funFact: varchar("fun_fact", { length: 500 }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});

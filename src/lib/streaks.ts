@@ -20,3 +20,8 @@ export const isConsecutiveDay = (prevDate: Date | null, currentDate: Date) => {
   // Return true only if the difference is exactly 1 day
   return diffInDays === 1;
 };
+
+export function isSameDay(date1: Date | null, date2: Date): boolean {
+  if (!date1) return false;
+  return toPST(date1).hasSame(toPST(date2), 'day');
+}
