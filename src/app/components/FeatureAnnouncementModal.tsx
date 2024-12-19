@@ -27,34 +27,30 @@ export function FeatureAnnouncementModal({
   const { handleGoogleSignIn } = useSignIn();
   const { data: session } = useSession();
   
-  const markAsSeen = () => {
-    try {
-      localStorage.setItem("achievements_announcement_seen", "true");
-    } catch (error) {
-      console.error("Failed to set localStorage:", error);
-    }
+  const handleClose = () => {
     setIsLocalOpen(false);
     onOpenChange?.(false);
   };
 
-  const handleClose = () => markAsSeen();
-
   const isModalOpen = open ?? isLocalOpen;
 
   const handleSignIn = async () => {
-    markAsSeen();
+    handleClose();
     await handleGoogleSignIn();
   };
 
   const handleCheckAchievements = () => {
-    markAsSeen();
+    handleClose();
   };
 
   return (
-    <Dialog open={isModalOpen} onOpenChange={(value) => {
-      onOpenChange?.(value);
-      if (!value) markAsSeen();
-    }}>
+    <Dialog 
+      open={isModalOpen} 
+      onOpenChange={(value) => {
+        onOpenChange?.(value);
+        if (!value) handleClose();
+      }}
+    >
       <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border-2 border-white/10 bg-zinc-950/95 text-zinc-50 shadow-[0_0_0_1px_rgba(255,255,255,0.05)] sm:w-full sm:max-w-[400px] [&>button]:hidden">
         <DialogHeader>
           <DialogTitle className="text-center">

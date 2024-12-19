@@ -18,6 +18,8 @@ import {
   LogOut,
   Share2,
   Pencil,
+  Star,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { useToast } from "~/hooks/use-toast";
@@ -167,12 +169,14 @@ export default function AccountPage() {
     icon: Icon,
     color,
     isLoading,
+    isLegendary,
   }: {
     title: string;
     value: number;
     icon: any; // Consider using a more specific type like LucideIcon
     color: keyof typeof STAT_CARD_STYLES;
     isLoading: boolean;
+    isLegendary?: boolean;
   }) => {
     const styles = STAT_CARD_STYLES[color];
 
@@ -181,7 +185,11 @@ export default function AccountPage() {
         className={cn(
           "relative overflow-hidden p-4 transition-all duration-200 hover:scale-[1.02]",
           styles.background,
-          "ring-1 ring-white/10",
+          "ring-1",
+          {
+            "ring-purple-500/20": isLegendary,
+            "ring-white/10": !isLegendary,
+          },
           "shadow-lg hover:shadow-xl",
         )}
       >
@@ -221,6 +229,11 @@ export default function AccountPage() {
             "opacity-20",
           )}
         />
+        {isLegendary && (
+          <Sparkles 
+            className="absolute right-2 top-2 h-4 w-4 text-purple-400" 
+          />
+        )}
       </Card>
     );
   };
@@ -397,9 +410,19 @@ export default function AccountPage() {
           {/* Achievements Section */}
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-zinc-200">
-                Achievements
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-zinc-200">
+                  Achievements
+                </h2>
+                {(barkleStats?.achievements ?? []).filter(a => a.rarity === 'legendary' && a.isUnlocked).length > 0 && (
+                  <div className="flex items-center gap-1 rounded-full bg-purple-500/10 px-2 py-0.5">
+                    <Sparkles className="h-4 w-4 text-purple-400" />
+                    <span className="text-sm text-purple-400">
+                      {(barkleStats?.achievements ?? []).filter(a => a.rarity === 'legendary' && a.isUnlocked).length}
+                    </span>
+                  </div>
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -438,6 +461,9 @@ export default function AccountPage() {
                 icon={Flame}
                 color="orange"
                 isLoading={isBarkleLoading}
+                isLegendary={barkleStats?.achievements.some(
+                  a => a.type === 'STREAK' && a.requirement === 10 && a.isUnlocked
+                )}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -450,10 +476,13 @@ export default function AccountPage() {
               />
               <StatCard
                 title="Best Guess Streak"
-                value={userData?.highestGuessStreak ?? 0}
+                value={barkleStats?.highestGuessStreak ?? 0}
                 icon={Trophy}
                 color="indigo"
-                isLoading={isLoading}
+                isLoading={isBarkleLoading}
+                isLegendary={barkleStats?.achievements.some(
+                  a => a.type === 'STREAK' && a.requirement === 20 && a.isUnlocked
+                )}
               />
             </div>
           </div>

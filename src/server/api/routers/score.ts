@@ -424,6 +424,26 @@ export const scoreRouter = createTRPCRouter({
           value: profile?.highestPawsistenceStreak ?? 0,
           name: "Paw Pro"
         },
+        // New Legendary Daily Streak - 10 days
+        {
+          type: "DAILY" as const,
+          requirement: 10,
+          value: profile?.currentDailyStreak ?? 0,
+          name: "Pawsome Dedication",
+          description: "Return to Barkle for 10 days in a row.",
+          rarity: "legendary",
+          icon: "⚡"
+        },
+        // New Legendary Guess Streak - 20 correct
+        {
+          type: "STREAK" as const,
+          requirement: 20,
+          value: profile?.highestGuessStreak ?? 0,
+          name: "Unleashed Genius",
+          description: "Get 20 breeds right in a row on daily.",
+          rarity: "legendary",
+          icon: "🎯"
+        },
       ];
 
 

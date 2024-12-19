@@ -32,7 +32,7 @@ export default function Home() {
   const [showNewUserDialog, setShowNewUserDialog] = useState(false);
   const { handleGoogleSignIn } = useSignIn();
   const [tempId, setTempId] = useState<string | null>(null);
-  const [showAchievements, setShowAchievements] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(true);
 
   useEffect(() => {
     const storedTempId = localStorage.getItem("barkle_temp_id");   
@@ -78,15 +78,6 @@ export default function Home() {
       enabled: !!session?.user,
     }
   );
-
-  useEffect(() => {
-    setTimeout(() => {
-      const hasSeenAnnouncement = localStorage.getItem("achievements_announcement_seen");
-      if (!hasSeenAnnouncement) {
-        setShowAchievements(true);
-      }
-    }, 500);
-  }, []);
 
   return (
     <div>
