@@ -420,11 +420,11 @@ export default function AccountPage() {
                 <h2 className="text-xl font-semibold text-zinc-200">
                   Achievements
                 </h2>
-                {(barkleStats?.achievements ?? []).filter(a => a.rarity === 'legendary' && a.isUnlocked).length > 0 && (
+                {(barkleStats?.achievements ?? []).filter(a => a.rarity === 'LEGENDARY' && a.isUnlocked).length > 0 && (
                   <div className="flex items-center gap-1 rounded-full bg-purple-500/10 px-2 py-0.5">
                     <Sparkles className="h-4 w-4 text-purple-400" />
                     <span className="text-sm text-purple-400">
-                      {(barkleStats?.achievements ?? []).filter(a => a.rarity === 'legendary' && a.isUnlocked).length}
+                      {(barkleStats?.achievements ?? []).filter(a => a.rarity === 'LEGENDARY' && a.isUnlocked).length}
                     </span>
                   </div>
                 )}
@@ -442,10 +442,13 @@ export default function AccountPage() {
               achievements={
                 showAllAchievements 
                   ? (barkleStats?.achievements ?? []).sort((a, b) => {
-                      // Sort by unlocked first, then by rarity
                       if (a.isUnlocked !== b.isUnlocked) return b.isUnlocked ? 1 : -1;
-                      // For unlocked achievements, sort by rarity (legendary > epic > rare > common)
-                      const rarityOrder = { legendary: 4, epic: 3, rare: 2, common: 1 } as const;
+                      const rarityOrder = { 
+                        LEGENDARY: 4, 
+                        EPIC: 3, 
+                        RARE: 2, 
+                        COMMON: 1 
+                      } as const;
                       return rarityOrder[b.rarity as keyof typeof rarityOrder] - rarityOrder[a.rarity as keyof typeof rarityOrder];
                     })
                   : (barkleStats?.achievements ?? [])
