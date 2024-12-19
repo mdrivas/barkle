@@ -32,7 +32,7 @@ export default function Home() {
   const [showNewUserDialog, setShowNewUserDialog] = useState(false);
   const { handleGoogleSignIn } = useSignIn();
   const [tempId, setTempId] = useState<string | null>(null);
-  const [showAchievements, setShowAchievements] = useState(true);
+  const [showAchievements, setShowAchievements] = useState(false);
 
   useEffect(() => {
     const storedTempId = localStorage.getItem("barkle_temp_id");   

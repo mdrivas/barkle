@@ -23,16 +23,14 @@ export function FeatureAnnouncementModal({
   open, 
   onOpenChange 
 }: FeatureAnnouncementModalProps) {
-  const [isLocalOpen, setIsLocalOpen] = useState(false);
   const { handleGoogleSignIn } = useSignIn();
   const { data: session } = useSession();
   
   const handleClose = () => {
-    setIsLocalOpen(false);
     onOpenChange?.(false);
   };
 
-  const isModalOpen = open ?? isLocalOpen;
+  const isModalOpen = open;
 
   const handleSignIn = async () => {
     handleClose();

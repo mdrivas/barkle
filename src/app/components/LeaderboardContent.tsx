@@ -89,37 +89,80 @@ const renderScore = (entry: LeaderboardEntry, isPawpulation: boolean) => {
   );
 };
 
-// Add achievement icons component
+// Update AchievementIcons component to match your database achievements
 const AchievementIcons = ({ achievements }: { achievements: string[] }) => {
-  const sortedAchievements = achievements.sort((a, b) => {
+  // Helper function to check if an achievement is superseded by a better one
+  const isSuperseded = (achievement: string, allAchievements: string[]) => {
+    const [type, rarity] = achievement.split('_');
+    
+    // If this is a RARE achievement, check if there's a LEGENDARY of the same type
+    if (rarity === 'RARE') {
+      return allAchievements.some(a => a === `${type}_LEGENDARY`);
+    }
+    
+    return false;
+  };
+
+  // Filter out superseded achievements before sorting
+  const filteredAchievements = achievements.filter(
+    achievement => !isSuperseded(achievement, achievements)
+  );
+
+  const sortedAchievements = filteredAchievements.sort((a, b) => {
     const priority = {
-      'STREAK': 3,
-      'DAILY': 2,
-      'SOCIAL': 1
+      'DAILY_LEGENDARY': 5,    // Pawsome Dedication (10 days)
+      'STREAK_LEGENDARY': 4,   // Unleashed Genius (20 streak)
+      'STREAK_RARE': 3,        // Pawfect Streak (10 streak)
+      'PAWSISTENCE_RARE': 3,   // Paw Pro (15 streak)
+      'DAILY_COMMON': 2,       // Furry Regular (4 days)
+      'SOCIAL_COMMON': 1,      // Top Dog Influencer
+      'COMMUNITY_COMMON': 1,   // Community Contributor
     };
     return (priority[b as keyof typeof priority] || 0) - (priority[a as keyof typeof priority] || 0);
   });
 
-  // Only show top 2 achievements, no remaining count
+  // Only show top 2 achievements
   const displayAchievements = sortedAchievements.slice(0, 2);
 
   return (
     <div className="flex items-center gap-[1px]">
-      {displayAchievements.map((type) => {
+      {displayAchievements.map((achievement) => {
+        const [type, rarity] = achievement.split('_');
         const icon = {
-          'STREAK': '⚡',
-          'DAILY': '⭐',
-          'SOCIAL': '📢',
-        }[type];
+          // Legendary achievements
+          'DAILY_LEGENDARY': '⚡',    // Pawsome Dedication
+          'STREAK_LEGENDARY': '🎯',   // Unleashed Genius
+          
+          // Rare achievements
+          'STREAK_RARE': '⚡',        // Pawfect Streak
+          'PAWSISTENCE_RARE': '🎯',   // Paw Pro
+          
+          // Common achievements
+          'DAILY_COMMON': '⭐',       // Furry Regular
+          'SOCIAL_COMMON': '📢',      // Top Dog Influencer
+          'COMMUNITY_COMMON': '📸',    // Community Contributor
+        }[achievement] ?? '🏆';
+        
+        const details = getAchievementDetails(achievement);
         
         return (
           <div
-            key={type}
+            key={achievement}
             className="group relative cursor-pointer"
           >
-            <span className="text-[9px] opacity-75 hover:opacity-100">{icon}</span>
-            <div className="absolute bottom-full left-1/2 z-50 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-black/90 px-2 py-1 text-[10px] text-white shadow-lg group-hover:block">
-              {getAchievementDetails(type)}
+            <span className={cn("text-[9px] opacity-75 hover:opacity-100",
+              rarity === 'LEGENDARY' && "text-amber-400",
+              rarity === 'RARE' && "text-blue-400"
+            )}>
+              {icon}
+            </span>
+            <div className="absolute bottom-full left-1/2 z-50 mb-1 hidden -translate-x-1/2 whitespace-normal rounded bg-black/90 px-2 py-1 text-left shadow-lg group-hover:block min-w-[200px] max-w-[240px]">
+              <div className="font-semibold text-[11px] text-amber-400/90 mb-0.5 tracking-wide">
+                {details.name}
+              </div>
+              <div className="text-[9px] text-zinc-300/90 font-normal">
+                {details.description}
+              </div>
             </div>
           </div>
         );
@@ -128,23 +171,39 @@ const AchievementIcons = ({ achievements }: { achievements: string[] }) => {
   );
 };
 
-const getAchievementDetails = (type: string) => {
+const getAchievementDetails = (achievement: string) => {
   const details = {
-    'STREAK': {
+    'DAILY_LEGENDARY': {
+      name: 'Pawsome Dedication',
+      description: 'Return to Barkle for 10 days in a row'
+    },
+    'STREAK_LEGENDARY': {
+      name: 'Unleashed Genius',
+      description: 'Get 20 breeds right in a row on daily'
+    },
+    'STREAK_RARE': {
       name: 'Pawfect Streak',
-      description: 'Reached a 10-guess streak on daily'
+      description: 'Reach a 10-guess streak on daily barkle'
     },
-    'DAILY': {
+    'PAWSISTENCE_RARE': {
+      name: 'Paw Pro',
+      description: 'Reach a 15-streak in Pawsistence mode'
+    },
+    'DAILY_COMMON': {
       name: 'Furry Regular',
-      description: 'Played 4 days in a row'
+      description: 'Play 4 days in a row'
     },
-    'SOCIAL': {
+    'SOCIAL_COMMON': {
       name: 'Top Dog Influencer',
-      description: 'Shared their account stats'
+      description: 'Share your account stats'
+    },
+    'COMMUNITY_COMMON': {
+      name: 'Community Contributor',
+      description: 'Submit a verified dog photo to the community collection'
     }
-  }[type] ?? { name: 'Unknown', description: 'Achievement' };
+  }[achievement] ?? { name: 'Achievement', description: 'Unknown achievement' };
 
-  return `${details.name}: ${details.description}`;
+  return details;
 };
 
 export function LeaderboardContent({

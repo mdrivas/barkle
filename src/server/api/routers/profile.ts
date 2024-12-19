@@ -28,6 +28,16 @@ export const profileRouter = createTRPCRouter({
           userId ? eq(profiles.userId, userId) : undefined,
           input.tempId ? eq(profiles.tempId, input.tempId) : undefined,
         ),
+        columns: {
+          username: true,
+          pawpulationGamesPlayed: true,
+          pawpulationHighScore: true,
+          pawpulationPlaysToday: true,
+          currentGuessStreak: true,
+          highestGuessStreak: true,
+          pawsistencePlaysToday: true,
+          highestPawsistenceStreak: true,
+        },
       });
 
       return profile ?? null;

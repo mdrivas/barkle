@@ -42,6 +42,17 @@ const getAchievementColor = (type: string) => {
   return colors[type as keyof typeof colors] ?? 'gray';
 };
 
+export const getAchievementDetails = (type: string) => {
+  const details = {
+    'STREAK': '🔥 Streak Master',
+    'DAILY': '⭐ Daily Champion',
+    'SOCIAL': '📢 Social Sharer',
+    'COMMUNITY': '📸 Community Star',
+    'PAWSISTENCE': '🎯 Pawsistence Pro'
+  };
+  return details[type as keyof typeof details] ?? 'Achievement';
+};
+
 export function Achievements({ 
   achievements, 
   isLoading 

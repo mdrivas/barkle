@@ -268,8 +268,15 @@ export const ACHIEVEMENT_TYPES = {
   STREAK: 'streak',
   DAILY: 'daily',
   SOCIAL: 'social',
-  COMMUNITY: 'community',
   PAWSISTENCE: 'pawsistence',
+  COMMUNITY: 'community',
+} as const;
+
+// Update rarity types
+export const ACHIEVEMENT_RARITY = {
+  LEGENDARY: 'legendary',
+  RARE: 'rare',
+  COMMON: 'common',
 } as const;
 
 // Achievement definitions table
@@ -282,7 +289,10 @@ export const achievements = createTable("achievement", {
   description: varchar("description", { length: 255 }).notNull(),
   requirement: integer("requirement").notNull(),
   icon: varchar("icon", { length: 50 }).notNull(),
-  rarity: varchar("rarity", { length: 20 }).default('common'),
+  rarity: varchar("rarity", { length: 20 })
+    .notNull()
+    .default('common')
+    .$type<keyof typeof ACHIEVEMENT_RARITY>(),
 });
 
 // User achievements junction table

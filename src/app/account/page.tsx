@@ -260,6 +260,12 @@ export default function AccountPage() {
 🎮 Today's Plays: ${userData?.pawsistencePlaysToday ?? 0}
 👑 Longest Streak: ${userData?.highestPawsistenceStreak ?? 0}
 
+🌟 PAWPULATION
+━━━━━━━━━━━━━━━
+🎮 Games Played: ${userData?.pawpulationGamesPlayed ?? 0}
+🏆 High Score: ${userData?.pawpulationHighScore ?? 0}
+📅 Today's Plays: ${userData?.pawpulationPlaysToday ?? 0}
+
 🌟 Fetch your own pups at https://barkle.vercel.app`;
 
     try {
@@ -435,8 +441,20 @@ export default function AccountPage() {
             <Achievements 
               achievements={
                 showAllAchievements 
-                  ? (barkleStats?.achievements ?? [])
-                  : (barkleStats?.achievements ?? []).slice(0, 3)
+                  ? (barkleStats?.achievements ?? []).sort((a, b) => {
+                      // Sort by unlocked first, then by rarity
+                      if (a.isUnlocked !== b.isUnlocked) return b.isUnlocked ? 1 : -1;
+                      // For unlocked achievements, sort by rarity (legendary > epic > rare > common)
+                      const rarityOrder = { legendary: 4, epic: 3, rare: 2, common: 1 } as const;
+                      return rarityOrder[b.rarity as keyof typeof rarityOrder] - rarityOrder[a.rarity as keyof typeof rarityOrder];
+                    })
+                  : (barkleStats?.achievements ?? [])
+                      .filter(a => a.isUnlocked)
+                      .sort((a, b) => {
+                        const rarityOrder = { legendary: 4, epic: 3, rare: 2, common: 1 } as const;
+                        return rarityOrder[b.rarity as keyof typeof rarityOrder] - rarityOrder[a.rarity as keyof typeof rarityOrder];
+                      })
+                      .slice(0, 3)
               }
               isLoading={isBarkleLoading} 
             />
@@ -507,6 +525,30 @@ export default function AccountPage() {
                 color="indigo"
                 isLoading={isLoading}
               />
+            </div>
+          </div>
+
+          {/* Pawpulation Section */}
+          <div className="mt-8">
+            <h2 className="mb-4 text-xl font-semibold text-zinc-200">
+              Pawpulation
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <StatCard
+                title="Games Played"
+                value={userData?.pawpulationGamesPlayed ?? 0}
+                icon={GamepadIcon}
+                color="sky"
+                isLoading={isLoading}
+              />
+              <StatCard
+                title="High Score"
+                value={userData?.pawpulationHighScore ?? 0}
+                icon={Trophy}
+                color="indigo"
+                isLoading={isLoading}
+              />
+
             </div>
           </div>
         </div>
