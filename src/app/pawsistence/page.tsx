@@ -490,6 +490,7 @@ export default function PawsistenceGame() {
                     src={gameState.currentBreed.imageUrl}
                     alt="Mystery dog"
                     fill
+                    unoptimized
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className={cn(
                       "rounded-xl transition-transform duration-500",

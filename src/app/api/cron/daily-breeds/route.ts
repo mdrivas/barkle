@@ -90,47 +90,76 @@ async function generateDailyBreeds() {
   console.log("\n=== Breed Selection Debug ===");
   console.log("Target date:", targetDate);
 
-  // Get recently used breeds (last 5 days)
+  // Get recently used breeds (look back at all historical entries)
   const recentBreeds = await db.query.dailyBreeds.findMany({
-    where: (breeds) => 
-      sql`${breeds.date} >= ${new Date(pstDate.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}`,
     orderBy: (breeds) => [desc(breeds.date)],
   });
 
-  console.log("\nRecent daily breeds entries:", recentBreeds.map(b => b.date));
+  console.log("\nAll historical daily breeds entries:", recentBreeds.map(b => b.date));
 
-  // Create set of recently used breeds
-  const recentlyUsedBreeds = new Set<string>();
+  // Get breed usage frequency from recent history
+  const breedFrequency = new Map<string, number>();
   recentBreeds.forEach(day => {
     const breeds = JSON.parse(day.breeds) as DogBreed[];
-    breeds.forEach(breed => recentlyUsedBreeds.add(breed.breed.toLowerCase()));
+    breeds.forEach(breed => {
+      const key = breed.breed.toLowerCase();
+      breedFrequency.set(key, (breedFrequency.get(key) ?? 0) + 1);
+    });
   });
 
-  console.log("\nRecently used breeds:", Array.from(recentlyUsedBreeds).sort().join(", "));
-  console.log(`\nNumber of recently used breeds: ${recentlyUsedBreeds.size}`);
-  console.log(`Number of available unused breeds: ${allBreeds.length - recentlyUsedBreeds.size}`);
+  // Create set of all historically used breeds
+  const historicallyUsedBreeds = new Set<string>();
+  recentBreeds.forEach(day => {
+    const breeds = JSON.parse(day.breeds) as DogBreed[];
+    breeds.forEach(breed => historicallyUsedBreeds.add(breed.breed.toLowerCase()));
+  });
 
-  // Modify breed selection logic
+  // Filter out 'mix' and get completely unused breeds
+  const validBreeds = allBreeds.filter(breed => 
+    breed !== 'mix' && !historicallyUsedBreeds.has(breed.toLowerCase())
+  );
+
+  // If we've used all breeds, reset the pool
+  const breedPool = validBreeds.length > 0 ? validBreeds : allBreeds.filter(breed => breed !== 'mix');
+
+  // Sort breeds by frequency (least used first)
+  const sortedBreeds = breedPool.sort((a, b) => {
+    const freqA = breedFrequency.get(a.toLowerCase()) ?? 0;
+    const freqB = breedFrequency.get(b.toLowerCase()) ?? 0;
+    return freqA - freqB;
+  });
+
+  console.log("\nBreed frequency distribution:");
+  sortedBreeds.slice(0, 10).forEach(breed => {
+    console.log(`${breed}: ${breedFrequency.get(breed.toLowerCase()) ?? 0} uses`);
+  });
+
+  // Select breeds, prioritizing unused ones
   const selectedBreeds: DogBreed[] = [];
   const usedBreeds = new Set<string>();
 
   console.log("\nStarting breed selection...");
 
-  // Select 4 API breeds, avoiding recently used ones if possible
-  const availableBreeds = allBreeds.filter(breed => !recentlyUsedBreeds.has(breed.toLowerCase()));
-  console.log("\nFiltered available breeds:", availableBreeds.length);
-
-  // Shuffle the available breeds array
-  const shuffledBreeds = [...availableBreeds].sort(() => rng() - 0.5);
-
+  // Select breeds, prioritizing unused ones
   while (selectedBreeds.length < 4) {
-    // If we've run out of unused breeds, use any breed
-    const breedPool = selectedBreeds.length < availableBreeds.length ? shuffledBreeds : allBreeds;
+    // First try completely unused breeds
+    const unusedBreeds = sortedBreeds.filter(breed => 
+      !usedBreeds.has(breed) && !breedFrequency.has(breed.toLowerCase())
+    );
+    
+    // If no unused breeds, use least frequently used breeds
+    const breedPool = unusedBreeds.length > 0 ? unusedBreeds : sortedBreeds.filter(breed => !usedBreeds.has(breed));
+    
+    if (breedPool.length === 0) {
+      console.log("\nNo more available breeds, using any breed");
+      breedPool.push(...sortedBreeds);
+    }
+
     const breed = breedPool[Math.floor(rng() * breedPool.length)];
     
     if (!usedBreeds.has(breed!) && breed) {
       console.log(`\nSelected breed: ${breed}`);
-      console.log(`From ${selectedBreeds.length < availableBreeds.length ? 'unused' : 'all'} pool`);
+      console.log(`Previous uses: ${breedFrequency.get(breed.toLowerCase()) ?? 0}`);
       
       const imageResponse = await fetch(
         `https://dog.ceo/api/breed/${breed}/images/random`,
