@@ -188,11 +188,12 @@ export default function PawpulationGame() {
                 <Card className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50">
                   <div className="relative aspect-[16/9] w-full overflow-hidden">
                     <Image
-                      src={gameState.currentBreed.imageUrl ?? "/breeds/placeholder.jpg"}
-                      alt={gameState.currentBreed.breed}
+                      src={gameState.currentBreed?.imageUrl ?? "/breeds/placeholder.jpg"}
+                      alt={gameState.currentBreed?.breed ?? ""}
                       fill
                       className="object-cover"
                       priority
+                      unoptimized
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
                   </div>
@@ -234,11 +235,12 @@ export default function PawpulationGame() {
                 <Card className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50">
                   <div className="relative aspect-[16/9] w-full overflow-hidden">
                     <Image
-                      src={gameState.nextBreed.imageUrl ?? "/breeds/placeholder.jpg"}
-                      alt={gameState.nextBreed.breed}
+                      src={gameState.nextBreed?.imageUrl ?? "/breeds/placeholder.jpg"}
+                      alt={gameState.nextBreed?.breed ?? ""}
                       fill
                       className="object-cover"
                       priority
+                      unoptimized
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
                   </div>
