@@ -28,6 +28,7 @@ const config = {
       "lh3.googleusercontent.com",  // For Google OAuth profile pictures
       "storage.googleapis.com",     // For GCS uploaded images
     ],
+    unoptimized: true,  // This will disable image optimization
   }
 };
 
