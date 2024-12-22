@@ -18,6 +18,7 @@ import { FeatureAnnouncementModal } from "./components/FeatureAnnouncementModal"
 import { TrophyIcon } from "@heroicons/react/24/outline";
 
 import { useSignIn } from "~/hooks/useSignIn";
+import { Snowflake } from "lucide-react";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -80,17 +81,35 @@ export default function Home() {
   );
 
   return (
-    <div>
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <Snowflake
+            key={i}
+            className="absolute text-white"
+            style={{
+              left: `${Math.random() * 100}%`,
+              animation: `fall ${Math.random() * 3 + 5}s linear infinite`,
+              animationDelay: `${Math.random() * 5}s`,
+              fontSize: `${Math.random() * 15 + 15}px`,
+              transform: 'translateZ(0)'
+            }}
+          />
+        ))}
+      </div>
+      
+      <div className="fixed inset-0 bg-gradient-to-b from-[#1e2c3d]/90 to-[#141c2a]/90" />
+      
+      <div className="fixed inset-0 bg-gradient-to-t from-transparent via-emerald-500/5 to-transparent animate-aurora pointer-events-none" />
+      
       <NavigationBar />
       <main
-        className={`flex flex-col items-center bg-[#121213] font-sans text-zinc-50 ${roboto.variable}`}
+        className={`relative flex flex-col items-center font-sans text-zinc-50 ${roboto.variable}`}
       >
-        {/* Account Area - Moved inside main content area */}
-        <div className="w-full max-w-4xl px-4 py-2">
+        <div className="fixed bottom-0 w-full h-20 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+        <div className="relative w-full max-w-4xl px-4 py-2 z-10">
           <div className="flex flex-col gap-1">
-            {/* Top row - Playing as and Sign in */}
             <div className="flex items-center justify-between">
-              {/* Left side */}
               <div className="flex items-center">
                 {session?.user ? (
                   <Button
@@ -110,7 +129,6 @@ export default function Home() {
                 )}
               </div>
               
-              {/* Right side - Sign In/Account */}
               {session?.user ? (
                 <Link href="/account">
                   <Button
@@ -150,7 +168,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Bottom row - Achievements for non-auth users */}
             {!session?.user && (
               <div className="flex justify-end">
                 <Button
@@ -166,13 +183,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Main Content - Centered in the available space */}
-        <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
           <div className="flex w-full max-w-2xl flex-col items-center gap-4 px-4">
-            {/* Logo - Updated for better circular fit */}
             <div className="relative aspect-square h-52 sm:h-72">
               <Image
-                src="/barklelogo.webp"
+                src="/barklelogo.png"
                 alt="Barkle Logo"
                 fill
                 priority
@@ -180,19 +195,18 @@ export default function Home() {
               />
             </div>
 
-            {/* Title */}
-            <h1 className="font-roboto text-4xl font-bold tracking-[0.15em] text-zinc-50 sm:text-5xl">
-              BARKLE
-            </h1>
+            <div className="relative">
+              <h1 className="font-roboto text-4xl font-bold tracking-[0.15em] text-zinc-50 sm:text-5xl">
+                BARKLE
+              </h1>
+            </div>
 
-            {/* Description */}
             <p className="font-roboto max-w-[400px] px-6 text-center text-base text-zinc-300 sm:text-lg">
               5 chances to guess different dog breeds from their photos. A new set
               of pups every day!
             </p>
 
-            {/* Games Counter */}
-            <Card className="mt-4 rounded-full bg-[#C4A484] px-6 py-2 text-sm text-black">
+            <Card className="mt-4 rounded-full backdrop-blur-md bg-white/10 border border-white/20 px-6 py-2 text-sm text-white shadow-xl">
               <p className="font-medium">
                 🐾{" "}
                 {gamesCount === undefined
@@ -202,13 +216,12 @@ export default function Home() {
               </p>
             </Card>
 
-            {/* Game Buttons and Submit Link */}
             <div className="mt-2 flex w-full max-w-lg flex-col items-center gap-2 px-4">
               <div className="flex w-full gap-4">
                 <GameModeModal />
                 <Button
                   onClick={() => setShowLeaderboard(true)}
-                  className="w-full transform rounded-2xl border border-zinc-600/20 bg-amber-700 py-7 text-xl font-bold text-zinc-50 shadow-lg transition-all hover:bg-amber-800 active:scale-95"
+                  className="w-full transform rounded-2xl border border-zinc-600/20 bg-[#2d4c6a] py-7 text-xl font-bold text-zinc-50 shadow-lg transition-all hover:bg-[#1d3b59] active:scale-95"
                 >
                   LEADERBOARD
                 </Button>
@@ -218,7 +231,7 @@ export default function Home() {
                 />
               </div>
               <DogSubmissionModal
-                className="mt-2 flex w-full transform items-center justify-center gap-2 rounded-xl border border-zinc-700/50 bg-zinc-800 py-4 text-lg font-medium text-zinc-100 shadow-lg transition-all hover:bg-zinc-700 active:scale-95"
+                className="mt-2 flex w-full transform items-center justify-center gap-2 rounded-xl border border-[#4c6c8a]/50 bg-[#2d4c6a] py-4 text-lg font-medium text-zinc-100 shadow-lg transition-all hover:bg-[#1d3b59] active:scale-95"
                 variant="default"
               />
             </div>
@@ -234,6 +247,30 @@ export default function Home() {
           onOpenChange={setShowAchievements}
         />
       </main>
+
+      <style jsx global>{`
+        @keyframes fall {
+          0% {
+            transform: translateY(-50px) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100vh) rotate(360deg);
+            opacity: 1;
+          }
+        }
+        @keyframes aurora {
+          0% { opacity: 0.3; }
+          50% { opacity: 0.5; }
+          100% { opacity: 0.3; }
+        }
+        .animate-aurora {
+          animation: aurora 8s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

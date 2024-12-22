@@ -379,87 +379,62 @@ export const scoreRouter = createTRPCRouter({
         },
       });
 
-      // Count all games played
-      const barkleGames = await tx.query.scores.findMany({
-        where: eq(scores.userId, ctx.session.user.id),
-        columns: {
-          id: true,
-        },
-      });
-
-      // Check for dog submissions
+      // Check for verified dog submissions
       const dogSubmission = await tx.query.dogSubmissions.findFirst({
         where: and(
           eq(dogSubmissions.userId, ctx.session.user.id),
-          eq(dogSubmissions.status, "verified"), // Only count verified submissions
+          eq(dogSubmissions.status, "verified"),
         ),
       });
 
-      // Check and award achievements
+      // Define all achievements to check
       const achievementsToCheck = [
-        // Pawfect Streak - 10 guess streak
         {
-          type: "STREAK" as const,
+          type: "STREAK_RARE",
           requirement: 10,
           value: profile?.highestGuessStreak ?? 0,
-          name: "Pawfect Streak"
         },
-        // Furry Regular - 4 day streak
         {
-          type: "DAILY" as const,
+          type: "DAILY_COMMON",
           requirement: 4,
           value: profile?.currentDailyStreak ?? 0,
-          name: "Furry Regular"
         },
-        // Community Contributor achievement
+        
         {
-          type: "COMMUNITY" as const,
+          type: "SOCIAL_COMMON",
+          requirement: 1,
+          value: 1,
+        },
+        {
+          type: "COMMUNITY_COMMON",
           requirement: 1,
           value: dogSubmission ? 1 : 0,
-          name: "Community Contributor"
         },
         {
-          type: "PAWSISTENCE" as const,
+          type: "PAWSISTENCE_RARE",
           requirement: 15,
           value: profile?.highestPawsistenceStreak ?? 0,
-          name: "Paw Pro"
         },
-        // New Legendary Daily Streak - 10 days
         {
-          type: "DAILY" as const,
+          type: "DAILY_LEGENDARY",
           requirement: 10,
           value: profile?.currentDailyStreak ?? 0,
-          name: "Pawsome Dedication",
-          description: "Return to Barkle for 10 days in a row.",
-          rarity: "legendary",
-          icon: "⚡"
         },
-        // New Legendary Guess Streak - 20 correct
         {
-          type: "STREAK" as const,
+          type: "STREAK_LEGENDARY",
           requirement: 20,
           value: profile?.highestGuessStreak ?? 0,
-          name: "Unleashed Genius",
-          description: "Get 20 breeds right in a row on daily.",
-          rarity: "legendary",
-          icon: "🎯"
         },
-      ];
+      ] as const;
 
-
-      // Award any new achievements
+      // Check and award all achievements
       for (const check of achievementsToCheck) {
         if (check.value >= check.requirement) {
           const achievement = await tx.query.achievements.findFirst({
-            where: and(
-              eq(achievements.type, check.type),
-              eq(achievements.requirement, check.requirement)
-            ),
+            where: eq(achievements.type, check.type),
           });
 
-
           if (achievement) {
-            // Award if not already awarded
             await tx.insert(userAchievements)
               .values({
                 userId: ctx.session.user.id,
@@ -469,6 +444,14 @@ export const scoreRouter = createTRPCRouter({
           }
         }
       }
+
+      // Count all games played
+      const barkleGames = await tx.query.scores.findMany({
+        where: eq(scores.userId, ctx.session.user.id),
+        columns: {
+          id: true,
+        },
+      });
 
       // Get all achievements with unlock status, ordered by rarity
       const allAchievements = await tx.query.achievements.findMany({

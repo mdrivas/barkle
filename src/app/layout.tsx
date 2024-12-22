@@ -90,6 +90,11 @@ export default function RootLayout({
           name="google-site-verification" 
           content="BOk0h2uB-ocZxKI2KqFTpqqn2gSftKMfvbVbXmAH7yI" 
         />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8788092045781561"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className="min-h-screen bg-[#121213]">
         {process.env.NODE_ENV === "production" && <GoogleAnalytics />}

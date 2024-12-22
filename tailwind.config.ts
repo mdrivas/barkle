@@ -73,12 +73,27 @@ export default {
           "0%": { backgroundPosition: "0% 0%" },
           "100%": { backgroundPosition: "200% 200%" },
         },
+        'fall-0': {
+          '0%': { transform: 'translateY(-10vh) rotate(0deg)' },
+          '100%': { transform: 'translateY(100vh) rotate(360deg)' }
+        },
+        'fall-1': {
+          '0%': { transform: 'translateY(-10vh) rotate(0deg)' },
+          '100%': { transform: 'translateY(100vh) rotate(-360deg)' }
+        },
+        'fall-2': {
+          '0%': { transform: 'translateY(-10vh) rotate(0deg)' },
+          '100%': { transform: 'translateY(100vh) rotate(720deg)' }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         shimmer: "shimmer 3s linear infinite",
         "medal-shine": "medal-shine 8s linear infinite",
+        'fall-0': 'fall-0 5s linear infinite',
+        'fall-1': 'fall-1 6s linear infinite',
+        'fall-2': 'fall-2 4s linear infinite'
       },
       backgroundImage: {
         "gold-gradient":

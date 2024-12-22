@@ -454,8 +454,13 @@ export default function AccountPage() {
                   : (barkleStats?.achievements ?? [])
                       .filter(a => a.isUnlocked)
                       .sort((a, b) => {
-                        const rarityOrder = { legendary: 4, epic: 3, rare: 2, common: 1 } as const;
-                        return rarityOrder[b.rarity as keyof typeof rarityOrder] - rarityOrder[a.rarity as keyof typeof rarityOrder];
+                        const rarityOrder = { 
+                          LEGENDARY: 4, 
+                          RARE: 2, 
+                          COMMON: 1 
+                        } as const;
+                        return rarityOrder[b.rarity.toUpperCase() as keyof typeof rarityOrder] - 
+                               rarityOrder[a.rarity.toUpperCase() as keyof typeof rarityOrder];
                       })
                       .slice(0, 3)
               }
@@ -483,7 +488,7 @@ export default function AccountPage() {
                 color="orange"
                 isLoading={isBarkleLoading}
                 isLegendary={barkleStats?.achievements.some(
-                  a => a.type === 'STREAK' && a.requirement === 10 && a.isUnlocked
+                  a => a.type === 'DAILY_LEGENDARY' && a.isUnlocked
                 )}
               />
             </div>
@@ -502,7 +507,7 @@ export default function AccountPage() {
                 color="indigo"
                 isLoading={isBarkleLoading}
                 isLegendary={barkleStats?.achievements.some(
-                  a => a.type === 'STREAK' && a.requirement === 20 && a.isUnlocked
+                  a => a.type === 'STREAK_LEGENDARY' && a.isUnlocked
                 )}
               />
             </div>

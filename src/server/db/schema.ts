@@ -265,11 +265,13 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
 
 // Define achievement types
 export const ACHIEVEMENT_TYPES = {
-  STREAK: 'streak',
-  DAILY: 'daily',
-  SOCIAL: 'social',
-  PAWSISTENCE: 'pawsistence',
-  COMMUNITY: 'community',
+  STREAK_RARE: 'STREAK_RARE',
+  DAILY_COMMON: 'DAILY_COMMON',
+  SOCIAL_COMMON: 'SOCIAL_COMMON',
+  COMMUNITY_COMMON: 'COMMUNITY_COMMON',
+  PAWSISTENCE_RARE: 'PAWSISTENCE_RARE',
+  DAILY_LEGENDARY: 'DAILY_LEGENDARY',
+  STREAK_LEGENDARY: 'STREAK_LEGENDARY',
 } as const;
 
 // Update rarity types

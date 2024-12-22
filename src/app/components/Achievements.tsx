@@ -22,11 +22,18 @@ export const ACHIEVEMENT_TYPES = {
 
 const getAchievementIcon = (type: string) => {
   const icons = {
-    'STREAK': '⚡',
-    'DAILY': '📅',
-    'SOCIAL': '🦮',
-    'COMMUNITY': '📸',
-    'PAWSISTENCE': '🎯',
+    // Legendary
+    'DAILY_LEGENDARY': '👑',
+    'STREAK_LEGENDARY': '⚡',
+    
+    // Rare
+    'STREAK_RARE': '🔥',
+    'PAWSISTENCE_RARE': '💫',
+    
+    // Common
+    'DAILY_COMMON': '📅',
+    'SOCIAL_COMMON': '📢',
+    'COMMUNITY_COMMON': '📸',
   };
   return icons[type as keyof typeof icons] ?? '🏆';
 };
@@ -44,11 +51,18 @@ const getAchievementColor = (type: string) => {
 
 export const getAchievementDetails = (type: string) => {
   const details = {
-    'STREAK': '🔥 Streak Master',
-    'DAILY': '⭐ Daily Champion',
-    'SOCIAL': '📢 Social Sharer',
-    'COMMUNITY': '📸 Community Star',
-    'PAWSISTENCE': '🎯 Pawsistence Pro'
+    // Legendary
+    'DAILY_LEGENDARY': '👑 Pawsome Dedication',
+    'STREAK_LEGENDARY': '⚡ Unleashed Genius',
+    
+    // Rare
+    'STREAK_RARE': '🔥 Pawfect Streak',
+    'PAWSISTENCE_RARE': '💫 Paw Pro',
+    
+    // Common
+    'DAILY_COMMON': '📅 Furry Regular',
+    'SOCIAL_COMMON': '📢 Top Dog Influencer',
+    'COMMUNITY_COMMON': '📸 Community Contributor',
   };
   return details[type as keyof typeof details] ?? 'Achievement';
 };

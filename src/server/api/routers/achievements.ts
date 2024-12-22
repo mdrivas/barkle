@@ -77,17 +77,21 @@ export const achievementRouter = createTRPCRouter({
   }),
 
   trackShare: protectedProcedure.mutation(async ({ ctx }) => {
-    // Check if user has already unlocked the sharing achievement
-    const shareAchievement = await ctx.db.query.achievements.findFirst({
-      where: (a, { eq }) => eq(a.type, 'SOCIAL'),
+    return await ctx.db.transaction(async (tx) => {
+      // Find the social sharing achievement
+      const socialAchievement = await tx.query.achievements.findFirst({
+        where: eq(achievements.type, "SOCIAL_COMMON"),
+      });
+
+      if (socialAchievement) {
+        // Add the achievement if it doesn't exist
+        await tx.insert(userAchievements)
+          .values({
+            userId: ctx.session.user.id,
+            achievementId: socialAchievement.id,
+          })
+          .onConflictDoNothing();
+      }
     });
-
-    if (!shareAchievement) return;
-
-    // Award the achievement if not already awarded
-    await ctx.db.insert(userAchievements).values({
-      userId: ctx.session.user.id,
-      achievementId: shareAchievement.id,
-    }).onConflictDoNothing();
   }),
 });

@@ -129,18 +129,18 @@ const AchievementIcons = ({ achievements }: { achievements: string[] }) => {
       {displayAchievements.map((achievement) => {
         const [type, rarity] = achievement.split('_');
         const icon = {
-          // Legendary achievements
-          'DAILY_LEGENDARY': '⚡',    // Pawsome Dedication
-          'STREAK_LEGENDARY': '🎯',   // Unleashed Genius
+          // Legendary achievements (purple)
+          'DAILY_LEGENDARY': '👑',    // Pawsome Dedication - Crown for highest daily achievement
+          'STREAK_LEGENDARY': '⚡',    // Unleashed Genius - Lightning for highest streak
           
-          // Rare achievements
-          'STREAK_RARE': '⚡',        // Pawfect Streak
-          'PAWSISTENCE_RARE': '🎯',   // Paw Pro
+          // Rare achievements (blue)
+          'STREAK_RARE': '🔥',        // Pawfect Streak - Fire for streak
+          'PAWSISTENCE_RARE': '💫',    // Paw Pro - Star burst for persistence
           
-          // Common achievements
-          'DAILY_COMMON': '⭐',       // Furry Regular
-          'SOCIAL_COMMON': '📢',      // Top Dog Influencer
-          'COMMUNITY_COMMON': '📸',    // Community Contributor
+          // Common achievements (white/gray)
+          'DAILY_COMMON': '📅',       // Furry Regular - Calendar for daily play
+          'SOCIAL_COMMON': '📢',      // Top Dog Influencer - Megaphone for sharing
+          'COMMUNITY_COMMON': '📸',    // Community Contributor - Camera for photo submission
         }[achievement] ?? '🏆';
         
         const details = getAchievementDetails(achievement);
