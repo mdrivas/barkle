@@ -18,14 +18,14 @@ export const achievementRouter = createTRPCRouter({
       const achievementsToCheck = [
         // Daily Streak Achievement
         {
-          type: "STREAK" as const,
+          type: "DAILY_COMMON" as const,
           requirement: 7,
           value: profile?.currentDailyStreak ?? 0,
           name: "Daily Streak Achievement"
         },
         // Guess Streak Achievement
         {
-          type: "STREAK" as const,
+          type: "STREAK_RARE" as const,
           requirement: 5,
           value: profile?.highestGuessStreak ?? 0,
           name: "Guess Streak Achievement"
@@ -43,7 +43,6 @@ export const achievementRouter = createTRPCRouter({
           });
 
           if (achievement) {
-            // Award if not already awarded
             await tx.insert(userAchievements)
               .values({
                 userId: ctx.session.user.id,
