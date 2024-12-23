@@ -529,4 +529,44 @@ export const scoreRouter = createTRPCRouter({
         highestStreak: profile?.highestGuessStreak ?? 0,
       };
     }),
+  getMonthlyLeaderboard: publicProcedure
+    .input(
+      z.object({
+        month: z.string().regex(/^\d{4}-\d{2}$/), // Format: "2024-01"
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Parse the month string to create date range
+      const [year, month] = input.month.split('-').map(Number);
+      
+      return await ctx.db
+        .select({
+          username: profiles.username,
+          isVerified: profiles.isVerified,
+          totalScore: sql<number>`SUM(${scores.score})`,
+          gamesPlayed: sql<number>`COUNT(${scores.id})`,
+          averageScore: sql<number>`ROUND(AVG(${scores.score})::numeric, 2)`,
+        })
+        .from(scores)
+        .innerJoin(
+          profiles,
+          eq(scores.userId, profiles.userId)
+        )
+        .where(
+          and(
+            sql`EXTRACT(YEAR FROM ${scores.playedAt}) = ${year}`,
+            sql`EXTRACT(MONTH FROM ${scores.playedAt}) = ${month}`,
+            isNotNull(scores.userId)
+          )
+        )
+        .groupBy(
+          profiles.username,
+          profiles.isVerified,
+        )
+        .orderBy(
+          desc(sql<number>`SUM(${scores.score})`),
+          desc(sql<number>`COUNT(${scores.id})`)
+        )
+        .limit(10);
+    }),
 });

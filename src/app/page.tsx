@@ -16,6 +16,7 @@ import { api } from "~/trpc/react";
 import { NewUserDialog } from "./components/NewUserDialog";
 import { FeatureAnnouncementModal } from "./components/FeatureAnnouncementModal";
 import { TrophyIcon } from "@heroicons/react/24/outline";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "~/components/ui/dialog";
 
 import { useSignIn } from "~/hooks/useSignIn";
 import { Snowflake } from "lucide-react";
@@ -34,6 +35,8 @@ export default function Home() {
   const { handleGoogleSignIn } = useSignIn();
   const [tempId, setTempId] = useState<string | null>(null);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showMonthlyIntro, setShowMonthlyIntro] = useState(false);
+  const [showEndOfMonth, setShowEndOfMonth] = useState(true);
 
   useEffect(() => {
     const storedTempId = localStorage.getItem("barkle_temp_id");   
@@ -80,10 +83,14 @@ export default function Home() {
     }
   );
 
+  useEffect(() => {
+    setShowMonthlyIntro(true);
+  }, []);
+
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {(Array.from({ length: 20 }) as undefined[]).map((_, i) => (
           <Snowflake
             key={i}
             className="absolute text-white"
@@ -228,6 +235,12 @@ export default function Home() {
                 <LeaderboardModal
                   open={showLeaderboard}
                   onOpenChange={setShowLeaderboard}
+                  defaultMode="monthly"
+                  showMonthlyIntro={showMonthlyIntro}
+                  onMonthlyIntroClose={() => {
+                    setShowMonthlyIntro(false);
+                    setShowLeaderboard(true);
+                  }}
                 />
               </div>
               <DogSubmissionModal
@@ -247,6 +260,34 @@ export default function Home() {
           onOpenChange={setShowAchievements}
         />
       </main>
+
+      <Dialog open={showEndOfMonth} onOpenChange={setShowEndOfMonth}>
+        <DialogContent className="border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8 text-center">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-zinc-50">
+              🌟 End of Month Celebration! 🌟
+            </DialogTitle>
+            <DialogDescription className="mt-4 space-y-4 text-lg text-zinc-300">
+              <p>
+                Woof! What an amazing first month of Barkle! 
+                Time to celebrate {new Date().toLocaleString('default', { month: 'long' })}&apos;s top pups! 🌟
+              </p>
+              <p className="text-green-400">
+                Stay on top - our champions get exclusive rewards! 🎁
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <Button 
+            onClick={() => {
+              setShowEndOfMonth(false);
+              setShowLeaderboard(true);
+            }}
+            className="mt-6 w-full bg-green-500 hover:bg-green-600 text-lg font-semibold"
+          >
+            Show Monthly Champions 🎉
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       <style jsx global>{`
         @keyframes fall {

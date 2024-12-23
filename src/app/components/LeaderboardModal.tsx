@@ -7,33 +7,29 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "~/components/ui/dialog";
+import { Button } from "~/components/ui/button";
 import { LeaderboardContent } from "./LeaderboardContent";
 
 interface LeaderboardModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  defaultMode?: "daily" | "pawsistence" | "pawpulation";
+  defaultMode?: "daily" | "pawsistence" | "pawpulation" | "monthly";
   source?: "pawsistence" | "pawpulation";
+  showMonthlyIntro?: boolean;
+  onMonthlyIntroClose?: () => void;
 }
 
 export function LeaderboardModal({
   open,
   onOpenChange,
   defaultMode = "daily",
-  source,
 }: LeaderboardModalProps) {
-  const [mode, setMode] = useState<"daily" | "pawsistence" | "pawpulation">(defaultMode);
-
-  const handleClose = () => {
-    if (source === "pawsistence" || source === "pawpulation") {
-      window.location.href = "/";
-    }
-    onOpenChange?.(false);
-  };
+  const [mode, setMode] = useState<"daily" | "pawsistence" | "pawpulation" | "monthly">(defaultMode);
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[600px] flex-col gap-0 border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 sm:max-h-[80vh] sm:max-w-[500px] [&>button]:text-white">
         <DialogHeader className="flex-none">
           <DialogTitle className="text-2xl font-bold text-zinc-50">
@@ -41,18 +37,29 @@ export function LeaderboardModal({
             <div className="flex h-min border-b border-zinc-800">
               <button
                 onClick={() => setMode("daily")}
-                className={`relative h-min flex-1 py-3 text-sm font-medium ${
+                className={`relative h-min flex-1 py-3 text-xs font-medium ${
                   mode === "daily" ? "text-green-500" : "text-zinc-400"
                 }`}
               >
-                Today&apos;s Barkle
+                Barkle
                 {mode === "daily" && (
                   <div className="absolute bottom-0 left-0 h-0.5 w-full bg-green-500" />
                 )}
               </button>
               <button
+                onClick={() => setMode("monthly")}
+                className={`relative h-min flex-1 py-3 text-xs font-medium ${
+                  mode === "monthly" ? "text-green-500" : "text-zinc-400"
+                }`}
+              >
+                Monthly
+                {mode === "monthly" && (
+                  <div className="absolute bottom-0 left-0 h-0.5 w-full bg-green-500" />
+                )}
+              </button>
+              <button
                 onClick={() => setMode("pawsistence")}
-                className={`relative h-min flex-1 py-3 text-sm font-medium ${
+                className={`relative h-min flex-1 py-3 text-xs font-medium ${
                   mode === "pawsistence" ? "text-green-500" : "text-zinc-400"
                 }`}
               >
@@ -63,7 +70,7 @@ export function LeaderboardModal({
               </button>
               <button
                 onClick={() => setMode("pawpulation")}
-                className={`relative h-min flex-1 py-3 text-sm font-medium ${
+                className={`relative h-min flex-1 py-3 text-xs font-medium ${
                   mode === "pawpulation" ? "text-green-500" : "text-zinc-400"
                 }`}
               >
@@ -76,7 +83,7 @@ export function LeaderboardModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="relative flex-1 overflow-hidden">
           <LeaderboardContent mode={mode} />
         </div>
 
@@ -86,6 +93,8 @@ export function LeaderboardModal({
               ? "Top 100 Streaks" 
               : mode === "pawpulation"
               ? "Top Pawpulation Scores"
+              : mode === "monthly"
+              ? "Monthly Champions"
               : "Today's Top 100"} 🏆
           </div>
         </DialogFooter>

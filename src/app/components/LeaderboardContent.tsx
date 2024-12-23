@@ -5,6 +5,9 @@ import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 import { useProfileContext } from "~/app/components/ProfileProvider";
 import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
+import { Trophy } from "lucide-react";
+import Image from "next/image";
 
 // Base type for common properties
 interface BaseLeaderboardEntry {
@@ -35,8 +38,15 @@ interface PawpulationEntry extends BaseLeaderboardEntry {
   totalPlays: number;
 }
 
+// Add monthly type to the union type
+interface MonthlyEntry extends BaseLeaderboardEntry {
+  mode: "monthly";
+  totalScore: number;
+  gamesPlayed: number;
+}
+
 // Union type for all possible entries
-type LeaderboardEntry = PawsistenceEntry | DailyEntry | PawpulationEntry;
+type LeaderboardEntry = PawsistenceEntry | DailyEntry | PawpulationEntry | MonthlyEntry;
 
 // Type guard to check if entry is pawsistence
 function isPawsistenceEntry(
@@ -55,6 +65,11 @@ function isPawpulationEntry(entry: LeaderboardEntry): entry is PawpulationEntry 
   return entry.mode === "pawpulation";
 }
 
+// Add type guard for monthly entries
+function isMonthlyEntry(entry: LeaderboardEntry): entry is MonthlyEntry {
+  return entry.mode === "monthly";
+}
+
 // Helper function to check if an entry matches the current user
 const isCurrentUser = (
   entry: LeaderboardEntry,
@@ -66,7 +81,15 @@ const isCurrentUser = (
 };
 
 // Helper to render score based on entry type
-const renderScore = (entry: LeaderboardEntry, isPawpulation: boolean) => {
+const renderScore = (entry: LeaderboardEntry) => {
+  if (isMonthlyEntry(entry)) {
+    return (
+      <>
+        <div className="text-center text-amber-500">{entry.totalScore}🏆</div>
+        <div className="text-center text-green-500">{entry.gamesPlayed} games</div>
+      </>
+    );
+  }
   if (isPawsistenceEntry(entry)) {
     return (
       <div className="text-center text-amber-500">{entry.highestStreak}🔥</div>
@@ -206,10 +229,13 @@ const getAchievementDetails = (achievement: string) => {
   return details;
 };
 
+// Update the mode type
+type LeaderboardMode = "daily" | "pawsistence" | "pawpulation" | "monthly";
+
 export function LeaderboardContent({
   mode,
 }: {
-  mode: "daily" | "pawsistence" | "pawpulation";
+  mode: LeaderboardMode;
 }) {
   const { tempId } = useProfileContext();
   const { data: session } = useSession();
@@ -249,6 +275,17 @@ export function LeaderboardContent({
     gcTime: 5 * 60 * 1000,
   });
 
+  // Add monthly query
+  const { data: monthlyLeaderboard, isLoading: monthlyLeaderboardLoading } =
+    api.score.getMonthlyLeaderboard.useQuery(
+      { month: new Date().toISOString().slice(0, 7) },
+      {
+        enabled: mode === "monthly",
+        staleTime: 60 * 1000,
+        gcTime: 5 * 60 * 1000,
+      }
+    );
+
   // Update data transformation to handle nulls
   const data = useMemo(() => {
     if (mode === "daily") {
@@ -272,6 +309,18 @@ export function LeaderboardContent({
         totalPlays: entry.totalPlays ?? 0
       }));
     }
+    if (mode === "monthly") {
+      return (monthlyLeaderboard?.map((entry) => ({
+        ...entry,
+        mode: "monthly" as const,
+        isVerified: entry.isVerified ?? false,
+        achievements: entry.achievements ?? [],
+        totalScore: entry.totalScore ?? 0,
+        gamesPlayed: entry.gamesPlayed ?? 0,
+        userId: entry.userId ?? null,
+        tempId: entry.tempId ?? null,
+      })) as MonthlyEntry[]);
+    }
     return pawsistenceLeaderboard?.map((entry) => ({
       ...entry,
       mode: "pawsistence" as const,
@@ -279,11 +328,12 @@ export function LeaderboardContent({
       achievements: entry.achievements ?? [],
       highestStreak: entry.highestStreak ?? 0
     }));
-  }, [mode, dailyLeaderboard, pawsistenceLeaderboard, pawpulationLeaderboard]);
+  }, [mode, dailyLeaderboard, pawsistenceLeaderboard, pawpulationLeaderboard, monthlyLeaderboard]);
 
   // Update loading state to include pawpulation
   const isLoading = 
     mode === "daily" ? dailyLeaderboardLoading : 
+    mode === "monthly" ? monthlyLeaderboardLoading :
     mode === "pawpulation" ? pawpulationLeaderboardLoading :
     pawsistenceLeaderboardLoading;
 
@@ -314,6 +364,16 @@ export function LeaderboardContent({
     );
   }
 
+  // Monthly view with podium
+  if (mode === "monthly") {
+    return (
+      <div className="h-full">
+        <MonthlyTopPlayersContent data={data as MonthlyPlayer[]} />
+      </div>
+    );
+  }
+
+  // Return original leaderboard format for other modes
   return (
     <div className="grid h-full grid-rows-[auto_minmax(0,1fr)_auto] gap-2">
       {/* Scrollable content area - modified to start from top */}
@@ -466,8 +526,139 @@ const ScoresList = ({
             <AchievementIcons achievements={entry.achievements} />
           )}
         </div>
-        {renderScore(entry, isPawpulation)}
+        {renderScore(entry)}
       </div>
     ))}
   </div>
 );
+
+interface MonthlyPlayer {
+  username: string;
+  totalScore: number;
+}
+
+function MonthlyTopPlayersContent({ data }: { data: MonthlyPlayer[] }) {
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="mt-8 flex justify-center">
+        <div className="relative flex items-end justify-center gap-4">
+          {/* Second Place */}
+          {data?.[1] && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: "auto" }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex w-24 flex-col items-center"
+            >
+              <div className="mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#C0C0C0] bg-zinc-800 flex items-center justify-center">
+                <Image
+                  src="/dog.png"
+                  alt="Dog avatar"
+                  width={48}
+                  height={48}
+                  className="object-cover"
+                />
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-zinc-200">{data[1].username}</div>
+                <div className="text-sm text-zinc-400">{data[1].totalScore} pts</div>
+              </div>
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 96 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="mt-2 w-full rounded-t-lg bg-[#C0C0C0]"
+              >
+                <div className="pt-2 text-center text-2xl">2</div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* First Place */}
+          {data?.[0] && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: "auto" }}
+              transition={{ duration: 0.5 }}
+              className="flex w-24 flex-col items-center"
+            >
+              <Trophy className="mb-2 h-8 w-8 text-yellow-500" />
+              <div className="mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#FFD700] bg-zinc-800 flex items-center justify-center">
+                <Image
+                  src="/dog.png"
+                  alt="Dog avatar"
+                  width={64}
+                  height={64}
+                  className="object-cover"
+                />
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-zinc-200">{data[0].username}</div>
+                <div className="text-sm text-zinc-400">{data[0].totalScore} pts</div>
+              </div>
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 128 }}
+                transition={{ duration: 0.5 }}
+                className="mt-2 w-full rounded-t-lg bg-[#FFD700]"
+              >
+                <div className="pt-2 text-center text-2xl">1</div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Third Place */}
+          {data?.[2] && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: "auto" }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex w-24 flex-col items-center"
+            >
+              <div className="mb-2 h-14 w-14 overflow-hidden rounded-full border-4 border-[#CD7F32] bg-zinc-800 flex items-center justify-center">
+                <Image
+                  src="/dog.png"
+                  alt="Dog avatar"
+                  width={42}
+                  height={42}
+                  className="object-cover"
+                />
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-zinc-200">{data[2].username}</div>
+                <div className="text-sm text-zinc-400">{data[2].totalScore} pts</div>
+              </div>
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 80 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="mt-2 w-full rounded-t-lg bg-[#CD7F32]"
+              >
+                <div className="pt-2 text-center text-2xl">3</div>
+              </motion.div>
+            </motion.div>
+          )}
+        </div>
+      </div>
+
+      {/* Rest of Top 10 with scrolling */}
+      <div className="mt-8 max-h-[200px] space-y-2 overflow-y-auto px-4">
+        {data?.slice(3).map((player, index) => (
+          <div
+            key={player.username}
+            className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="text-lg text-zinc-500">{index + 4}</div>
+              <div>
+                <div className="font-medium text-zinc-200">{player.username}</div>
+                <div className="text-sm text-zinc-400">{player.totalScore} pts</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
