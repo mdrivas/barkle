@@ -1,0 +1,11 @@
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(5deg); }
+}
+
+.ear {
+  transform-origin: center;
+  animation: wiggle 2s ease-in-out infinite;
+}
+
+/* Add this to your globals.css or a similar file */

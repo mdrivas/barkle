@@ -30,6 +30,7 @@ export const profileRouter = createTRPCRouter({
         ),
         columns: {
           username: true,
+          profileImageUrl: true,
           pawpulationGamesPlayed: true,
           pawpulationHighScore: true,
           pawpulationPlaysToday: true,
@@ -183,7 +184,7 @@ export const profileRouter = createTRPCRouter({
             .update(profiles)
             .set({
               userId: ctx.session.user.id,
-              profileImageUrl: ctx.session.user.image,
+              profileImageUrl: "/avatars/dogav1.png",
               tempId: null,
             })
             .where(eq(profiles.tempId, input.tempId));
@@ -200,7 +201,7 @@ export const profileRouter = createTRPCRouter({
           // Create new profile if no temporary profile exists
           await tx.insert(profiles).values({
             userId: ctx.session.user.id,
-            profileImageUrl: ctx.session.user.image,
+            profileImageUrl: "/avatars/dogav1.png",
             tempId: null,
           });
         }
@@ -212,15 +213,15 @@ export const profileRouter = createTRPCRouter({
   updateProfileImage: protectedProcedure
     .input(
       z.object({
-        imageUrl: z.string().url(),
+        imageUrl: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Update validation to use correct bucket name
-      if (!input.imageUrl.includes("profile_pics_barkle")) {
+      // Validate that it's a local avatar path
+      if (!input.imageUrl.startsWith('/avatars/dogav')) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Invalid image URL",
+          message: "Invalid avatar path",
         });
       }
 
@@ -255,4 +256,5 @@ export const profileRouter = createTRPCRouter({
       isNewUser: !profile?.lastPlayedAt,
     };
   }),
+
 });

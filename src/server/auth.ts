@@ -7,6 +7,7 @@ import {
 import { type Adapter } from "next-auth/adapters";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
+import { eq } from "drizzle-orm";
 
 import { env } from "~/env";
 import { db } from "~/server/db";
@@ -15,6 +16,7 @@ import {
   sessions,
   users,
   verificationTokens,
+  profiles,
 } from "~/server/db/schema";
 
 /**
@@ -30,12 +32,14 @@ declare module "next-auth" {
       id: string;
       role: "admin" | "user";
       username: string | null;
+      image: string;
     } & DefaultSession["user"];
   }
 
   interface User {
     role: "admin" | "user";
     username: string | null;
+    image: string;
   }
 }
 
@@ -46,15 +50,26 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: ({ session, token, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: token?.id ?? user?.id,
-        role: token?.role ?? user?.role ?? "user",
-        username: token?.username ?? user?.username,
-      },
-    }),
+    session: async ({ session, token, user }) => {
+      const profile = await db.query.profiles.findFirst({
+        where: token?.id ? eq(profiles.userId, token.id as string) : undefined,
+        columns: {
+          profileImageUrl: true,
+          username: true,
+        },
+      });
+
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token?.id ?? user?.id,
+          role: token?.role ?? user?.role ?? "user",
+          username: profile?.username ?? user?.username,
+          image: profile?.profileImageUrl ?? "/avatars/dogav1.png",
+        },
+      };
+    },
   },
   adapter: DrizzleAdapter(db, {
     usersTable: users,

@@ -75,7 +75,9 @@ export const profiles = createTable("profile", {
     .unique(),
   username: varchar("username", { length: 30 }).unique(),
   tempId: varchar("temp_id", { length: 255 }).unique().$type<string | null>(),
-  profileImageUrl: varchar("profile_image_url", { length: 255 }),
+  profileImageUrl: varchar("profile_image_url", { length: 255 })
+    .default("/public/avatars/dogav1.png")
+    .notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   isVerified: boolean("is_verified").default(false).notNull(),
   currentDailyStreak: integer("current_daily_streak").default(0),

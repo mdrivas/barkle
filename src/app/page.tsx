@@ -17,6 +17,7 @@ import { NewUserDialog } from "./components/NewUserDialog";
 import { FeatureAnnouncementModal } from "./components/FeatureAnnouncementModal";
 import { TrophyIcon } from "@heroicons/react/24/outline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "~/components/ui/dialog";
+import { DogAvatar } from "~/components/DogAvatar/DogAvatar";
 
 import { useSignIn } from "~/hooks/useSignIn";
 import { Snowflake } from "lucide-react";
@@ -147,19 +148,11 @@ export default function Home() {
                         {userProfile?.username ?? "Loading..."}
                       </span>
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
-                        {session.user.image ? (
-                          <Image
-                            src={session.user.image}
-                            alt="Profile"
-                            width={40}
-                            height={40}
-                            className="rounded-full"
-                          />
-                        ) : (
-                          <span className="text-base">
-                            {userProfile?.username?.[0]?.toUpperCase() ?? "?"}
-                          </span>
-                        )}
+                        <DogAvatar 
+                          size="sm"
+                          imageUrl={userProfile?.profileImageUrl}
+                          showHat={false}
+                        />
                       </div>
                     </div>
                   </Button>

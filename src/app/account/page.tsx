@@ -28,6 +28,8 @@ import { useProfileContext } from "../components/ProfileProvider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Achievements } from "../components/Achievements";
+import { DogAvatar } from "~/components/DogAvatar/DogAvatar";
+import { AvatarSelector } from "~/components/DogAvatar/AvatarSelector";
 const STAT_CARD_STYLES = {
   sky: {
     background: "bg-gradient-to-br from-sky-500/20 to-sky-600/10",
@@ -84,6 +86,13 @@ export default function AccountPage() {
   const { mutate: updateImage } = api.profile.updateProfileImage.useMutation({
     onSuccess: () => {
       void refetchProfile();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -143,10 +152,10 @@ export default function AccountPage() {
         throw new Error("Upload failed");
       }
 
-      const { url } = await response.json();
+      const { url } = (await response.json()) as { url: string };
 
       // Update user profile with new image URL
-      await updateImage({ imageUrl: url });
+      updateImage({ imageUrl: url });
 
       // Clear file state but keep preview
       setImageFile(null);
@@ -261,10 +270,9 @@ export default function AccountPage() {
 👑 Longest Streak: ${userData?.highestPawsistenceStreak ?? 0}
 
 🌟 PAWPULATION
-━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━
 🎮 Games Played: ${userData?.pawpulationGamesPlayed ?? 0}
 🏆 High Score: ${userData?.pawpulationHighScore ?? 0}
-📅 Today's Plays: ${userData?.pawpulationPlaysToday ?? 0}
 
 🌟 Fetch your own pups at https://barkle.vercel.app`;
 
@@ -289,6 +297,14 @@ export default function AccountPage() {
   };
 
   const [showAllAchievements, setShowAllAchievements] = useState(false);
+  const [isSelectingAvatar, setIsSelectingAvatar] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(1);
+
+  const handleAvatarUpdate = async (avatarNumber: number) => {
+    setSelectedAvatar(avatarNumber);
+    setIsSelectingAvatar(false);
+    await updateImage({ imageUrl: `https://example.com/avatar${avatarNumber}.jpg` });
+  };
 
   if (!session) {
     return (
@@ -347,45 +363,17 @@ export default function AccountPage() {
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="h-24 w-24 overflow-hidden rounded-full ring-2 ring-green-500/20">
-                {(previewUrl || session.user.image) && (
-                  <Image
-                    src={previewUrl ?? session.user.image!}
-                    alt="Profile"
-                    width={96}
-                    height={96}
-                    className="h-full w-full object-cover"
-                  />
-                )}
-              </div>
-              <label
-                className={cn(
-                  "absolute bottom-0 right-0 cursor-pointer",
-                  isUploading && "pointer-events-none",
-                  isUploading && "pointer-events-none",
-                )}
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
-                  disabled={isUploading}
+                <DogAvatar 
+                  size="lg" 
+                  imageUrl={userData?.profileImageUrl}
                 />
-                <div
-                  className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-full",
-                    isUploading
-                      ? "bg-gray-500"
-                      : "bg-green-500 hover:bg-green-600",
-                  )}
-                >
-                  {isUploading ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  ) : (
-                    <Camera className="h-4 w-4 text-white" />
-                  )}
-                </div>
-              </label>
+              </div>
+              <button
+                onClick={() => setIsSelectingAvatar(true)}
+                className="absolute -bottom-1 -right-1 rounded-full bg-zinc-800 p-1.5 ring-1 ring-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
             </div>
 
             <div className="text-center">
@@ -401,7 +389,7 @@ export default function AccountPage() {
                       setNewUsername(userData?.username ?? "");
                       setIsEditingUsername(true);
                     }}
-                    className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+                    className="rounded-full p-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -603,6 +591,16 @@ export default function AccountPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AvatarSelector
+        open={isSelectingAvatar}
+        onClose={() => setIsSelectingAvatar(false)}
+        selectedAvatar={parseInt(userData?.profileImageUrl?.split('dogav')[1]?.[0] ?? '1')}
+        onSelect={async (avatarNumber) => {
+          setIsSelectingAvatar(false);
+          await updateImage({ imageUrl: `/avatars/dogav${avatarNumber}.png` });
+        }}
+      />
     </div>
   );
 }
