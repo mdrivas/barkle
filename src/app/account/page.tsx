@@ -311,11 +311,7 @@ export default function AccountPage() {
   const [isSelectingAccessory, setIsSelectingAccessory] = useState(false);
   const [selectedAccessory, setSelectedAccessory] = useState<number | null>(null);
 
-  const { mutate: updateAccessory } = api.profile.updateAccessory.useMutation({
-    onSuccess: () => {
-      void refetchProfile();
-    },
-  });
+  
 
   const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
 
@@ -625,7 +621,6 @@ export default function AccountPage() {
         onSelect={(accessoryId) => {
           setSelectedAccessory(accessoryId);
           setIsSelectingAccessory(false);
-          updateAccessory({ accessoryId });
         }}
         selectedAccessory={selectedAccessory}
       />

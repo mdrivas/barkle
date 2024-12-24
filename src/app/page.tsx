@@ -151,7 +151,6 @@ export default function Home() {
                         <DogAvatar 
                           size="sm"
                           imageUrl={userProfile?.profileImageUrl}
-                          showHat={false}
                         />
                       </div>
                     </div>
