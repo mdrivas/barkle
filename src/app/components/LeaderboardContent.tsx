@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
 import Image from "next/image";
+import { MonthlyTopPlayersModal } from "~/app/components/MonthlyTopPlayersModal";
 
 // Base type for common properties
 interface BaseLeaderboardEntry {
@@ -17,6 +18,8 @@ interface BaseLeaderboardEntry {
   isVerified: boolean;
   achievements: string[];
 }
+
+
 
 // Specific types for each leaderboard mode
 interface PawsistenceEntry extends BaseLeaderboardEntry {
@@ -45,6 +48,7 @@ interface MonthlyEntry extends BaseLeaderboardEntry {
   gamesPlayed: number;
   averageScore: number;
   achievements: string[];
+  profileImageUrl: string | null;
 }
 
 // Union type for all possible entries
@@ -236,8 +240,10 @@ type LeaderboardMode = "daily" | "pawsistence" | "pawpulation" | "monthly";
 
 export function LeaderboardContent({
   mode,
+  setMode,
 }: {
   mode: LeaderboardMode;
+  setMode?: (mode: LeaderboardMode) => void;
 }) {
   const { tempId } = useProfileContext();
   const { data: session } = useSession();
@@ -318,7 +324,7 @@ export function LeaderboardContent({
         isVerified: entry.isVerified ?? false,
         achievements: entry.achievements ?? [],
         totalScore: entry.totalScore ?? 0,
-        gamesPlayed: entry.gamesPlayed ?? 0,
+        gamesPlayed: entry.monthlyGames ?? 0,
         averageScore: entry.averageScore ?? 0,
         userId: entry.userId ?? null,
         tempId: entry.tempId ?? null,
@@ -368,11 +374,17 @@ export function LeaderboardContent({
     );
   }
 
-  // Monthly view with podium
+  // Monthly view with modal
   if (mode === "monthly") {
     return (
       <div className="h-full">
-        <MonthlyTopPlayersContent data={data as MonthlyPlayer[]} />
+        <MonthlyTopPlayersModal 
+          open={true} 
+          onOpenChange={() => {
+            // Switch back to daily view when modal is closed
+            setMode?.("daily");
+          }} 
+        />
       </div>
     );
   }
@@ -539,12 +551,13 @@ const ScoresList = ({
 interface MonthlyPlayer {
   username: string;
   totalScore: number;
+  profileImageUrl: string | null;
 }
 
 function MonthlyTopPlayersContent({ data }: { data: MonthlyPlayer[] }) {
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="mt-8 flex justify-center">
+    <div className="flex flex-col">
+      <div className="flex justify-center">
         <div className="relative flex items-end justify-center gap-4">
           {/* Second Place */}
           {data?.[1] && (
@@ -554,13 +567,13 @@ function MonthlyTopPlayersContent({ data }: { data: MonthlyPlayer[] }) {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="flex w-24 flex-col items-center"
             >
-              <div className="mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#C0C0C0] bg-zinc-800 flex items-center justify-center">
+              <div className="mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#C0C0C0] bg-zinc-800">
                 <Image
-                  src="/dog.png"
-                  alt="Dog avatar"
-                  width={48}
-                  height={48}
-                  className="object-cover"
+                  src={data[1].profileImageUrl ?? "/avatars/dogav1.png"}
+                  alt={`${data[1].username}'s avatar`}
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-cover"
                 />
               </div>
               <div className="text-center">
@@ -587,13 +600,13 @@ function MonthlyTopPlayersContent({ data }: { data: MonthlyPlayer[] }) {
               className="flex w-24 flex-col items-center"
             >
               <Trophy className="mb-2 h-8 w-8 text-yellow-500" />
-              <div className="mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#FFD700] bg-zinc-800 flex items-center justify-center">
+              <div className="mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#FFD700] bg-zinc-800">
                 <Image
-                  src="/dog.png"
-                  alt="Dog avatar"
-                  width={64}
-                  height={64}
-                  className="object-cover"
+                  src={data[0].profileImageUrl ?? "/avatars/dogav1.png"}
+                  alt={`${data[0].username}'s avatar`}
+                  width={80}
+                  height={80}
+                  className="h-full w-full object-cover"
                 />
               </div>
               <div className="text-center">
@@ -607,38 +620,6 @@ function MonthlyTopPlayersContent({ data }: { data: MonthlyPlayer[] }) {
                 className="mt-2 w-full rounded-t-lg bg-[#FFD700]"
               >
                 <div className="pt-2 text-center text-2xl">1</div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {/* Third Place */}
-          {data?.[2] && (
-            <motion.div
-              initial={{ height: 0 }}
-              animate={{ height: "auto" }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="flex w-24 flex-col items-center"
-            >
-              <div className="mb-2 h-14 w-14 overflow-hidden rounded-full border-4 border-[#CD7F32] bg-zinc-800 flex items-center justify-center">
-                <Image
-                  src="/dog.png"
-                  alt="Dog avatar"
-                  width={42}
-                  height={42}
-                  className="object-cover"
-                />
-              </div>
-              <div className="text-center">
-                <div className="font-medium text-zinc-200">{data[2].username}</div>
-                <div className="text-sm text-zinc-400">{data[2].totalScore} pts</div>
-              </div>
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: 80 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="mt-2 w-full rounded-t-lg bg-[#CD7F32]"
-              >
-                <div className="pt-2 text-center text-2xl">3</div>
               </motion.div>
             </motion.div>
           )}

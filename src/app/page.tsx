@@ -257,17 +257,17 @@ export default function Home() {
         <DialogContent className="border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8 text-center">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-zinc-50">
-              🌟 End of Month Celebration! 🌟
+              <span>🌟 End of Month Celebration! 🌟</span>
             </DialogTitle>
-            <DialogDescription className="mt-4 space-y-4 text-lg text-zinc-300">
-              <p>
+            <div className="mt-4 space-y-4 text-lg text-zinc-300">
+              <div>
                 Woof! What an amazing first month of Barkle! 
                 Time to celebrate {new Date().toLocaleString('default', { month: 'long' })}&apos;s top pups! 🌟
-              </p>
-              <p className="text-green-400">
+              </div>
+              <div className="text-green-400">
                 Stay on top - our champions get exclusive rewards! 🎁
-              </p>
-            </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
           <Button 
             onClick={() => {

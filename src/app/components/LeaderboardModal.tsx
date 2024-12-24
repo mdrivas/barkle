@@ -84,7 +84,7 @@ export function LeaderboardModal({
         </DialogHeader>
 
         <div className="relative flex-1 overflow-hidden">
-          <LeaderboardContent mode={mode} />
+          <LeaderboardContent mode={mode} setMode={setMode} />
         </div>
 
         <DialogFooter className="flex-none">

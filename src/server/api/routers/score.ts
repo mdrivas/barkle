@@ -252,6 +252,7 @@ export const scoreRouter = createTRPCRouter({
         userId: scores.userId,
         tempId: scores.tempId,
         isVerified: profiles.isVerified,
+        profileImageUrl: profiles.profileImageUrl,
         achievements: sql<string[]>`
           array_remove(array_agg(distinct ${achievements.type}), null)::text[]
         `,
@@ -284,6 +285,7 @@ export const scoreRouter = createTRPCRouter({
         scores.userId,
         scores.tempId,
         profiles.isVerified,
+        profiles.profileImageUrl,
       )
       .orderBy(
         desc(scores.score),
@@ -301,6 +303,7 @@ export const scoreRouter = createTRPCRouter({
         userId: profiles.userId,
         tempId: profiles.tempId,
         isVerified: profiles.isVerified,
+        profileImageUrl: profiles.profileImageUrl,
         achievements: sql<string[]>`
           array_remove(array_agg(distinct ${achievements.type}), null)::text[]
         `,
@@ -323,6 +326,7 @@ export const scoreRouter = createTRPCRouter({
         profiles.userId,
         profiles.tempId,
         profiles.isVerified,
+        profiles.profileImageUrl,
       )
       .orderBy(desc(profiles.highestPawsistenceStreak))
       .limit(100);
@@ -337,6 +341,7 @@ export const scoreRouter = createTRPCRouter({
         userId: profiles.userId,
         tempId: profiles.tempId,
         isVerified: profiles.isVerified,
+        profileImageUrl: profiles.profileImageUrl,
         achievements: sql<string[]>`
           array_remove(array_agg(distinct ${achievements.type}), null)::text[]
         `,
@@ -360,6 +365,7 @@ export const scoreRouter = createTRPCRouter({
         profiles.userId,
         profiles.tempId,
         profiles.isVerified,
+        profiles.profileImageUrl,
       )
       .orderBy(desc(profiles.pawpulationHighScore))
       .limit(100);
@@ -532,7 +538,7 @@ export const scoreRouter = createTRPCRouter({
   getMonthlyLeaderboard: publicProcedure
     .input(
       z.object({
-        month: z.string().regex(/^\d{4}-\d{2}$/), // Format: "2024-01"
+        month: z.string().regex(/^\d{4}-\d{2}$/),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -541,29 +547,43 @@ export const scoreRouter = createTRPCRouter({
       return await ctx.db
         .select({
           username: profiles.username,
-          isVerified: profiles.isVerified,
-          totalScore: sql<number>`SUM(${scores.score})`,
-          gamesPlayed: sql<number>`COUNT(${scores.id})`,
-          averageScore: sql<number>`ROUND(AVG(${scores.score})::numeric, 2)`,
           userId: profiles.userId,
           tempId: profiles.tempId,
-          achievements: sql<string[]>`
-            array_remove(array_agg(distinct ${achievements.type}), null)::text[]
+          isVerified: profiles.isVerified,
+          profileImageUrl: profiles.profileImageUrl,
+          totalScore: sql<number>`
+            COALESCE(
+              SUM(${scores.score}) * 5 + 
+              MAX(${profiles.currentDailyStreak}) * 25 +
+              MAX(${profiles.highestGuessStreak}) * 10 +
+              MAX(${profiles.currentGuessStreak}) * 15 +
+              MAX(${profiles.highestPawsistenceStreak}) * 15 +
+              MAX(${profiles.pawpulationHighScore}) * 15 +
+              COUNT(${scores.id}) * 5 +
+              MAX(${profiles.pawpulationGamesPlayed}) * 5,
+              0
+            )
           `,
+          monthlyGames: sql<number>`COUNT(${scores.id})`,
+          dailyStreak: sql<number>`MAX(${profiles.currentDailyStreak})`,
+          highestStreak: sql<number>`MAX(${profiles.highestGuessStreak})`,
+          currentStreak: sql<number>`MAX(${profiles.currentGuessStreak})`,
+          pawsistenceStreak: sql<number>`MAX(${profiles.highestPawsistenceStreak})`,
+          pawpulationScore: sql<number>`MAX(${profiles.pawpulationHighScore})`,
+          pawpulationGamesPlayed: sql<number>`MAX(${profiles.pawpulationGamesPlayed})`,
+          achievements: sql<string[]>`array_remove(array_agg(distinct ${achievements.type}), null)::text[]`,
+          averageScore: sql<number>`
+            CASE 
+              WHEN COUNT(${scores.id}) > 0 
+              THEN ROUND(CAST(AVG(${scores.score}) as numeric), 2)
+              ELSE 0 
+            END
+          `
         })
         .from(scores)
-        .innerJoin(
-          profiles,
-          eq(scores.userId, profiles.userId)
-        )
-        .leftJoin(
-          userAchievements,
-          eq(userAchievements.userId, profiles.userId)
-        )
-        .leftJoin(
-          achievements,
-          eq(achievements.id, userAchievements.achievementId)
-        )
+        .innerJoin(profiles, eq(scores.userId, profiles.userId))
+        .leftJoin(userAchievements, eq(userAchievements.userId, profiles.userId))
+        .leftJoin(achievements, eq(achievements.id, userAchievements.achievementId))
         .where(
           and(
             sql`EXTRACT(YEAR FROM ${scores.playedAt}) = ${year}`,
@@ -573,14 +593,24 @@ export const scoreRouter = createTRPCRouter({
         )
         .groupBy(
           profiles.username,
-          profiles.isVerified,
           profiles.userId,
-          profiles.tempId
+          profiles.tempId,
+          profiles.isVerified,
+          profiles.profileImageUrl
         )
-        .orderBy(
-          desc(sql<number>`SUM(${scores.score})`),
-          desc(sql<number>`COUNT(${scores.id})`)
-        )
+        .orderBy(desc(sql<number>`
+          COALESCE(
+            SUM(${scores.score}) * 5 + 
+            MAX(${profiles.currentDailyStreak}) * 25 +
+            MAX(${profiles.highestGuessStreak}) * 15 +
+            MAX(${profiles.currentGuessStreak}) * 10 +
+            MAX(${profiles.highestPawsistenceStreak}) * 15 +
+            MAX(${profiles.pawpulationHighScore}) * 15 +
+            COUNT(${scores.id}) * 5 +
+            MAX(${profiles.pawpulationGamesPlayed}) * 5,
+            0
+          )
+        `))
         .limit(10);
     }),
 });
