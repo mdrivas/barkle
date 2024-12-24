@@ -43,6 +43,8 @@ interface MonthlyEntry extends BaseLeaderboardEntry {
   mode: "monthly";
   totalScore: number;
   gamesPlayed: number;
+  averageScore: number;
+  achievements: string[];
 }
 
 // Union type for all possible entries
@@ -310,16 +312,18 @@ export function LeaderboardContent({
       }));
     }
     if (mode === "monthly") {
-      return (monthlyLeaderboard?.map((entry) => ({
+      return monthlyLeaderboard?.map((entry) => ({
         ...entry,
         mode: "monthly" as const,
         isVerified: entry.isVerified ?? false,
         achievements: entry.achievements ?? [],
         totalScore: entry.totalScore ?? 0,
         gamesPlayed: entry.gamesPlayed ?? 0,
+        averageScore: entry.averageScore ?? 0,
         userId: entry.userId ?? null,
         tempId: entry.tempId ?? null,
-      })) as MonthlyEntry[]);
+        username: entry.username ?? null
+      })) as MonthlyEntry[];
     }
     return pawsistenceLeaderboard?.map((entry) => ({
       ...entry,

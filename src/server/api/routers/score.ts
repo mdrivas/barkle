@@ -536,7 +536,6 @@ export const scoreRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
-      // Parse the month string to create date range
       const [year, month] = input.month.split('-').map(Number);
       
       return await ctx.db
@@ -546,11 +545,24 @@ export const scoreRouter = createTRPCRouter({
           totalScore: sql<number>`SUM(${scores.score})`,
           gamesPlayed: sql<number>`COUNT(${scores.id})`,
           averageScore: sql<number>`ROUND(AVG(${scores.score})::numeric, 2)`,
+          userId: profiles.userId,
+          tempId: profiles.tempId,
+          achievements: sql<string[]>`
+            array_remove(array_agg(distinct ${achievements.type}), null)::text[]
+          `,
         })
         .from(scores)
         .innerJoin(
           profiles,
           eq(scores.userId, profiles.userId)
+        )
+        .leftJoin(
+          userAchievements,
+          eq(userAchievements.userId, profiles.userId)
+        )
+        .leftJoin(
+          achievements,
+          eq(achievements.id, userAchievements.achievementId)
         )
         .where(
           and(
@@ -562,6 +574,8 @@ export const scoreRouter = createTRPCRouter({
         .groupBy(
           profiles.username,
           profiles.isVerified,
+          profiles.userId,
+          profiles.tempId
         )
         .orderBy(
           desc(sql<number>`SUM(${scores.score})`),
