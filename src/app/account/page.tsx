@@ -30,6 +30,8 @@ import { Input } from "~/components/ui/input";
 import { Achievements } from "../components/Achievements";
 import { DogAvatar } from "~/components/DogAvatar/DogAvatar";
 import { AvatarSelector } from "~/components/DogAvatar/AvatarSelector";
+import { AccessorySelector } from "~/components/DogAvatar/AccessorySelector";
+import { CustomizeAvatarDialog } from "~/components/DogAvatar/CustomizeAvatarDialog";
 const STAT_CARD_STYLES = {
   sky: {
     background: "bg-gradient-to-br from-sky-500/20 to-sky-600/10",
@@ -303,8 +305,19 @@ export default function AccountPage() {
   const handleAvatarUpdate = async (avatarNumber: number) => {
     setSelectedAvatar(avatarNumber);
     setIsSelectingAvatar(false);
-    await updateImage({ imageUrl: `https://example.com/avatar${avatarNumber}.jpg` });
+    await updateImage({ imageUrl: `/avatars/dogav${avatarNumber}.png` });
   };
+
+  const [isSelectingAccessory, setIsSelectingAccessory] = useState(false);
+  const [selectedAccessory, setSelectedAccessory] = useState<number | null>(null);
+
+  const { mutate: updateAccessory } = api.profile.updateAccessory.useMutation({
+    onSuccess: () => {
+      void refetchProfile();
+    },
+  });
+
+  const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
 
   if (!session) {
     return (
@@ -369,7 +382,7 @@ export default function AccountPage() {
                 />
               </div>
               <button
-                onClick={() => setIsSelectingAvatar(true)}
+                onClick={() => setShowCustomizeDialog(true)}
                 className="absolute -bottom-1 -right-1 rounded-full bg-zinc-800 p-1.5 ring-1 ring-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
               >
                 <Pencil className="h-4 w-4" />
@@ -592,14 +605,29 @@ export default function AccountPage() {
         </DialogContent>
       </Dialog>
 
+      <CustomizeAvatarDialog
+        isOpen={showCustomizeDialog}
+        onClose={() => setShowCustomizeDialog(false)}
+        onSelectAvatar={() => setIsSelectingAvatar(true)}
+        onSelectAccessory={() => setIsSelectingAccessory(true)}
+      />
+
       <AvatarSelector
-        open={isSelectingAvatar}
+        isOpen={isSelectingAvatar}
         onClose={() => setIsSelectingAvatar(false)}
-        selectedAvatar={parseInt(userData?.profileImageUrl?.split('dogav')[1]?.[0] ?? '1')}
-        onSelect={async (avatarNumber) => {
-          setIsSelectingAvatar(false);
-          await updateImage({ imageUrl: `/avatars/dogav${avatarNumber}.png` });
+        onSelect={handleAvatarUpdate}
+        selectedAvatar={selectedAvatar}
+      />
+
+      <AccessorySelector
+        isOpen={isSelectingAccessory}
+        onClose={() => setIsSelectingAccessory(false)}
+        onSelect={(accessoryId) => {
+          setSelectedAccessory(accessoryId);
+          setIsSelectingAccessory(false);
+          updateAccessory({ accessoryId });
         }}
+        selectedAccessory={selectedAccessory}
       />
     </div>
   );

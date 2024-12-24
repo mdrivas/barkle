@@ -5,15 +5,15 @@ import Image from "next/image";
 import { cn } from "~/lib/utils";
 
 interface AvatarSelectorProps {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
   selectedAvatar: number;
   onSelect: (avatarNumber: number) => void;
 }
 
-export function AvatarSelector({ open, onClose, selectedAvatar, onSelect }: AvatarSelectorProps) {
+export function AvatarSelector({ isOpen, onClose, selectedAvatar, onSelect }: AvatarSelectorProps) {
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-zinc-900 text-zinc-50 sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center">Choose Your Pup</DialogTitle>
