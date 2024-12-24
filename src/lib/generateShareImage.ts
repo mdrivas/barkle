@@ -1,7 +1,7 @@
 export async function generateShareImage(
   score: number,
   questionResults: boolean[],
-  mode?: "daily" | "pawsistence"
+  mode?: "daily" | "pawsistence" | "pawpulation"
 ) {
   // Load both regular and bold Poppins
   await document.fonts.load('700 120px "Poppins"');

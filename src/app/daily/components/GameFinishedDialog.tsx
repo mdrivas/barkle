@@ -19,6 +19,7 @@ import { Share2, Home } from "lucide-react";
 import { useSignIn } from "~/hooks/useSignIn";
 import { useProfileContext } from "~/app/components/ProfileProvider";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { LeaderboardModal } from "~/app/components/LeaderboardModal";
 
 // Props interface for GameFinishedDialog component
 interface GameFinishedDialogProps {
@@ -53,6 +54,9 @@ export function GameFinishedDialog({
   const [shouldShowResults, setShouldShowResults] =
     useState(!isReturningFromAuth);
 
+  // Add state for leaderboard
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+
   // Add effect to update shouldShowResults when username is set
   useEffect(() => {
     if (!isReturningFromAuth) {
@@ -62,7 +66,7 @@ export function GameFinishedDialog({
 
   // Define handleViewLeaderboard at the top level of the component
   const handleViewLeaderboard = () => {
-    router.push("/?showLeaderboard=true");
+    setIsLeaderboardOpen(true);
   };
 
   // Simplified sign in handler
@@ -202,11 +206,18 @@ export function GameFinishedDialog({
         </div>
       </div>
       <Button
-        onClick={handlePlayPawsistence}
+        onClick={() => router.push("/pawsistence")}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-900 text-indigo-100 transition-all duration-200 hover:bg-indigo-800 py-2 text-base font-medium"
       >
         Play Pawsistence
         <span className="text-xl">🐾</span>
+      </Button>
+      <Button
+        onClick={() => router.push("/pawpulation")}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-900 text-purple-100 transition-all duration-200 hover:bg-purple-800 py-2 text-base font-medium"
+      >
+        Play Pawpulation
+        <span className="text-xl">🦮</span>
       </Button>
       {shareResults}
       {leaderboardButton}
@@ -228,11 +239,18 @@ export function GameFinishedDialog({
           </div>
         </div>
         <Button
-          onClick={handlePlayPawsistence}
+          onClick={() => router.push("/pawsistence")}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-900 text-indigo-100 transition-all duration-200 hover:bg-indigo-800 py-2 text-base font-medium"
         >
           Play Pawsistence
           <span className="text-xl">🐾</span>
+        </Button>
+        <Button
+          onClick={() => router.push("/pawpulation")}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-900 text-purple-100 transition-all duration-200 hover:bg-purple-800 py-2 text-base font-medium"
+        >
+          Play Pawpulation
+          <span className="text-xl">🦮</span>
         </Button>
         {shareResults}
         {leaderboardButton}
@@ -276,6 +294,12 @@ export function GameFinishedDialog({
         questionResults={displayResults}
         isOpen={isShareDialogOpen}
         onOpenChange={setIsShareDialogOpen}
+      />
+
+      <LeaderboardModal
+        open={isLeaderboardOpen}
+        onOpenChange={setIsLeaderboardOpen}
+        defaultMode="daily"
       />
     </>
   );

@@ -31,15 +31,20 @@ function formatDate(date: Date): string {
 async function generateDailyBreeds() {
   // Get current date in PST
   const pstDate = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
+    new Date().toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles",
+    })
   );
+  
+  // Add one day to get tomorrow's date
+  pstDate.setDate(pstDate.getDate() + 1);
   
   // Format as YYYY-MM-DD
   const targetDate = formatDate(pstDate);
 
   console.log("Current UTC time:", new Date().toISOString());
-  console.log("Current PST date:", targetDate);
-  console.log("Generating breeds for today in PST");
+  console.log("Target PST date:", targetDate);
+  console.log("Generating breeds for tomorrow in PST");
 
   // Check if breeds already exist
   if (!targetDate) {
@@ -266,7 +271,7 @@ async function previewTomorrowBreeds() {
 
   // Get available community dogs
   const sevenDaysAgo = new Date(tomorrow);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 8);
 
   const verifiedDogs = await db.query.dogSubmissions.findMany({
     where: (dogs) =>

@@ -128,6 +128,7 @@ export function PawpulationFinishedDialog({
         isOpen={isShareDialogOpen}
         onOpenChange={setIsShareDialogOpen}
         questionResults={[]}
+        mode="pawpulation"
       />
     </>
   );

@@ -38,7 +38,7 @@ export function PawsistenceFinishedDialog({
   const router = useRouter();
 
   const handleViewLeaderboard = () => {
-    router.push("/?showLeaderboard=true");
+    setIsLeaderboardOpen(true);
   };
 
   const handlePlayDaily = () => {
@@ -83,6 +83,14 @@ export function PawsistenceFinishedDialog({
               </Button>
 
               <Button
+                onClick={() => router.push("/pawpulation")}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-900 text-purple-100 transition-all duration-200 hover:bg-purple-800 py-2 text-base font-medium"
+              >
+                Play Pawpulation
+                <span className="text-xl">🦮</span>
+              </Button>
+
+              <Button
                 onClick={() => setIsShareDialogOpen(true)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-900 text-emerald-100 transition-all duration-200 hover:bg-emerald-800 py-2 text-base font-medium"
               >
@@ -122,7 +130,6 @@ export function PawsistenceFinishedDialog({
         open={isLeaderboardOpen}
         onOpenChange={setIsLeaderboardOpen}
         defaultMode="pawsistence"
-        source="pawsistence"
       />
     </>
   );

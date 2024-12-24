@@ -18,7 +18,7 @@ interface ShareResultsDialogProps {
   questionResults: boolean[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  mode?: "daily" | "pawsistence";
+  mode?: "daily" | "pawsistence" | "pawpulation";
 }
 
 interface UploadResponse {
@@ -67,6 +67,12 @@ export function ShareResultsDialog({
   };
 
   const getShareText = () => {
+    if (mode === "pawpulation") {
+      return `🐕 Pawpulation Score: ${score} ${Array(Math.min(score, 10)).fill("🦮").join("")}
+
+Can you guess which dog breeds are more popular? Play at https://barkle.vercel.app`;
+    }
+
     if (mode === "pawsistence") {
       return `Pawsistence is Key! 🔑
 My Highest Streak: ${score} ${Array(score).fill("🐶").join("")}
@@ -154,12 +160,17 @@ Can you beat my streak? https://barkle.vercel.app/pawsistence`;
       <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900/95 text-zinc-50 sm:w-full sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold">
-            Share Your Score! {mode === "pawsistence" ? "🔥" : ""}
+            Share Your Score! {mode === "pawpulation" ? "🦮" : mode === "pawsistence" ? "🔥" : ""}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 px-4 sm:px-6">
-          {mode === "pawsistence" ? (
+          {mode === "pawpulation" ? (
+            <div className="py-4 text-center">
+              <div className="mb-2 text-3xl font-bold">{score} 🦮</div>
+              <div className="text-sm text-zinc-400">Correct Guesses</div>
+            </div>
+          ) : mode === "pawsistence" ? (
             <div className="py-4 text-center">
               <div className="mb-2 text-3xl font-bold">{score} 🐶</div>
               <div className="text-sm text-zinc-400">Highest Streak</div>

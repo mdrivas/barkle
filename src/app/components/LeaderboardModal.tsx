@@ -25,8 +25,13 @@ export function LeaderboardModal({
   open,
   onOpenChange,
   defaultMode = "daily",
+  source,
+  showMonthlyIntro,
+  onMonthlyIntroClose,
 }: LeaderboardModalProps) {
-  const [mode, setMode] = useState<"daily" | "pawsistence" | "pawpulation" | "monthly">(defaultMode);
+  const [mode, setMode] = useState<"daily" | "pawsistence" | "pawpulation" | "monthly">(
+    source ?? defaultMode
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
