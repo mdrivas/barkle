@@ -37,7 +37,7 @@ export default function Home() {
   const [tempId, setTempId] = useState<string | null>(null);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showMonthlyIntro, setShowMonthlyIntro] = useState(false);
-  const [showEndOfMonth, setShowEndOfMonth] = useState(true);
+  const [showEndOfMonth, setShowEndOfMonth] = useState(false);
 
   useEffect(() => {
     const storedTempId = localStorage.getItem("barkle_temp_id");   
