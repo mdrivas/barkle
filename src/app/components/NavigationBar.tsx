@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
 import { Terms } from "~/app/components/Terms";
-import { Privacy } from "~/app/components/Privacy";
 import { FAQSheet } from "~/app/components/FAQSheet";
 import { FeedbackSheet } from "~/app/components/FeedbackSheet";
 import { Instagram, TiktokIcon } from "~/app/components/icons";
@@ -22,7 +21,6 @@ export function NavigationBar() {
 
   const navItems = [
     { Component: Terms },
-    { Component: Privacy },
     { Component: FAQSheet },
     { Component: FeedbackSheet },
   ] satisfies NavItem[];

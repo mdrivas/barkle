@@ -11,6 +11,7 @@ import { Suspense } from "react";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { GoogleAnalytics } from "./components/GoogleAnalytics"; // Add this import
 import { ProfileProvider } from "./components/ProfileProvider";
+import { CookieBanner } from "./components/CookieBanner";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -120,6 +121,7 @@ export default function RootLayout({
             </TRPCReactProvider>
           </AuthProvider>
         </TooltipProvider>
+        <CookieBanner />
       </body>
     </html>
   );

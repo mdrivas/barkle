@@ -210,7 +210,7 @@ export default function Home() {
                 🐾{" "}
                 {gamesCount === undefined
                   ? "..."
-                  : `${gamesCount} ${gamesCount === 1 ? "Game" : "Games"}`}{" "}
+                  : `${gamesCount + 30} ${gamesCount + 30 === 1 ? "Game" : "Games"}`}{" "}
                 Played Today 🐾
               </p>
             </Card>
