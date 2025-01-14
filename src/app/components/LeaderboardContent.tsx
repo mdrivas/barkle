@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 import { useProfileContext } from "~/app/components/ProfileProvider";
@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
 import Image from "next/image";
 import { MonthlyTopPlayersModal } from "~/app/components/MonthlyTopPlayersModal";
+import { LevelSystemModal, getLevelBadge } from "~/app/components/LevelSystemModal";
 
 // Base type for common properties
 interface BaseLeaderboardEntry {
@@ -17,6 +18,7 @@ interface BaseLeaderboardEntry {
   tempId: string | null;
   isVerified: boolean;
   achievements: string[];
+  xp: number;
 }
 
 
@@ -49,6 +51,7 @@ interface MonthlyEntry extends BaseLeaderboardEntry {
   averageScore: number;
   achievements: string[];
   profileImageUrl: string | null;
+  xp: number;
 }
 
 // Union type for all possible entries
@@ -238,13 +241,18 @@ const getAchievementDetails = (achievement: string) => {
 // Update the mode type
 type LeaderboardMode = "daily" | "pawsistence" | "pawpulation" | "monthly";
 
+// Add onUserClick to props
+interface LeaderboardContentProps {
+  mode: LeaderboardMode;
+  setMode?: (mode: LeaderboardMode) => void;
+  onUserClick?: (userId: string | null, tempId: string | null) => void;
+}
+
 export function LeaderboardContent({
   mode,
   setMode,
-}: {
-  mode: LeaderboardMode;
-  setMode?: (mode: LeaderboardMode) => void;
-}) {
+  onUserClick,
+}: LeaderboardContentProps) {
   const { tempId } = useProfileContext();
   const { data: session } = useSession();
   const userId = session?.user?.id ?? null;
@@ -304,7 +312,8 @@ export function LeaderboardContent({
         achievements: entry.achievements ?? [],
         score: entry.score ?? 0,
         currentStreak: entry.currentStreak ?? 0,
-        dailyStreak: entry.dailyStreak ?? 0
+        dailyStreak: entry.dailyStreak ?? 0,
+        xp: entry.xp ?? 0
       }));
     }
     if (mode === "pawpulation") {
@@ -314,7 +323,8 @@ export function LeaderboardContent({
         isVerified: entry.isVerified ?? false,
         achievements: entry.achievements ?? [],
         score: entry.score ?? 0,
-        totalPlays: entry.totalPlays ?? 0
+        totalPlays: entry.totalPlays ?? 0,
+        xp: entry.xp ?? 0
       }));
     }
     if (mode === "monthly") {
@@ -324,11 +334,12 @@ export function LeaderboardContent({
         isVerified: entry.isVerified ?? false,
         achievements: entry.achievements ?? [],
         totalScore: entry.totalScore ?? 0,
-        gamesPlayed: entry.monthlyGames ?? 0,
+        gamesPlayed: entry.gamesPlayed ?? 0,
         averageScore: entry.averageScore ?? 0,
         userId: entry.userId ?? null,
         tempId: entry.tempId ?? null,
-        username: entry.username ?? null
+        username: entry.username ?? null,
+        xp: entry.xp ?? 0
       })) as MonthlyEntry[];
     }
     return pawsistenceLeaderboard?.map((entry) => ({
@@ -336,7 +347,8 @@ export function LeaderboardContent({
       mode: "pawsistence" as const,
       isVerified: entry.isVerified ?? false,
       achievements: entry.achievements ?? [],
-      highestStreak: entry.highestStreak ?? 0
+      highestStreak: entry.highestStreak ?? 0,
+      xp: entry.xp ?? 0
     }));
   }, [mode, dailyLeaderboard, pawsistenceLeaderboard, pawpulationLeaderboard, monthlyLeaderboard]);
 
@@ -403,7 +415,12 @@ export function LeaderboardContent({
           />
         )}
         <HeadersSection isPawsistence={isPawsistence} isPawpulation={isPawpulation} />
-        <ScoresList data={data} isPawsistence={isPawsistence} isPawpulation={isPawpulation} />
+        <ScoresList 
+          data={data} 
+          isPawsistence={isPawsistence} 
+          isPawpulation={isPawpulation}
+          onUserClick={onUserClick}
+        />
       </div>
     </div>
   );
@@ -416,65 +433,36 @@ const UserScoreSection = ({
   isPawsistence,
   isPawpulation,
 }: {
-  userScore: LeaderboardEntry | undefined;
-  userRank: number | undefined;
+  userScore: LeaderboardEntry;
+  userRank: number;
   isPawsistence: boolean;
   isPawpulation: boolean;
-}) => (
-  <div className="rounded-lg border border-green-900/30 bg-green-900/20 p-2">
-    <div className="mb-2 text-xs font-medium text-green-500">
-      {isPawsistence ? "Your Best Score" : isPawpulation ? "Your Best Score" : "Your Score Today"}
-    </div>
-    <div
-      className={cn(
-        "grid items-center gap-2 text-xs",
+}) => {
+  const levelInfo = getLevelBadge(userScore.xp);
+  
+  return (
+    <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-2 text-xs">
+      <div className="mb-1 font-medium text-green-500">Your Score Today</div>
+      <div className={cn(
+        "grid items-center gap-2",
         isPawsistence ? "grid-cols-3" : 
         isPawpulation ? "grid-cols-[12%_28%_30%_30%]" :
         "grid-cols-[12%_28%_18%_18%_18%]"
-      )}
-    >
-      <div className="text-center font-bold text-green-500">
-        {userRank !== undefined ? `#${userRank + 1}` : "N/A"}
+      )}>
+        <div className="text-center font-bold text-green-500">
+          #{userRank + 1}
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="truncate text-zinc-100">{userScore.username}</span>
+          <span className={levelInfo?.color ?? "text-zinc-400"}>
+            {levelInfo?.badge ?? "🐕"}
+          </span>
+        </div>
+        {renderScore(userScore)}
       </div>
-      <div className="flex items-center gap-1">
-        <span className="truncate text-zinc-100">
-          {userScore?.username}
-        </span>
-        {userScore && (userScore.achievements?.length ?? 0) > 0 && (
-          <AchievementIcons achievements={userScore.achievements ?? []} />
-        )}
-      </div>
-      {userScore ? (
-        isPawsistence && isPawsistenceEntry(userScore) ? (
-          <div className="text-center text-amber-500">
-            {userScore.highestStreak}🔥
-          </div>
-        ) : isPawpulation && isPawpulationEntry(userScore) ? (
-          <>
-            <div className="text-center text-amber-500">{userScore.score}🎯</div>
-            <div className="text-center text-green-500">{userScore.totalPlays}</div>
-          </>
-        ) : (
-          isDailyEntry(userScore) && (
-            <>
-              <div className="text-center text-amber-500">
-                {userScore.score}/5
-              </div>
-              <div className="text-center text-green-500">
-                {userScore.currentStreak}🔥
-              </div>
-              <div className="text-center text-amber-500">
-                {userScore.dailyStreak}🔥
-              </div>
-            </>
-          )
-        )
-      ) : (
-        <div className="text-zinc-400">You haven&apos;t played yet!</div>
-      )}
     </div>
-  </div>
-);
+  );
+};
 
 const HeadersSection = ({ isPawsistence, isPawpulation }: { 
   isPawsistence: boolean;
@@ -511,40 +499,50 @@ const ScoresList = ({
   data,
   isPawsistence,
   isPawpulation,
+  onUserClick,
 }: {
   data: LeaderboardEntry[];
   isPawsistence: boolean;
   isPawpulation: boolean;
+  onUserClick?: (userId: string | null, tempId: string | null) => void;
 }) => (
   <div className="scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800/50 max-h-[400px] space-y-1.5 overflow-y-auto pr-1">
-    {data.map((entry, i) => (
-      <div
-        key={`${entry.username}-${i}`}
-        className={cn(
-          "grid items-center gap-2 rounded-lg border p-2 text-xs shadow-lg",
-          isPawsistence ? "grid-cols-3" : 
-          isPawpulation ? "grid-cols-[12%_28%_30%_30%]" :
-          "grid-cols-[12%_28%_18%_18%_18%]",
-          {
-            "bg-gold animate-medal-shine": i === 0,
-            "bg-silver animate-medal-shine": i === 1,
-            "bg-bronze animate-medal-shine": i === 2,
-            "border-zinc-800 bg-zinc-800/30": i > 2,
-          },
-        )}
-      >
-        <div className="text-center font-bold text-green-500">#{i + 1}</div>
-        <div className="flex items-center gap-1">
-          <span className={cn("truncate text-zinc-100", { "font-semibold": i < 3 })}>
-            {entry.username}
-          </span>
-          {entry.achievements?.length > 0 && (
-            <AchievementIcons achievements={entry.achievements} />
+    {data.map((entry, i) => {
+      const levelInfo = getLevelBadge(entry.xp ?? 0);
+      return (
+        <div
+          key={`${entry.username}-${i}`}
+          className={cn(
+            "grid items-center gap-2 rounded-lg border p-2 text-xs shadow-lg",
+            isPawsistence ? "grid-cols-3" : 
+            isPawpulation ? "grid-cols-[12%_28%_30%_30%]" :
+            "grid-cols-[12%_28%_18%_18%_18%]",
+            {
+              "bg-gold animate-medal-shine": i === 0,
+              "bg-silver animate-medal-shine": i === 1,
+              "bg-bronze animate-medal-shine": i === 2,
+              "border-zinc-800 bg-zinc-800/30": i > 2,
+            },
           )}
+        >
+          <div className="text-center font-bold text-green-500">#{i + 1}</div>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => onUserClick?.(entry.userId, entry.tempId)}
+              className="flex items-center gap-1 hover:opacity-80"
+            >
+              <span className={cn("truncate text-zinc-100", { "font-semibold": i < 3 })}>
+                {entry.username}
+              </span>
+              <span className={levelInfo?.color ?? "text-zinc-400"}>
+                {levelInfo?.badge ?? "🐕"}
+              </span>
+            </button>
+          </div>
+          {renderScore(entry)}
         </div>
-        {renderScore(entry)}
-      </div>
-    ))}
+      );
+    })}
   </div>
 );
 

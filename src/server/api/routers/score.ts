@@ -243,55 +243,53 @@ export const scoreRouter = createTRPCRouter({
   }),
 
   getDailyLeaderboard: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db
+    return await ctx.db
       .select({
         username: profiles.username,
-        score: scores.score,
-        currentStreak: profiles.currentGuessStreak,
-        dailyStreak: profiles.currentDailyStreak,
-        userId: scores.userId,
-        tempId: scores.tempId,
+        userId: profiles.userId,
+        tempId: profiles.tempId,
         isVerified: profiles.isVerified,
-        profileImageUrl: profiles.profileImageUrl,
-        achievements: sql<string[]>`
-          array_remove(array_agg(distinct ${achievements.type}), null)::text[]
-        `,
+        achievements: sql<string[]>`array_remove(array_agg(distinct ${achievements.type}), null)::text[]`,
+        score: sql<number>`MAX(${scores.score})`,
+        currentStreak: sql<number>`MAX(${profiles.currentGuessStreak})`,
+        dailyStreak: sql<number>`MAX(${profiles.currentDailyStreak})`,
+        xp: sql<number>`
+          COALESCE(COUNT(${scores.id}) * 20, 0) +
+          COALESCE(SUM(CASE WHEN ${scores.score} = '5' THEN 1 ELSE 0 END) * 50, 0) +
+          COALESCE(MAX(${profiles.currentDailyStreak}) * 25, 0) +
+          COALESCE(MAX(${profiles.highestDailyStreak}) * 50, 0) +
+          COALESCE(MAX(${profiles.highestPawsistenceStreak}) * 25, 0) +
+          COALESCE(MAX(${profiles.pawpulationGamesPlayed}) * 10, 0) +
+          COALESCE(MAX(${profiles.pawpulationHighScore}) * 10, 0)
+        `
       })
       .from(scores)
       .leftJoin(
         profiles,
         or(
           and(isNotNull(scores.userId), eq(scores.userId, profiles.userId)),
-          and(isNotNull(scores.tempId), eq(scores.tempId, profiles.tempId)),
-        ),
+          and(isNotNull(scores.tempId), eq(scores.tempId, profiles.tempId))
+        )
       )
-      .leftJoin(
-        userAchievements,
-        eq(userAchievements.userId, profiles.userId)
-      )
-      .leftJoin(
-        achievements,
-        eq(achievements.id, userAchievements.achievementId)
-      )
+      .leftJoin(userAchievements, eq(userAchievements.userId, profiles.userId))
+      .leftJoin(achievements, eq(achievements.id, userAchievements.achievementId))
       .where(
         sql`date_trunc('day', ${scores.playedAt} AT TIME ZONE 'America/Los_Angeles') = 
             date_trunc('day', now() AT TIME ZONE 'America/Los_Angeles')`
       )
       .groupBy(
         profiles.username,
-        scores.score,
-        profiles.currentGuessStreak,
-        profiles.currentDailyStreak,
-        scores.userId,
-        scores.tempId,
+        profiles.userId,
+        profiles.tempId,
         profiles.isVerified,
         profiles.profileImageUrl,
+        profiles.currentDailyStreak,
+        profiles.highestDailyStreak,
+        profiles.highestPawsistenceStreak,
+        profiles.pawpulationGamesPlayed,
+        profiles.pawpulationHighScore
       )
-      .orderBy(
-        desc(scores.score),
-        desc(profiles.currentGuessStreak),
-        desc(profiles.currentDailyStreak),
-      )
+      .orderBy(desc(sql<number>`MAX(${scores.score})`))
       .limit(100);
   }),
 
@@ -304,22 +302,27 @@ export const scoreRouter = createTRPCRouter({
         tempId: profiles.tempId,
         isVerified: profiles.isVerified,
         profileImageUrl: profiles.profileImageUrl,
-        achievements: sql<string[]>`
-          array_remove(array_agg(distinct ${achievements.type}), null)::text[]
-        `,
+        achievements: sql<string[]>`array_remove(array_agg(distinct ${achievements.type}), null)::text[]`,
+        xp: sql<number>`
+          COALESCE(COUNT(${scores.id}) * 20, 0) +
+          COALESCE(SUM(CASE WHEN ${scores.score} = '5' THEN 1 ELSE 0 END) * 50, 0) +
+          COALESCE(${profiles.currentDailyStreak} * 25, 0) +
+          COALESCE(${profiles.highestDailyStreak} * 50, 0) +
+          COALESCE(${profiles.highestPawsistenceStreak} * 25, 0) +
+          COALESCE(${profiles.pawpulationGamesPlayed} * 10, 0) +
+          COALESCE(${profiles.pawpulationHighScore} * 10, 0)
+        `
       })
       .from(profiles)
-      .leftJoin(
-        userAchievements,
-        eq(userAchievements.userId, profiles.userId)
+      .leftJoin(scores, 
+        or(
+          and(isNotNull(scores.userId), eq(scores.userId, profiles.userId)),
+          and(isNotNull(scores.tempId), eq(scores.tempId, profiles.tempId))
+        )
       )
-      .leftJoin(
-        achievements,
-        eq(achievements.id, userAchievements.achievementId)
-      )
-      .where(
-        gt(profiles.highestPawsistenceStreak, 0)
-      )
+      .leftJoin(userAchievements, eq(userAchievements.userId, profiles.userId))
+      .leftJoin(achievements, eq(achievements.id, userAchievements.achievementId))
+      .where(gt(profiles.highestPawsistenceStreak, 0))
       .groupBy(
         profiles.username,
         profiles.highestPawsistenceStreak,
@@ -327,6 +330,11 @@ export const scoreRouter = createTRPCRouter({
         profiles.tempId,
         profiles.isVerified,
         profiles.profileImageUrl,
+        profiles.currentDailyStreak,
+        profiles.highestDailyStreak,
+        profiles.highestPawsistenceStreak,
+        profiles.pawpulationGamesPlayed,
+        profiles.pawpulationHighScore
       )
       .orderBy(desc(profiles.highestPawsistenceStreak))
       .limit(100);
@@ -342,22 +350,27 @@ export const scoreRouter = createTRPCRouter({
         tempId: profiles.tempId,
         isVerified: profiles.isVerified,
         profileImageUrl: profiles.profileImageUrl,
-        achievements: sql<string[]>`
-          array_remove(array_agg(distinct ${achievements.type}), null)::text[]
-        `,
+        achievements: sql<string[]>`array_remove(array_agg(distinct ${achievements.type}), null)::text[]`,
+        xp: sql<number>`
+          COALESCE(COUNT(${scores.id}) * 20, 0) +
+          COALESCE(SUM(CASE WHEN ${scores.score} = '5' THEN 1 ELSE 0 END) * 50, 0) +
+          COALESCE(${profiles.currentDailyStreak} * 25, 0) +
+          COALESCE(${profiles.highestDailyStreak} * 50, 0) +
+          COALESCE(${profiles.highestPawsistenceStreak} * 25, 0) +
+          COALESCE(${profiles.pawpulationGamesPlayed} * 10, 0) +
+          COALESCE(${profiles.pawpulationHighScore} * 10, 0)
+        `
       })
       .from(profiles)
-      .leftJoin(
-        userAchievements,
-        eq(userAchievements.userId, profiles.userId)
+      .leftJoin(scores, 
+        or(
+          and(isNotNull(scores.userId), eq(scores.userId, profiles.userId)),
+          and(isNotNull(scores.tempId), eq(scores.tempId, profiles.tempId))
+        )
       )
-      .leftJoin(
-        achievements,
-        eq(achievements.id, userAchievements.achievementId)
-      )
-      .where(
-        gt(profiles.pawpulationHighScore, 0)
-      )
+      .leftJoin(userAchievements, eq(userAchievements.userId, profiles.userId))
+      .leftJoin(achievements, eq(achievements.id, userAchievements.achievementId))
+      .where(gt(profiles.pawpulationHighScore, 0))
       .groupBy(
         profiles.username,
         profiles.pawpulationHighScore,
@@ -366,11 +379,15 @@ export const scoreRouter = createTRPCRouter({
         profiles.tempId,
         profiles.isVerified,
         profiles.profileImageUrl,
+        profiles.currentDailyStreak,
+        profiles.highestDailyStreak,
+        profiles.highestPawsistenceStreak,
+        profiles.pawpulationGamesPlayed,
+        profiles.pawpulationHighScore
       )
       .orderBy(desc(profiles.pawpulationHighScore))
       .limit(100);
   }),
-  // TODO: Take out userId from input, change to protected procedure
   getBarkleStats: protectedProcedure.query(async ({ ctx }) => {
     return await ctx.db.transaction(async (tx) => {
       // Get user profile stats
@@ -536,54 +553,32 @@ export const scoreRouter = createTRPCRouter({
       };
     }),
   getMonthlyLeaderboard: publicProcedure
-    .input(
-      z.object({
-        month: z.string().regex(/^\d{4}-\d{2}$/),
-      })
-    )
+    .input(z.object({ month: z.string() }))
     .query(async ({ ctx, input }) => {
-      const [year, month] = input.month.split('-').map(Number);
+      const [year, month] = input.month.split("-").map(Number);
       
-      return await ctx.db
+      return ctx.db
         .select({
           username: profiles.username,
           userId: profiles.userId,
           tempId: profiles.tempId,
           isVerified: profiles.isVerified,
           profileImageUrl: profiles.profileImageUrl,
-          totalScore: sql<number>`
-            COALESCE(
-              SUM(${scores.score}) * 5 + 
-              MAX(${profiles.currentDailyStreak}) * 25 +
-              MAX(${profiles.highestGuessStreak}) * 10 +
-              MAX(${profiles.currentGuessStreak}) * 15 +
-              MAX(${profiles.highestPawsistenceStreak}) * 15 +
-              MAX(${profiles.pawpulationHighScore}) * 15 +
-              COUNT(${scores.id}) * 5 +
-              MAX(${profiles.pawpulationGamesPlayed}) * 5,
-              0
-            )
+          totalScore: sql<number>`SUM(${scores.score})`,
+          gamesPlayed: sql<number>`COUNT(*)`,
+          averageScore: sql<number>`ROUND(AVG(${scores.score})::numeric, 2)`,
+          achievements: sql<string[]>`
+            array_remove(array_agg(distinct ${achievements.type}), null)::text[]
           `,
-          monthlyGames: sql<number>`COUNT(${scores.id})`,
-          dailyStreak: sql<number>`MAX(${profiles.currentDailyStreak})`,
-          highestStreak: sql<number>`MAX(${profiles.highestGuessStreak})`,
-          currentStreak: sql<number>`MAX(${profiles.currentGuessStreak})`,
-          pawsistenceStreak: sql<number>`MAX(${profiles.highestPawsistenceStreak})`,
-          pawpulationScore: sql<number>`MAX(${profiles.pawpulationHighScore})`,
-          pawpulationGamesPlayed: sql<number>`MAX(${profiles.pawpulationGamesPlayed})`,
-          achievements: sql<string[]>`array_remove(array_agg(distinct ${achievements.type}), null)::text[]`,
-          averageScore: sql<number>`
-            CASE 
-              WHEN COUNT(${scores.id}) > 0 
-              THEN ROUND(CAST(AVG(${scores.score}) as numeric), 2)
-              ELSE 0 
-            END
-          `
         })
         .from(scores)
-        .innerJoin(profiles, eq(scores.userId, profiles.userId))
-        .leftJoin(userAchievements, eq(userAchievements.userId, profiles.userId))
-        .leftJoin(achievements, eq(achievements.id, userAchievements.achievementId))
+        .leftJoin(
+          profiles,
+          or(
+            and(isNotNull(scores.userId), eq(scores.userId, profiles.userId)),
+            and(isNotNull(scores.tempId), eq(scores.tempId, profiles.tempId))
+          )
+        )
         .where(
           and(
             sql`EXTRACT(YEAR FROM ${scores.playedAt}) = ${year}`,
@@ -591,26 +586,86 @@ export const scoreRouter = createTRPCRouter({
             isNotNull(scores.userId)
           )
         )
+        .groupBy(profiles.username, profiles.userId, profiles.tempId, profiles.isVerified, profiles.profileImageUrl)
+        .orderBy(desc(sql<number>`SUM(${scores.score})`))
+        .limit(100);
+    }),
+  getMonthlyStats: publicProcedure
+    .input(z.object({
+      userId: z.string().optional(),
+      tempId: z.string().optional()
+    }))
+    .query(async ({ ctx, input }) => {
+      // Use input.userId or input.tempId instead of ctx.session.user.id
+      const userId = input.userId ?? ctx.session?.user?.id;
+      const whereClause = input.tempId ? 
+        eq(profiles.tempId, input.tempId) : 
+        userId ? eq(profiles.userId, userId) : undefined;
+
+      // First get global rank by calculating total XP for all users
+    
+  
+
+      const stats = await ctx.db
+        .select({
+          totalGamesPlayed: sql<number>`COALESCE(COUNT(${scores.id}), 0)`,
+          averageScore: sql<number>`COALESCE(ROUND(AVG(${scores.score})::numeric, 2), 0)`,
+          perfectScores: sql<number>`COALESCE(SUM(CASE WHEN ${scores.score} = '5' THEN 1 ELSE 0 END), 0)`,
+          currentDailyStreak: sql<number>`COALESCE(${profiles.currentDailyStreak}, 0)`,
+          highestDailyStreak: sql<number>`COALESCE(${profiles.highestDailyStreak}, 0)`,
+          highestPawsistenceStreak: sql<number>`COALESCE(${profiles.highestPawsistenceStreak}, 0)`,
+          highestPawpulationScore: sql<number>`COALESCE(${profiles.pawpulationHighScore}, 0)`,
+          totalPawpulationGames: sql<number>`COALESCE(${profiles.pawpulationGamesPlayed}, 0)`,
+        })
+        .from(profiles)
+        .leftJoin(
+          scores,
+          or(
+            and(isNotNull(scores.userId), eq(scores.userId, profiles.userId)),
+            and(isNotNull(scores.tempId), eq(scores.tempId, profiles.tempId))
+          )
+        )
+        .where(whereClause)
         .groupBy(
-          profiles.username,
           profiles.userId,
           profiles.tempId,
-          profiles.isVerified,
-          profiles.profileImageUrl
-        )
-        .orderBy(desc(sql<number>`
-          COALESCE(
-            SUM(${scores.score}) * 5 + 
-            MAX(${profiles.currentDailyStreak}) * 25 +
-            MAX(${profiles.highestGuessStreak}) * 15 +
-            MAX(${profiles.currentGuessStreak}) * 10 +
-            MAX(${profiles.highestPawsistenceStreak}) * 15 +
-            MAX(${profiles.pawpulationHighScore}) * 15 +
-            COUNT(${scores.id}) * 5 +
-            MAX(${profiles.pawpulationGamesPlayed}) * 5,
-            0
-          )
-        `))
-        .limit(10);
+          profiles.currentDailyStreak,
+          profiles.highestDailyStreak,
+          profiles.highestPawsistenceStreak,
+          profiles.pawpulationHighScore,
+          profiles.pawpulationGamesPlayed
+        );
+
+      const userStats = stats[0] ?? {
+        totalGamesPlayed: 0,
+        averageScore: 0,
+        perfectScores: 0,
+        currentDailyStreak: 0,
+        highestDailyStreak: 0,
+        highestPawsistenceStreak: 0,
+        highestPawpulationScore: 0,
+        totalPawpulationGames: 0
+      };
+
+      // Simplified XP calculation (remove rankBonus)
+      const xpBreakdown = {
+        gamesPlayed: userStats.totalGamesPlayed * 20,
+        perfectScores: userStats.perfectScores * 50,
+        currentDailyStreak: userStats.currentDailyStreak * 25,
+        highestDailyStreak: userStats.highestDailyStreak * 50,
+        highestPawsistenceStreak: userStats.highestPawsistenceStreak * 25,
+        pawpulationGames: userStats.totalPawpulationGames * 10,
+        pawpulationScore: userStats.highestPawpulationScore * 10,
+      };
+
+      const totalXP = Object.values(xpBreakdown).reduce((a, b) => a + b, 0);
+
+      return {
+        stats: {
+          ...userStats,
+        },
+        xp: totalXP,
+        xpBreakdown
+      };
     }),
 });

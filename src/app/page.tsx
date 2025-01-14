@@ -16,11 +16,12 @@ import { api } from "~/trpc/react";
 import { NewUserDialog } from "./components/NewUserDialog";
 import { FeatureAnnouncementModal } from "./components/FeatureAnnouncementModal";
 import { TrophyIcon } from "@heroicons/react/24/outline";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "~/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { DogAvatar } from "~/components/DogAvatar/DogAvatar";
 
 import { useSignIn } from "~/hooks/useSignIn";
 import { Snowflake } from "lucide-react";
+import { LevelSystemModal } from "./components/LevelSystemModal";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -38,6 +39,7 @@ export default function Home() {
   const [showAchievements, setShowAchievements] = useState(false);
   const [showMonthlyIntro, setShowMonthlyIntro] = useState(false);
   const [showEndOfMonth, setShowEndOfMonth] = useState(false);
+  const [showLevelSystem, setShowLevelSystem] = useState(false);
 
   useEffect(() => {
     const storedTempId = localStorage.getItem("barkle_temp_id");   
@@ -121,12 +123,12 @@ export default function Home() {
               <div className="flex items-center">
                 {session?.user ? (
                   <Button
-                    onClick={() => setShowAchievements(true)}
+                    onClick={() => setShowLevelSystem(true)}
                     variant="ghost"
-                    className="flex items-center gap-1 text-sm text-amber-500/80 hover:text-amber-400"
+                    className="flex items-center gap-1 text-sm text-yellow-500/80 hover:text-yellow-400"
                   >
-                    <TrophyIcon className="h-4 w-4" />
-                    Achievements
+                    <span className="text-xl">🎖️</span>
+                    My Level
                   </Button>
                 ) : (
                   tempProfile?.username && (
@@ -227,7 +229,7 @@ export default function Home() {
                 <LeaderboardModal
                   open={showLeaderboard}
                   onOpenChange={setShowLeaderboard}
-                  defaultMode="monthly"
+                  defaultMode="daily"
                   showMonthlyIntro={showMonthlyIntro}
                   onMonthlyIntroClose={() => {
                     setShowMonthlyIntro(false);
@@ -280,6 +282,11 @@ export default function Home() {
           </Button>
         </DialogContent>
       </Dialog>
+
+      <LevelSystemModal
+        open={showLevelSystem}
+        onOpenChange={setShowLevelSystem}
+      />
 
       <style jsx global>{`
         @keyframes fall {

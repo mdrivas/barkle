@@ -80,6 +80,39 @@ export function GameModeModal() {
               <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-purple-500/0 via-purple-500/50 to-purple-500/0 transition-transform group-hover:translate-x-1" />
             </div>
           </Link>
+
+          {/* Breed Origins Mode */}
+          <Link href="/origins" className="block">
+            <div className="group relative rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all hover:bg-zinc-800/50">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="mr-2 truncate text-lg font-bold text-indigo-400 group-hover:text-indigo-300">
+                  Global Tails
+                </span>
+                <span className="flex-shrink-0 text-2xl">🌍</span>
+              </div>
+              <p className="text-sm text-zinc-400 group-hover:text-zinc-300">
+                Match breeds to their countries of origin on a world map
+              </p>
+            </div>
+          </Link>
+
+       
+          
+
+          {/* Breed Characteristics */}
+          <Link href="/traits" className="block">
+            <div className="group relative rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all hover:bg-zinc-800/50">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="mr-2 truncate text-lg font-bold text-amber-400 group-hover:text-amber-300">
+                  Trait Detective
+                </span>
+                <span className="flex-shrink-0 text-2xl">🔍</span>
+              </div>
+              <p className="text-sm text-zinc-400 group-hover:text-zinc-300">
+                Match breeds based on their characteristics and traits
+              </p>
+            </div>
+          </Link>
         </div>
       </DialogContent>
     </Dialog>
