@@ -408,8 +408,8 @@ export function LeaderboardContent({
       <div className="row-start-2 flex flex-col gap-3 overflow-y-auto pt-2">
         {userScore && (
           <UserScoreSection
-            userScore={userScore}
-            userRank={userRank}
+            userScore={userScore!}
+            userRank={userRank ?? 0}
             isPawsistence={isPawsistence}
             isPawpulation={isPawpulation}
           />

@@ -8,7 +8,6 @@ import {
 } from "~/components/ui/dialog";
 import { Progress } from "~/components/ui/progress";
 import { api } from "~/trpc/react";
-import { useSession } from "next-auth/react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -24,7 +23,7 @@ export interface LevelTier {
   color: string;
 }
 
-export const LEVEL_TIERS: LevelTier[] = [
+export const LEVEL_TIERS: readonly [LevelTier, ...LevelTier[]] = [
   {
     level: 1,
     title: "Puppy Paddler",
@@ -95,7 +94,7 @@ export const LEVEL_TIERS: LevelTier[] = [
     badge: "🏆",
     color: "text-red-400"
   },
-];
+] as const;
 
 export function getLevelBadge(xp: number) {
   const currentTier = [...LEVEL_TIERS]
@@ -142,10 +141,11 @@ export function LevelSystemModal({ open, onOpenChange, userId, tempId }: LevelSy
 
   const currentXP = userStats.xp;
   
-  const getCurrentLevel = (xp: number) => {
-    const currentTier = LEVEL_TIERS.findLast(tier => xp >= tier.requiredXP);
-     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
-    return currentTier ?? LEVEL_TIERS[0];
+  const getCurrentLevel = (xp: number): LevelTier => {
+    for (const tier of [...LEVEL_TIERS].reverse()) {
+      if (xp >= tier.requiredXP) return tier;
+    }
+    return LEVEL_TIERS[0];
   };
 
   const currentTier = getCurrentLevel(currentXP);
