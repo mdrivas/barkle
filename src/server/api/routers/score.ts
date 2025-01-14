@@ -567,9 +567,10 @@ export const scoreRouter = createTRPCRouter({
           totalScore: sql<number>`SUM(${scores.score})`,
           gamesPlayed: sql<number>`COUNT(*)`,
           averageScore: sql<number>`ROUND(AVG(${scores.score})::numeric, 2)`,
-          achievements: sql<string[]>`
-            array_remove(array_agg(distinct ${achievements.type}), null)::text[]
-          `,
+          achievements: sql<string[]>`array_remove(array_agg(distinct ${achievements.type}), null)::text[]`,
+          xp: sql<number>`COALESCE(
+            (COUNT(*) * 20 + 
+             SUM(CASE WHEN ${scores.score} = 5 THEN 50 ELSE 0 END)), 0)::int`
         })
         .from(scores)
         .leftJoin(

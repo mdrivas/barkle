@@ -144,6 +144,7 @@ export function LevelSystemModal({ open, onOpenChange, userId, tempId }: LevelSy
   
   const getCurrentLevel = (xp: number) => {
     const currentTier = LEVEL_TIERS.findLast(tier => xp >= tier.requiredXP);
+     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
     return currentTier ?? LEVEL_TIERS[0];
   };
 
