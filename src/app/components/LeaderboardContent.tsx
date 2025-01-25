@@ -44,15 +44,25 @@ interface PawpulationEntry extends BaseLeaderboardEntry {
 }
 
 // Add monthly type to the union type
-interface MonthlyEntry extends BaseLeaderboardEntry {
+type MonthlyEntry = {
   mode: "monthly";
+  username: string | null;
+  userId: string | null;
+  tempId: string | null;
+  isVerified: boolean;
+  profileImageUrl: string | null;
+  achievements: never[];
   totalScore: number;
   gamesPlayed: number;
-  averageScore: number;
-  achievements: string[];
-  profileImageUrl: string | null;
   xp: number;
-}
+  monthlyStats: {
+    dailyStreak: number;
+    guessStreak: number;
+    correctGuesses: number;
+    gamesPlayed: number;
+  };
+  correctGuesses: number;
+};
 
 // Union type for all possible entries
 type LeaderboardEntry = PawsistenceEntry | DailyEntry | PawpulationEntry | MonthlyEntry;
@@ -65,9 +75,6 @@ function isPawsistenceEntry(
 }
 
 // Type guard to check if entry is daily
-function isDailyEntry(entry: LeaderboardEntry): entry is DailyEntry {
-  return entry.mode === "daily";
-}
 
 // Type guard to check if entry is pawpulation
 function isPawpulationEntry(entry: LeaderboardEntry): entry is PawpulationEntry {
@@ -92,11 +99,19 @@ const isCurrentUser = (
 // Helper to render score based on entry type
 const renderScore = (entry: LeaderboardEntry) => {
   if (isMonthlyEntry(entry)) {
+    const stats = entry.monthlyStats;
     return (
-      <>
-        <div className="text-center text-amber-500">{entry.totalScore}🏆</div>
-        <div className="text-center text-green-500">{entry.gamesPlayed} games</div>
-      </>
+      <div className="flex flex-col gap-1">
+        <div className="text-center text-amber-500 font-semibold">
+          {entry.totalScore}🏆
+        </div>
+        <div className="text-xs text-zinc-400">
+          <div>Daily: {stats.dailyStreak * 10}</div>
+          <div>Streak: {stats.guessStreak * 5}</div>
+          <div>Perfect: {stats.correctGuesses * 5}</div>
+          <div>Games: {stats.gamesPlayed * 5}</div>
+        </div>
+      </div>
     );
   }
   if (isPawsistenceEntry(entry)) {
@@ -159,7 +174,7 @@ const AchievementIcons = ({ achievements }: { achievements: string[] }) => {
   return (
     <div className="flex items-center gap-[1px]">
       {displayAchievements.map((achievement) => {
-        const [type, rarity] = achievement.split('_');
+        const [rarity] = achievement.split('_');
         const icon = {
           // Legendary achievements (purple)
           'DAILY_LEGENDARY': '👑',    // Pawsome Dedication - Crown for highest daily achievement
@@ -332,15 +347,11 @@ export function LeaderboardContent({
         ...entry,
         mode: "monthly" as const,
         isVerified: entry.isVerified ?? false,
-        achievements: entry.achievements ?? [],
+        achievements: [],
         totalScore: entry.totalScore ?? 0,
         gamesPlayed: entry.gamesPlayed ?? 0,
-        averageScore: entry.averageScore ?? 0,
-        userId: entry.userId ?? null,
-        tempId: entry.tempId ?? null,
-        username: entry.username ?? null,
-        xp: entry.xp ?? 0
-      })) as MonthlyEntry[];
+        xp: 0
+      }));
     }
     return pawsistenceLeaderboard?.map((entry) => ({
       ...entry,
@@ -454,9 +465,11 @@ const UserScoreSection = ({
         </div>
         <div className="flex items-center gap-1">
           <span className="truncate text-zinc-100">{userScore.username}</span>
-          <span className={levelInfo?.color ?? "text-zinc-400"}>
-            {levelInfo?.badge ?? "🐕"}
-          </span>
+          {levelInfo && (
+            <span className={cn(levelInfo.color ?? "text-zinc-400", "ml-1")}>
+              {levelInfo.badge}
+            </span>
+          )}
         </div>
         {renderScore(userScore)}
       </div>
@@ -508,7 +521,7 @@ const ScoresList = ({
 }) => (
   <div className="scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800/50 max-h-[400px] space-y-1.5 overflow-y-auto pr-1">
     {data.map((entry, i) => {
-      const levelInfo = getLevelBadge(entry.xp ?? 0);
+      const levelInfo = getLevelBadge(entry.xp);
       return (
         <div
           key={`${entry.username}-${i}`}
@@ -534,9 +547,11 @@ const ScoresList = ({
               <span className={cn("truncate text-zinc-100", { "font-semibold": i < 3 })}>
                 {entry.username}
               </span>
-              <span className={levelInfo?.color ?? "text-zinc-400"}>
-                {levelInfo?.badge ?? "🐕"}
-              </span>
+              {levelInfo && (
+                <span className={cn(levelInfo.color ?? "text-zinc-400", "ml-1")}>
+                  {levelInfo.badge}
+                </span>
+              )}
             </button>
           </div>
           {renderScore(entry)}

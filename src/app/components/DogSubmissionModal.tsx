@@ -22,6 +22,12 @@ interface DogSubmissionModalProps {
   variant?: "default" | "link";
 }
 
+// Add type for error response
+type ErrorResponse = { error: string };
+
+// Add type for success response
+type SuccessResponse = { url: string; success: boolean };
+
 export function DogSubmissionModal({
   className,
   variant,
@@ -110,6 +116,7 @@ export function DogSubmissionModal({
 
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("type", "submission");
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -117,11 +124,11 @@ export function DogSubmissionModal({
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as ErrorResponse;
         throw new Error(error.error || "Upload failed");
       }
 
-      const { url } = await response.json();
+      const { url } = await response.json() as SuccessResponse;
       setImageUrl(url);
 
       toast({
@@ -276,7 +283,7 @@ export function DogSubmissionModal({
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          handleFileUpload(file);
+                          void handleFileUpload(file);
                         }
                       }}
                       className="absolute inset-0 h-full w-full cursor-pointer opacity-0"

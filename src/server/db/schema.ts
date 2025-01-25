@@ -345,3 +345,52 @@ export const breedPopulations = createTable("breed_population", {
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
 });
+
+export const blogPosts = createTable("blog_post", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 })
+    .$type<string | null>()
+    .references(() => profiles.userId, { onDelete: "set null" }),
+  tempId: varchar("temp_id", { length: 255 })
+    .$type<string | null>()
+    .references(() => profiles.tempId, { onDelete: "set null" }),
+  title: varchar("title", { length: 100 }).notNull(),
+  content: text("content").notNull(),
+  imageUrl: varchar("image_url", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export const blogPostsRelations = relations(blogPosts, ({ one, many }) => ({
+  author: one(profiles, {
+    fields: [blogPosts.userId],
+    references: [profiles.userId],
+  }),
+  tempAuthor: one(profiles, {
+    fields: [blogPosts.tempId],
+    references: [profiles.tempId],
+  }),
+  comments: many(comments),
+}));
+
+export const comments = createTable("comments", {
+  id: serial("id").primaryKey(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  blogPostId: serial("blog_post_id").references(() => blogPosts.id, { onDelete: "cascade" }).notNull(),
+});
+
+export type Comment = typeof comments.$inferSelect;
+
+export const commentsRelations = relations(comments, ({ one }) => ({
+  user: one(users, {
+    fields: [comments.userId],
+    references: [users.id],
+  }),
+  post: one(blogPosts, {
+    fields: [comments.blogPostId],
+    references: [blogPosts.id],
+  }),
+}));

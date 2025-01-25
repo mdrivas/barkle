@@ -1,25 +1,30 @@
 import { NextResponse } from "next/server";
-import { dogSubmissionsBucket, profilePicsBucket } from "~/lib/gcs-config";
+import { dogSubmissionsBucket, profilePicsBucket, postsImagesBucket } from "~/lib/gcs-config";
 
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
-    const type = formData.get("type") as string; // 'profile' or 'submission'
+    const type = formData.get("type") as string;
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     // Select bucket based on upload type
-    const bucket =
-      type === "profile" ? profilePicsBucket : dogSubmissionsBucket;
+    let bucket;
+    if (type === "profile") {
+      bucket = profilePicsBucket;
+    } else if (type === "post") {
+      bucket = postsImagesBucket;
+    } else {
+      bucket = dogSubmissionsBucket;
+    }
 
-    // Generate unique filename (remove 'pending/' for profile pics)
-    const filename =
-      type === "profile"
-        ? `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
-        : `pending/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
+    // Generate unique filename
+    const filename = type === "submission" 
+      ? `pending/${Date.now()}-${file.name.replace(/\s+/g, "-")}`
+      : `${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
 
     const gcsFile = bucket.file(filename);
     const buffer = Buffer.from(await file.arrayBuffer());

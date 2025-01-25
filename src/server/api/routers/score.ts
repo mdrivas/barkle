@@ -564,13 +564,53 @@ export const scoreRouter = createTRPCRouter({
           tempId: profiles.tempId,
           isVerified: profiles.isVerified,
           profileImageUrl: profiles.profileImageUrl,
-          totalScore: sql<number>`SUM(${scores.score})`,
-          gamesPlayed: sql<number>`COUNT(*)`,
-          averageScore: sql<number>`ROUND(AVG(${scores.score})::numeric, 2)`,
-          achievements: sql<string[]>`array_remove(array_agg(distinct ${achievements.type}), null)::text[]`,
-          xp: sql<number>`COALESCE(
-            (COUNT(*) * 20 + 
-             SUM(CASE WHEN ${scores.score} = 5 THEN 50 ELSE 0 END)), 0)::int`
+          totalScore: sql<number>`
+            COALESCE(
+              (${profiles.currentDailyStreak} * 10) +  -- Daily streak x10
+              (${profiles.currentGuessStreak} * 5) +   -- Current guess streak x5
+              (SUM(CASE WHEN ${scores.score} = 5 AND 
+                EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
+                EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
+                THEN 5 ELSE 0 END)) + -- Correct guesses this month x5
+              (COUNT(CASE WHEN 
+                EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
+                EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
+                THEN 1 END) * 5)  -- Games played this month x5
+            , 0)::int`,
+          monthlyStats: sql<{
+            dailyStreak: number;
+            guessStreak: number;
+            correctGuesses: number;
+            gamesPlayed: number;
+          }>`jsonb_build_object(
+            'dailyStreak', ${profiles.currentDailyStreak},
+            'guessStreak', ${profiles.currentGuessStreak},
+            'correctGuesses', SUM(CASE WHEN ${scores.score} = 5 AND 
+              EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
+              EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
+              THEN 1 ELSE 0 END),
+            'gamesPlayed', COUNT(CASE WHEN 
+              EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
+              EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
+              THEN 1 END)
+          )`,
+          gamesPlayed: sql<number>`COUNT(CASE WHEN 
+            EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
+            EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
+            THEN 1 END)`,
+          correctGuesses: sql<number>`SUM(CASE WHEN ${scores.score} = 5 AND 
+            EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
+            EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
+            THEN 1 ELSE 0 END)`,
+          xp: sql<number>`
+            COALESCE(COUNT(${scores.id}) * 20, 0) +
+            COALESCE(SUM(CASE WHEN ${scores.score} = '5' THEN 1 ELSE 0 END) * 50, 0) +
+            COALESCE(${profiles.currentDailyStreak} * 25, 0) +
+            COALESCE(${profiles.highestDailyStreak} * 50, 0) +
+            COALESCE(${profiles.highestPawsistenceStreak} * 25, 0) +
+            COALESCE(${profiles.pawpulationGamesPlayed} * 10, 0) +
+            COALESCE(${profiles.pawpulationHighScore} * 10, 0)
+          `
         })
         .from(scores)
         .leftJoin(
@@ -587,8 +627,21 @@ export const scoreRouter = createTRPCRouter({
             isNotNull(scores.userId)
           )
         )
-        .groupBy(profiles.username, profiles.userId, profiles.tempId, profiles.isVerified, profiles.profileImageUrl)
-        .orderBy(desc(sql<number>`SUM(${scores.score})`))
+        .groupBy(
+          profiles.username,
+          profiles.userId,
+          profiles.tempId,
+          profiles.isVerified,
+          profiles.profileImageUrl,
+          profiles.currentDailyStreak,
+          profiles.currentGuessStreak
+        )
+        .orderBy(desc(sql<number>`
+          (${profiles.currentDailyStreak} * 10) + 
+          (${profiles.currentGuessStreak} * 5) +
+          (SUM(CASE WHEN ${scores.score} = 5 THEN 5 ELSE 0 END)) +
+          (COUNT(*) * 5)
+        `))
         .limit(100);
     }),
   getMonthlyStats: publicProcedure

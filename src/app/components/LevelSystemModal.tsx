@@ -55,42 +55,42 @@ export const LEVEL_TIERS: readonly [LevelTier, ...LevelTier[]] = [
   {
     level: 5,
     title: "Canine Cadet",
-    requiredXP: 7500,
+    requiredXP: 5000,
     badge: "🎖️",
     color: "text-yellow-400"
   },
   {
     level: 6,
     title: "Breed Buddy",
-    requiredXP: 20000,
+    requiredXP: 7500,
     badge: "🏅",
     color: "text-orange-400"
   },
   {
     level: 7,
     title: "Doggy Detective",
-    requiredXP: 35000,
+    requiredXP: 10000,
     badge: "🔍",
     color: "text-pink-400"
   },
   {
     level: 8,
-    title: "Furry Fanatic",
-    requiredXP: 50000,
+    title: "Barkle Pro",
+    requiredXP: 15000,
     badge: "⭐",
     color: "text-amber-400"
   },
   {
     level: 9,
     title: "Hound Hero",
-    requiredXP: 75000,
+    requiredXP: 20000,
     badge: "👑",
     color: "text-indigo-400"
   },
   {
     level: 10,
     title: "Barkle Master",
-    requiredXP: 100000,
+    requiredXP: 50000,
     badge: "🏆",
     color: "text-red-400"
   },
