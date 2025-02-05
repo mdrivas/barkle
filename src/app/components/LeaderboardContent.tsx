@@ -53,6 +53,7 @@ type MonthlyEntry = {
   profileImageUrl: string | null;
   totalScore: number;
   gamesPlayed: number;
+  xp: number;
   monthlyStats: {
     dailyStreak: number;
     guessStreak: number;
@@ -344,14 +345,10 @@ export function LeaderboardContent({
         ...entry,
         mode: "monthly" as const,
         isVerified: entry.isVerified ?? false,
-        monthlyStats: {
-          dailyStreak: entry.monthlyStats.dailyStreak ?? 0,
-          guessStreak: entry.monthlyStats.guessStreak ?? 0,
-          correctGuesses: entry.monthlyStats.correctGuesses ?? 0,
-          gamesPlayed: entry.monthlyStats.gamesPlayed ?? 0
-        },
+        achievements: [],
         totalScore: entry.totalScore ?? 0,
-        gamesPlayed: entry.gamesPlayed ?? 0
+        gamesPlayed: entry.gamesPlayed ?? 0,
+        xp: 0
       }));
     }
     return pawsistenceLeaderboard?.map((entry) => ({

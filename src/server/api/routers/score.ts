@@ -553,11 +553,7 @@ export const scoreRouter = createTRPCRouter({
       };
     }),
   getMonthlyLeaderboard: publicProcedure
-    .input(
-      z.object({
-        month: z.string(),
-      }),
-    )
+    .input(z.object({ month: z.string() }))
     .query(async ({ ctx, input }) => {
       const [year, month] = input.month.split("-").map(Number);
 
@@ -575,6 +571,15 @@ export const scoreRouter = createTRPCRouter({
             (COUNT(*) * 5)
           `,
           gamesPlayed: sql<number>`COUNT(${scores.id})`,
+          xp: sql<number>`
+            COALESCE(COUNT(${scores.id}) * 20, 0) +
+            COALESCE(SUM(CASE WHEN ${scores.score} = '5' THEN 1 ELSE 0 END) * 50, 0) +
+            COALESCE(${profiles.currentDailyStreak} * 25, 0) +
+            COALESCE(${profiles.highestDailyStreak} * 50, 0) +
+            COALESCE(${profiles.highestPawsistenceStreak} * 25, 0) +
+            COALESCE(${profiles.pawpulationGamesPlayed} * 10, 0) +
+            COALESCE(${profiles.pawpulationHighScore} * 10, 0)
+          `,
           monthlyStats: sql<{
             dailyStreak: number;
             guessStreak: number;
@@ -609,7 +614,11 @@ export const scoreRouter = createTRPCRouter({
           profiles.isVerified,
           profiles.profileImageUrl,
           profiles.currentDailyStreak,
-          profiles.currentGuessStreak
+          profiles.currentGuessStreak,
+          profiles.highestDailyStreak,
+          profiles.highestPawsistenceStreak,
+          profiles.pawpulationGamesPlayed,
+          profiles.pawpulationHighScore
         )
         .orderBy(desc(sql<number>`
           (${profiles.currentDailyStreak} * 10) + 
