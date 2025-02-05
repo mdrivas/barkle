@@ -43,7 +43,7 @@ interface PawpulationEntry extends BaseLeaderboardEntry {
   totalPlays: number;
 }
 
-// Add monthly type to the union type
+// Update MonthlyEntry type
 type MonthlyEntry = {
   mode: "monthly";
   username: string | null;
@@ -51,17 +51,14 @@ type MonthlyEntry = {
   tempId: string | null;
   isVerified: boolean;
   profileImageUrl: string | null;
-  achievements: never[];
   totalScore: number;
   gamesPlayed: number;
-  xp: number;
   monthlyStats: {
     dailyStreak: number;
     guessStreak: number;
     correctGuesses: number;
     gamesPlayed: number;
   };
-  correctGuesses: number;
 };
 
 // Union type for all possible entries
@@ -347,10 +344,14 @@ export function LeaderboardContent({
         ...entry,
         mode: "monthly" as const,
         isVerified: entry.isVerified ?? false,
-        achievements: [],
+        monthlyStats: {
+          dailyStreak: entry.monthlyStats.dailyStreak ?? 0,
+          guessStreak: entry.monthlyStats.guessStreak ?? 0,
+          correctGuesses: entry.monthlyStats.correctGuesses ?? 0,
+          gamesPlayed: entry.monthlyStats.gamesPlayed ?? 0
+        },
         totalScore: entry.totalScore ?? 0,
-        gamesPlayed: entry.gamesPlayed ?? 0,
-        xp: 0
+        gamesPlayed: entry.gamesPlayed ?? 0
       }));
     }
     return pawsistenceLeaderboard?.map((entry) => ({

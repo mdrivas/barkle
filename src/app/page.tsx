@@ -15,7 +15,6 @@ import { DogSubmissionModal } from "./components/DogSubmissionModal";
 import { api } from "~/trpc/react";
 import { NewUserDialog } from "./components/NewUserDialog";
 import { FeatureAnnouncementModal } from "./components/FeatureAnnouncementModal";
-import { TrophyIcon } from "@heroicons/react/24/outline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { DogAvatar } from "~/components/DogAvatar/DogAvatar";
 
@@ -162,14 +161,15 @@ export default function Home() {
                 <Button
                   onClick={handleSignIn}
                   variant="ghost"
-                  className="flex items-center gap-2 py-1 text-sm font-medium text-zinc-400 hover:text-zinc-200"
+                  className="flex items-center gap-2 py-1 text-sm font-medium text-zinc-400 hover:text-zinc-200 -ml-4 sm:-ml-4"
                 >
                   Sign in with Google
                 </Button>
               )}
             </div>
 
-            {!session?.user && (
+            {/* Remove the entire block for non-signed in users */}
+            {/* {!session?.user && (
               <div className="flex justify-end">
                 <Button
                   onClick={() => setShowAchievements(true)}
@@ -180,12 +180,23 @@ export default function Home() {
                   Achievements
                 </Button>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
           <div className="flex w-full max-w-2xl flex-col items-center gap-4 px-4">
+            <div className="absolute top-0 right-4 sm:right-8">
+              <div className="flex flex-col items-end">
+                <div className="text-lg font-light tracking-widest text-emerald-400/60">
+                  FEBRUARY
+                </div>
+                <div className="text-4xl font-bold tracking-[0.2em] text-emerald-300/40">
+                  2025
+                </div>
+              </div>
+            </div>
+
             <div className="relative aspect-square h-52 sm:h-72">
               <Image
                 src="/barklelogo.png"

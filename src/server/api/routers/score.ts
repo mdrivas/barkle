@@ -553,10 +553,14 @@ export const scoreRouter = createTRPCRouter({
       };
     }),
   getMonthlyLeaderboard: publicProcedure
-    .input(z.object({ month: z.string() }))
+    .input(
+      z.object({
+        month: z.string(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const [year, month] = input.month.split("-").map(Number);
-      
+
       return ctx.db
         .select({
           username: profiles.username,
@@ -565,52 +569,23 @@ export const scoreRouter = createTRPCRouter({
           isVerified: profiles.isVerified,
           profileImageUrl: profiles.profileImageUrl,
           totalScore: sql<number>`
-            COALESCE(
-              (${profiles.currentDailyStreak} * 10) +  -- Daily streak x10
-              (${profiles.currentGuessStreak} * 5) +   -- Current guess streak x5
-              (SUM(CASE WHEN ${scores.score} = 5 AND 
-                EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
-                EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
-                THEN 5 ELSE 0 END)) + -- Correct guesses this month x5
-              (COUNT(CASE WHEN 
-                EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
-                EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
-                THEN 1 END) * 5)  -- Games played this month x5
-            , 0)::int`,
+            (${profiles.currentDailyStreak} * 10) + 
+            (${profiles.currentGuessStreak} * 5) +
+            (SUM(CASE WHEN ${scores.score} = 5 THEN 5 ELSE 0 END)) +
+            (COUNT(*) * 5)
+          `,
+          gamesPlayed: sql<number>`COUNT(${scores.id})`,
           monthlyStats: sql<{
             dailyStreak: number;
             guessStreak: number;
             correctGuesses: number;
             gamesPlayed: number;
-          }>`jsonb_build_object(
+          }>`json_build_object(
             'dailyStreak', ${profiles.currentDailyStreak},
             'guessStreak', ${profiles.currentGuessStreak},
-            'correctGuesses', SUM(CASE WHEN ${scores.score} = 5 AND 
-              EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
-              EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
-              THEN 1 ELSE 0 END),
-            'gamesPlayed', COUNT(CASE WHEN 
-              EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
-              EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
-              THEN 1 END)
-          )`,
-          gamesPlayed: sql<number>`COUNT(CASE WHEN 
-            EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
-            EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
-            THEN 1 END)`,
-          correctGuesses: sql<number>`SUM(CASE WHEN ${scores.score} = 5 AND 
-            EXTRACT(YEAR FROM ${scores.playedAt}) = ${year} AND 
-            EXTRACT(MONTH FROM ${scores.playedAt}) = ${month} 
-            THEN 1 ELSE 0 END)`,
-          xp: sql<number>`
-            COALESCE(COUNT(${scores.id}) * 20, 0) +
-            COALESCE(SUM(CASE WHEN ${scores.score} = '5' THEN 1 ELSE 0 END) * 50, 0) +
-            COALESCE(${profiles.currentDailyStreak} * 25, 0) +
-            COALESCE(${profiles.highestDailyStreak} * 50, 0) +
-            COALESCE(${profiles.highestPawsistenceStreak} * 25, 0) +
-            COALESCE(${profiles.pawpulationGamesPlayed} * 10, 0) +
-            COALESCE(${profiles.pawpulationHighScore} * 10, 0)
-          `
+            'correctGuesses', SUM(CASE WHEN ${scores.score} = 5 THEN 1 ELSE 0 END),
+            'gamesPlayed', COUNT(${scores.id})
+          )`
         })
         .from(scores)
         .leftJoin(
