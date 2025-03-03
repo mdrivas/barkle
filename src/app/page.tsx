@@ -189,7 +189,7 @@ export default function Home() {
             <div className="absolute top-0 right-4 sm:right-8">
               <div className="flex flex-col items-end">
                 <div className="text-lg font-light tracking-widest text-emerald-400/60">
-                  FEBRUARY
+                  MARCH
                 </div>
                 <div className="text-4xl font-bold tracking-[0.2em] text-emerald-300/40">
                   2025
@@ -223,7 +223,7 @@ export default function Home() {
                 🐾{" "}
                 {gamesCount === undefined
                   ? "..."
-                  : `${gamesCount + 30} ${gamesCount + 30 === 1 ? "Game" : "Games"}`}{" "}
+                  : `${gamesCount + 0} ${gamesCount + 0 === 1 ? "Game" : "Games"}`}{" "}
                 Played Today 🐾
               </p>
             </Card>
