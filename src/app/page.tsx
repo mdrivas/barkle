@@ -19,7 +19,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/u
 import { DogAvatar } from "~/components/DogAvatar/DogAvatar";
 
 import { useSignIn } from "~/hooks/useSignIn";
-import { Snowflake } from "lucide-react";
 import { LevelSystemModal } from "./components/LevelSystemModal";
 
 const roboto = Roboto({
@@ -91,23 +90,25 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen">
+      <div className="fixed inset-0 bg-gradient-to-b from-[#1e2c3d]/90 to-[#141c2a]/90" />
+      
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {(Array.from({ length: 20 }) as undefined[]).map((_, i) => (
-          <Snowflake
+          <div
             key={i}
-            className="absolute text-white"
+            className="absolute text-blue-200/40"
             style={{
               left: `${Math.random() * 100}%`,
-              animation: `fall ${Math.random() * 3 + 5}s linear infinite`,
+              animation: `float ${Math.random() * 3 + 8}s linear infinite`,
               animationDelay: `${Math.random() * 5}s`,
               fontSize: `${Math.random() * 15 + 15}px`,
               transform: 'translateZ(0)'
             }}
-          />
+          >
+            {['🌸', '🌺', '🌷', '🦋', '🌱'][Math.floor(Math.random() * 5)]}
+          </div>
         ))}
       </div>
-      
-      <div className="fixed inset-0 bg-gradient-to-b from-[#1e2c3d]/90 to-[#141c2a]/90" />
       
       <div className="fixed inset-0 bg-gradient-to-t from-transparent via-emerald-500/5 to-transparent animate-aurora pointer-events-none" />
       
@@ -300,17 +301,17 @@ export default function Home() {
       />
 
       <style jsx global>{`
-        @keyframes fall {
+        @keyframes float {
           0% {
             transform: translateY(-50px) rotate(0deg);
             opacity: 0;
           }
           10% {
-            opacity: 1;
+            opacity: 0.8;
           }
           100% {
-            transform: translateY(100vh) rotate(360deg);
-            opacity: 1;
+            transform: translateY(100vh) rotate(360deg) translateX(${Math.random() * 200 - 100}px);
+            opacity: 0;
           }
         }
         @keyframes aurora {
