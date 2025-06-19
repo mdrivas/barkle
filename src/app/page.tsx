@@ -90,13 +90,13 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="fixed inset-0 bg-gradient-to-b from-[#1e2c3d]/90 to-[#141c2a]/90" />
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0284c7] to-[#0369a1]" />
       
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {(Array.from({ length: 20 }) as undefined[]).map((_, i) => (
           <div
             key={i}
-            className="absolute text-blue-200/40"
+            className="absolute text-white/40"
             style={{
               left: `${Math.random() * 100}%`,
               animation: `float ${Math.random() * 3 + 8}s linear infinite`,
@@ -105,12 +105,12 @@ export default function Home() {
               transform: 'translateZ(0)'
             }}
           >
-            {['🌸', '🌺', '🌷', '🦋', '🌱'][Math.floor(Math.random() * 5)]}
+            {['🐕', '🏖️', '🌊', '🐾', '🏄‍♂️', '🐶', '🌴', '⛱️'][Math.floor(Math.random() * 8)]}
           </div>
         ))}
       </div>
       
-      <div className="fixed inset-0 bg-gradient-to-t from-transparent via-emerald-500/5 to-transparent animate-aurora pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-t from-transparent via-sky-100/5 to-transparent animate-aurora pointer-events-none" />
       
       <NavigationBar />
       <main
@@ -189,10 +189,10 @@ export default function Home() {
           <div className="flex w-full max-w-2xl flex-col items-center gap-4 px-4">
             <div className="absolute top-0 right-4 sm:right-8">
               <div className="flex flex-col items-end">
-                <div className="text-lg font-light tracking-widest text-emerald-400/60">
-                  APRIL
+                <div className="text-lg font-light tracking-widest text-sky-100/90">
+                  JUNE
                 </div>
-                <div className="text-4xl font-bold tracking-[0.2em] text-emerald-300/40">
+                <div className="text-4xl font-bold tracking-[0.2em] text-sky-100/40">
                   2025
                 </div>
               </div>
@@ -219,7 +219,7 @@ export default function Home() {
               of pups every day!
             </p>
 
-            <Card className="mt-4 rounded-full backdrop-blur-md bg-white/10 border border-white/20 px-6 py-2 text-sm text-white shadow-xl">
+            <Card className="mt-4 rounded-full backdrop-blur-md bg-sky-900/10 border border-sky-200/10 px-6 py-2 text-sm text-white/90 shadow-xl">
               <p className="font-medium">
                 🐾{" "}
                 {gamesCount === undefined
@@ -234,7 +234,7 @@ export default function Home() {
                 <GameModeModal />
                 <Button
                   onClick={() => setShowLeaderboard(true)}
-                  className="w-full transform rounded-2xl border border-zinc-600/20 bg-[#2d4c6a] py-7 text-xl font-bold text-zinc-50 shadow-lg transition-all hover:bg-[#1d3b59] active:scale-95"
+                  className="w-full transform rounded-2xl border border-sky-400/10 bg-[#f97316]/90 py-7 text-xl font-bold text-white shadow-lg transition-all hover:bg-[#ea580c] active:scale-95"
                 >
                   LEADERBOARD
                 </Button>
@@ -250,7 +250,7 @@ export default function Home() {
                 />
               </div>
               <DogSubmissionModal
-                className="mt-2 flex w-full transform items-center justify-center gap-2 rounded-xl border border-[#4c6c8a]/50 bg-[#2d4c6a] py-4 text-lg font-medium text-zinc-100 shadow-lg transition-all hover:bg-[#1d3b59] active:scale-95"
+                className="mt-2 flex w-full transform items-center justify-center gap-2 rounded-xl border border-sky-400/10 bg-[#f97316]/90 py-4 text-lg font-medium text-white shadow-lg transition-all hover:bg-[#ea580c] active:scale-95"
                 variant="default"
               />
             </div>
@@ -307,7 +307,7 @@ export default function Home() {
             opacity: 0;
           }
           10% {
-            opacity: 0.8;
+            opacity: 0.6;
           }
           100% {
             transform: translateY(100vh) rotate(360deg) translateX(${Math.random() * 200 - 100}px);
@@ -315,12 +315,12 @@ export default function Home() {
           }
         }
         @keyframes aurora {
-          0% { opacity: 0.3; }
-          50% { opacity: 0.5; }
-          100% { opacity: 0.3; }
+          0% { opacity: 0.1; }
+          50% { opacity: 0.2; }
+          100% { opacity: 0.1; }
         }
         .animate-aurora {
-          animation: aurora 8s ease-in-out infinite;
+          animation: aurora 12s ease-in-out infinite;
         }
       `}</style>
     </div>

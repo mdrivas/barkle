@@ -26,23 +26,23 @@ export function NavigationBar() {
   ] satisfies NavItem[];
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-zinc-600/20 bg-gradient-to-br from-[#1e2c3d] to-[#141c2a]">
+    <nav className="sticky top-0 z-50 w-full border-b border-sky-400/10 bg-gradient-to-br from-[#0284c7]/90 to-[#0369a1]/90">
       <div className="mx-auto max-w-7xl">
-        <div className="flex w-full justify-end gap-2 px-3 py-1.5 text-[10px] text-zinc-300 [&>*]:transition-colors [&>*]:hover:text-zinc-100">
+        <div className="flex w-full justify-end gap-2 px-3 py-1.5 text-[10px] text-white/80 [&>*]:transition-colors [&>*]:hover:text-white">
           {isAdmin ? (
             <>
-              <Link href="/" className="text-[10px] font-normal text-zinc-300 hover:text-zinc-100">
+              <Link href="/" className="text-[10px] font-normal text-white/90 hover:text-white">
                 Home
               </Link>
-              <span className="text-zinc-600">|</span>
-              <Link href="/admin" className="text-[10px] font-normal text-zinc-300 hover:text-zinc-100">
+              <span className="text-sky-200/50">|</span>
+              <Link href="/admin" className="text-[10px] font-normal text-white/90 hover:text-white">
                 Admin
               </Link>
-              <span className="text-zinc-600">|</span>
-              <Link href="/preview" className="text-[10px] font-normal text-zinc-300 hover:text-zinc-100">
+              <span className="text-sky-200/50">|</span>
+              <Link href="/preview" className="text-[10px] font-normal text-white/90 hover:text-white">
                 QR Code
               </Link>
-              <span className="text-zinc-600">|</span>
+              <span className="text-sky-200/50">|</span>
             </>
           ) : (
             <>
@@ -50,26 +50,26 @@ export function NavigationBar() {
                 href="https://www.instagram.com/barkledailyy" 
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-zinc-300 hover:text-zinc-100"
+                className="text-white/90 hover:text-white"
               >
                 <Instagram className="h-3 w-3" />
               </Link>
-              <span className="text-zinc-600">|</span>
+              <span className="text-sky-200/50">|</span>
               <Link 
                 href="https://www.tiktok.com/@barkleapp" 
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-zinc-300 hover:text-zinc-100"
+                className="text-white/90 hover:text-white"
               >
                 <TiktokIcon className="h-3 w-3" />
               </Link>
-              <span className="text-zinc-600">|</span>
+              <span className="text-sky-200/50">|</span>
             </>
           )}
           {navItems.map(({ Component }, index) => (
             <React.Fragment key={index}>
-              {index > 0 && <span className="text-zinc-600">|</span>}
-              <div className="[&>*]:!p-0 [&>*]:!text-[10px] [&>*]:!font-normal [&>*]:!text-zinc-300 [&>*:hover]:!text-zinc-100">
+              {index > 0 && <span className="text-sky-200/50">|</span>}
+              <div className="[&>*]:!p-0 [&>*]:!text-[10px] [&>*]:!font-normal [&>*]:!text-white/90 [&>*:hover]:!text-white">
                 <Component />
               </div>
             </React.Fragment>
