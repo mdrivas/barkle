@@ -90,7 +90,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="fixed inset-0 bg-gradient-to-b from-[#0284c7] to-[#0369a1]" />
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0369a1] to-[#075985]" />
       
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {(Array.from({ length: 20 }) as undefined[]).map((_, i) => (
@@ -105,12 +105,14 @@ export default function Home() {
               transform: 'translateZ(0)'
             }}
           >
-            {['🐕', '🏖️', '🌊', '🐾', '🏄‍♂️', '🐶', '🌴', '⛱️'][Math.floor(Math.random() * 8)]}
+            {['🐕', '🏖️', '🌊', '🐾', '🏄‍♂️', '🐶', '🌴', '⛱️', '🌺', '🍉', '🌞'][Math.floor(Math.random() * 11)]}
           </div>
         ))}
       </div>
       
       <div className="fixed inset-0 bg-gradient-to-t from-transparent via-sky-100/5 to-transparent animate-aurora pointer-events-none" />
+      
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(252,211,77,0.15),transparent_50%)] pointer-events-none" />
       
       <NavigationBar />
       <main
@@ -189,8 +191,9 @@ export default function Home() {
           <div className="flex w-full max-w-2xl flex-col items-center gap-4 px-4">
             <div className="absolute top-0 right-4 sm:right-8">
               <div className="flex flex-col items-end">
-                <div className="text-lg font-light tracking-widest text-sky-100/90">
-                  JUNE
+                <div className="text-lg font-light tracking-widest text-sky-100/90 relative">
+                  JULY
+                  <span className="absolute -right-6 top-0"></span>
                 </div>
                 <div className="text-4xl font-bold tracking-[0.2em] text-sky-100/40">
                   2025
@@ -224,7 +227,7 @@ export default function Home() {
                 🐾{" "}
                 {gamesCount === undefined
                   ? "..."
-                  : `${gamesCount + 0} ${gamesCount + 0 === 1 ? "Game" : "Games"}`}{" "}
+                  : `${gamesCount + 4} ${gamesCount + 4 === 1 ? "Game" : "Games"}`}{" "}
                 Played Today 🐾
               </p>
             </Card>
@@ -316,11 +319,11 @@ export default function Home() {
         }
         @keyframes aurora {
           0% { opacity: 0.1; }
-          50% { opacity: 0.2; }
+          50% { opacity: 0.3; }
           100% { opacity: 0.1; }
         }
         .animate-aurora {
-          animation: aurora 12s ease-in-out infinite;
+          animation: aurora 8s ease-in-out infinite;
         }
       `}</style>
     </div>

@@ -26,9 +26,9 @@ export function NavigationBar() {
   ] satisfies NavItem[];
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-sky-400/10 bg-gradient-to-br from-[#0284c7]/90 to-[#0369a1]/90">
+    <nav className="sticky top-0 z-50 w-full border-b border-sky-300/10 bg-gradient-to-br from-[#0369a1]/90 to-[#075985]/90 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl">
-        <div className="flex w-full justify-end gap-2 px-3 py-1.5 text-[10px] text-white/80 [&>*]:transition-colors [&>*]:hover:text-white">
+        <div className="flex w-full justify-end gap-2 px-3 py-1.5 text-[10px] text-white/90 [&>*]:transition-colors [&>*]:hover:text-white">
           {isAdmin ? (
             <>
               <Link href="/" className="text-[10px] font-normal text-white/90 hover:text-white">
