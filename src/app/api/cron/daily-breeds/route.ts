@@ -95,14 +95,15 @@ async function generateDailyBreeds() {
   console.log("\n=== Breed Selection Debug ===");
   console.log("Target date:", targetDate);
 
-  // Get recently used breeds (look back at all historical entries)
+  // Get recent breeds (last 30 days) to track frequency
   const recentBreeds = await db.query.dailyBreeds.findMany({
     orderBy: (breeds) => [desc(breeds.date)],
+    limit: 30,
   });
 
-  console.log("\nAll historical daily breeds entries:", recentBreeds.map(b => b.date));
+  console.log("\nRecent daily breeds entries:", recentBreeds.map(b => b.date));
 
-  // Get breed usage frequency from recent history
+  // Get breed usage frequency from recent history only
   const breedFrequency = new Map<string, number>();
   recentBreeds.forEach(day => {
     const breeds = JSON.parse(day.breeds) as DogBreed[];
@@ -112,29 +113,16 @@ async function generateDailyBreeds() {
     });
   });
 
-  // Create set of all historically used breeds
-  const historicallyUsedBreeds = new Set<string>();
-  recentBreeds.forEach(day => {
-    const breeds = JSON.parse(day.breeds) as DogBreed[];
-    breeds.forEach(breed => historicallyUsedBreeds.add(breed.breed.toLowerCase()));
-  });
+  // Filter out 'mix' and sort by frequency (least used first)
+  const sortedBreeds = allBreeds
+    .filter(breed => breed !== 'mix')
+    .sort((a, b) => {
+      const freqA = breedFrequency.get(a.toLowerCase()) ?? 0;
+      const freqB = breedFrequency.get(b.toLowerCase()) ?? 0;
+      return freqA - freqB;
+    });
 
-  // Filter out 'mix' and get completely unused breeds
-  const validBreeds = allBreeds.filter(breed => 
-    breed !== 'mix' && !historicallyUsedBreeds.has(breed.toLowerCase())
-  );
-
-  // If we've used all breeds, reset the pool
-  const breedPool = validBreeds.length > 0 ? validBreeds : allBreeds.filter(breed => breed !== 'mix');
-
-  // Sort breeds by frequency (least used first)
-  const sortedBreeds = breedPool.sort((a, b) => {
-    const freqA = breedFrequency.get(a.toLowerCase()) ?? 0;
-    const freqB = breedFrequency.get(b.toLowerCase()) ?? 0;
-    return freqA - freqB;
-  });
-
-  console.log("\nBreed frequency distribution:");
+  console.log("\nBreed frequency distribution (last 30 days):");
   sortedBreeds.slice(0, 10).forEach(breed => {
     console.log(`${breed}: ${breedFrequency.get(breed.toLowerCase()) ?? 0} uses`);
   });
@@ -145,27 +133,18 @@ async function generateDailyBreeds() {
 
   console.log("\nStarting breed selection...");
 
-  // Select breeds, prioritizing unused ones
+  // Select 4 unique breeds, prioritizing least recently used
   while (selectedBreeds.length < 4) {
-    // First try completely unused breeds
-    const unusedBreeds = sortedBreeds.filter(breed => 
-      !usedBreeds.has(breed) && !breedFrequency.has(breed.toLowerCase())
-    );
-    
-    // If no unused breeds, use least frequently used breeds
-    const breedPool = unusedBreeds.length > 0 ? unusedBreeds : sortedBreeds.filter(breed => !usedBreeds.has(breed));
-    
-    if (breedPool.length === 0) {
-      console.log("\nNo more available breeds, using any breed");
-      breedPool.push(...sortedBreeds);
-    }
+    // Get breeds not yet used today
+    const availableBreeds = sortedBreeds.filter(breed => !usedBreeds.has(breed));
 
-    const breed = breedPool[Math.floor(rng() * breedPool.length)];
-    
-    if (!usedBreeds.has(breed!) && breed) {
+    // Pick from available breeds (sorted by frequency, so picks least used first)
+    const breed = availableBreeds[Math.floor(rng() * availableBreeds.length)];
+
+    if (breed) {
       console.log(`\nSelected breed: ${breed}`);
-      console.log(`Previous uses: ${breedFrequency.get(breed.toLowerCase()) ?? 0}`);
-      
+      console.log(`Uses in last 30 days: ${breedFrequency.get(breed.toLowerCase()) ?? 0}`);
+
       const imageResponse = await fetch(
         `https://dog.ceo/api/breed/${breed}/images/random`,
       );
