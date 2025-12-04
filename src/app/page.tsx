@@ -38,6 +38,40 @@ export default function Home() {
   const [showMonthlyIntro, setShowMonthlyIntro] = useState(false);
   const [showEndOfMonth, setShowEndOfMonth] = useState(false);
   const [showLevelSystem, setShowLevelSystem] = useState(false);
+  const [showCreatorNote, setShowCreatorNote] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+  const submitFeedback = api.feedback.submit.useMutation({
+    onSuccess: () => {
+      setFeedbackSubmitted(true);
+      setFeedbackText("");
+    },
+  });
+
+  useEffect(() => {
+    const hasSeenCreatorNote = localStorage.getItem("barkle_seen_creator_note_dec2025");
+    if (!hasSeenCreatorNote) {
+      setShowCreatorNote(true);
+    }
+  }, []);
+
+  const dismissCreatorNote = () => {
+    localStorage.setItem("barkle_seen_creator_note_dec2025", "true");
+    setShowCreatorNote(false);
+    setFeedbackSubmitted(false);
+    setFeedbackText("");
+  };
+
+  const handleSubmitFeedback = () => {
+    if (feedbackText.trim()) {
+      submitFeedback.mutate({
+        message: feedbackText,
+        userId: session?.user?.id,
+        tempId: tempId,
+      });
+    }
+  };
 
   useEffect(() => {
     const storedTempId = localStorage.getItem("barkle_temp_id");   
@@ -302,6 +336,75 @@ export default function Home() {
         open={showLevelSystem}
         onOpenChange={setShowLevelSystem}
       />
+
+      <Dialog open={showCreatorNote} onOpenChange={setShowCreatorNote}>
+        <DialogContent className="border-sky-800/50 bg-gradient-to-br from-sky-950 to-zinc-950 p-6 sm:p-8">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-zinc-50">
+              Hey from the creator!
+            </DialogTitle>
+          </DialogHeader>
+          {feedbackSubmitted ? (
+            <div className="mt-2 space-y-4 text-center">
+              <p className="text-lg text-emerald-400">Thanks for the feedback!</p>
+              <p className="text-sm text-zinc-400">I&apos;ll check it out when I get a chance.</p>
+              <Button
+                onClick={dismissCreatorNote}
+                className="mt-4 bg-sky-600 hover:bg-sky-700 text-white"
+              >
+                Close
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="mt-2 space-y-3 text-sm sm:text-base text-zinc-300">
+                <p>
+                  Super cool to see a few of you still playing every day! I&apos;ve been busy with other projects lately, but I love that Barkle still has its loyal pup fans.
+                </p>
+                <p>
+                  Got any feature requests or things you&apos;d like to see? Drop a note below!
+                </p>
+                <p className="text-zinc-500 text-sm">
+                  - Matt
+                </p>
+              </div>
+              <textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Any suggestions or requests? (optional)"
+                className="mt-3 w-full rounded-lg border border-zinc-700 bg-zinc-900/50 p-3 text-sm text-zinc-200 placeholder-zinc-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                rows={3}
+                maxLength={500}
+              />
+              <div className="mt-4 flex gap-3">
+                {feedbackText.trim() ? (
+                  <Button
+                    onClick={handleSubmitFeedback}
+                    disabled={submitFeedback.isPending}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {submitFeedback.isPending ? "Sending..." : "Send Feedback"}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={dismissCreatorNote}
+                    className="flex-1 bg-sky-600 hover:bg-sky-700 text-white"
+                  >
+                    Got it!
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={dismissCreatorNote}
+                  className="border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                >
+                  Later
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <style jsx global>{`
         @keyframes float {
