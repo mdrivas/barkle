@@ -90,7 +90,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="fixed inset-0 bg-gradient-to-b from-[#92400e] to-[#78350f]" />
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0369a1] to-[#075985]" />
 
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {(Array.from({ length: 20 }) as undefined[]).map((_, i) => (
@@ -105,14 +105,14 @@ export default function Home() {
               transform: 'translateZ(0)'
             }}
           >
-            {['🐕', '🍂', '🍁', '🐾', '🎃', '🐶', '🍄', '🌰', '🦃', '🌾', '🧡'][Math.floor(Math.random() * 11)]}
+            {['🐕', '❄️', '🎄', '🐾', '⛄', '🐶', '🎁', '🌟', '☃️', '🎅', '💙'][Math.floor(Math.random() * 11)]}
           </div>
         ))}
       </div>
 
-      <div className="fixed inset-0 bg-gradient-to-t from-transparent via-orange-100/5 to-transparent animate-aurora pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-t from-transparent via-sky-100/5 to-transparent animate-aurora pointer-events-none" />
 
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(251,146,60,0.15),transparent_50%)] pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(56,189,248,0.15),transparent_50%)] pointer-events-none" />
       
       <NavigationBar />
       <main
@@ -191,11 +191,11 @@ export default function Home() {
           <div className="flex w-full max-w-2xl flex-col items-center gap-4 px-4">
             <div className="absolute top-0 right-4 sm:right-8">
               <div className="flex flex-col items-end">
-                <div className="text-lg font-light tracking-widest text-orange-100/90 relative">
-                  OCTOBER
+                <div className="text-lg font-light tracking-widest text-sky-100/90 relative">
+                  DECEMBER
                   <span className="absolute -right-6 top-0"></span>
                 </div>
-                <div className="text-4xl font-bold tracking-[0.2em] text-orange-100/40">
+                <div className="text-4xl font-bold tracking-[0.2em] text-sky-100/40">
                   2025
                 </div>
               </div>
@@ -222,7 +222,7 @@ export default function Home() {
               of pups every day!
             </p>
 
-            <Card className="mt-4 rounded-full backdrop-blur-md bg-amber-900/10 border border-orange-200/10 px-6 py-2 text-sm text-white/90 shadow-xl">
+            <Card className="mt-4 rounded-full backdrop-blur-md bg-sky-900/10 border border-sky-200/10 px-6 py-2 text-sm text-white/90 shadow-xl">
               <p className="font-medium">
                 🐾{" "}
                 {gamesCount === undefined
@@ -237,7 +237,7 @@ export default function Home() {
                 <GameModeModal />
                 <Button
                   onClick={() => setShowLeaderboard(true)}
-                  className="w-full transform rounded-2xl border border-orange-400/10 bg-[#c2410c]/90 py-7 text-xl font-bold text-white shadow-lg transition-all hover:bg-[#9a3412] active:scale-95"
+                  className="w-full transform rounded-2xl border border-sky-400/10 bg-[#0369a1]/90 py-7 text-xl font-bold text-white shadow-lg transition-all hover:bg-[#075985] active:scale-95"
                 >
                   LEADERBOARD
                 </Button>
@@ -253,7 +253,7 @@ export default function Home() {
                 />
               </div>
               <DogSubmissionModal
-                className="mt-2 flex w-full transform items-center justify-center gap-2 rounded-xl border border-orange-400/10 bg-[#c2410c]/90 py-4 text-lg font-medium text-white shadow-lg transition-all hover:bg-[#9a3412] active:scale-95"
+                className="mt-2 flex w-full transform items-center justify-center gap-2 rounded-xl border border-sky-400/10 bg-[#0369a1]/90 py-4 text-lg font-medium text-white shadow-lg transition-all hover:bg-[#075985] active:scale-95"
                 variant="default"
               />
             </div>
