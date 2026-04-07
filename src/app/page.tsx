@@ -49,12 +49,12 @@ export default function Home() {
     },
   });
 
-  useEffect(() => {
-    const hasSeenCreatorNote = localStorage.getItem("barkle_seen_creator_note_dec2025");
-    if (!hasSeenCreatorNote) {
-      setShowCreatorNote(true);
-    }
-  }, []);
+  // useEffect(() => {
+  //   const hasSeenCreatorNote = localStorage.getItem("barkle_seen_creator_note_dec2025");
+  //   if (!hasSeenCreatorNote) {
+  //     setShowCreatorNote(true);
+  //   }
+  // }, []);
 
   const dismissCreatorNote = () => {
     localStorage.setItem("barkle_seen_creator_note_dec2025", "true");
