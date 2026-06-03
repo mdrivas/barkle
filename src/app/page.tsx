@@ -226,7 +226,7 @@ export default function Home() {
             <div className="absolute top-0 right-4 sm:right-8">
               <div className="flex flex-col items-end">
                 <div className="text-lg font-light tracking-widest text-sky-100/90 relative">
-                  APRIL
+                  JUNE
                   <span className="absolute -right-6 top-0"></span>
                 </div>
                 <div className="text-4xl font-bold tracking-[0.2em] text-sky-100/40">
