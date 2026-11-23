@@ -4,16 +4,73 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
 import Link from "next/link";
-import { PawPrintIcon } from "lucide-react";
+import {
+  ArrowUpDown,
+  CalendarDays,
+  ChevronRight,
+  MessagesSquare,
+  Target,
+  type LucideIcon,
+} from "lucide-react";
+import { instrumentSerif } from "~/lib/fonts";
 
 const defaultTriggerClass =
   "w-full transform rounded-2xl border border-green-600/20 bg-[#58A84D] py-7 text-xl font-bold text-white shadow-lg transition-all hover:bg-[#4A9341] active:scale-95";
+
+interface GameMode {
+  href: string;
+  title: string;
+  description: string;
+  Icon: LucideIcon;
+  /** Icon/badge color and its light tint (Fresh Snow palette). */
+  color: string;
+  tint: string;
+  isNew?: boolean;
+}
+
+const gameModes: GameMode[] = [
+  {
+    href: "/daily",
+    title: "Today's Barkle",
+    description: "5 chances to guess today's dog breeds",
+    Icon: CalendarDays,
+    color: "#2f7d32",
+    tint: "#e8f3e8",
+  },
+  {
+    href: "/pawsts",
+    title: "Pup Posts",
+    description: "Share your dog stories, photos, and get advice from our community",
+    Icon: MessagesSquare,
+    color: "#1f3b5c",
+    tint: "#e6edf5",
+    isNew: true,
+  },
+  {
+    href: "/pawsistence",
+    title: "Pawsistence",
+    description: "Keep playing until you miss! How far can you go?",
+    Icon: Target,
+    color: "#b45309",
+    tint: "#fdf0e1",
+  },
+  {
+    href: "/pawpulation",
+    title: "Pawpulation",
+    description: "Higher or lower? Test your knowledge of global breed populations!",
+    Icon: ArrowUpDown,
+    color: "#5b52e0",
+    tint: "#eeedff",
+    isNew: true,
+  },
+];
 
 export function GameModeModal({ className = defaultTriggerClass }: { className?: string }) {
   const [open, setOpen] = useState(false);
@@ -21,92 +78,56 @@ export function GameModeModal({ className = defaultTriggerClass }: { className?:
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className={className}>
-          PLAY
-        </Button>
+        <Button className={className}>PLAY</Button>
       </DialogTrigger>
-      <DialogContent className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-950/95 text-zinc-50 sm:w-full sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold">
+      <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] gap-5 overflow-y-auto rounded-[28px] border-2 border-[#e6eaef] bg-[#f5f7f9] p-5 text-[#1a1d24] shadow-[0_30px_60px_-30px_rgba(31,59,92,0.45)] sm:max-w-[460px] sm:rounded-[28px] sm:p-7">
+        <DialogHeader className="space-y-1 text-left">
+          <DialogTitle
+            className={`${instrumentSerif.className} text-[40px] font-normal leading-none tracking-[-0.01em]`}
+          >
             Choose Game Mode
           </DialogTitle>
+          <DialogDescription className="text-sm text-[#4a5465]">
+            Pick how you want to play today.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-4 sm:px-6">
-          <Link href="/daily" className="block">
-            <div className="group relative rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all hover:bg-zinc-800/50">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-lg font-bold text-emerald-400 group-hover:text-emerald-300">
-                  Today&apos;s Barkle
+        <ul className="flex flex-col gap-3">
+          {gameModes.map(({ href, title, description, Icon, color, tint, isNew }) => (
+            <li key={href}>
+              <Link
+                href={href}
+                onClick={() => setOpen(false)}
+                className="group flex items-center gap-4 rounded-[18px] border-2 border-[#dfe4ea] bg-white p-4 shadow-[0_3px_0_#dfe4ea] transition-all hover:border-[#c9d1da] hover:shadow-[0_3px_0_#c9d1da] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f3b5c] focus-visible:ring-offset-2 active:translate-y-[3px] active:shadow-none"
+              >
+                <span
+                  className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[14px]"
+                  style={{ backgroundColor: tint, color }}
+                >
+                  <Icon className="h-6 w-6" aria-hidden="true" />
                 </span>
-                <span className="ml-2 flex-shrink-0 text-2xl">🐕</span>
-              </div>
-              <p className="text-sm text-zinc-400 group-hover:text-zinc-300">
-                5 chances to guess today&apos;s dog breeds
-              </p>
-              <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-emerald-500/0 via-emerald-500/50 to-emerald-500/0 transition-transform group-hover:translate-x-1" />
-            </div>
-          </Link>
-
-          {/* Pup Posts - Moved to second position and added NEW badge */}
-          <Link href="/pawsts" className="block">
-            <div className="group relative rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all hover:bg-zinc-800/50">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-lg font-bold text-blue-400 group-hover:text-blue-300">
-                  Pup Posts
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-blue-300 border border-blue-500/20">
-                    NEW
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex items-center gap-2">
+                    <span className="text-base font-semibold">{title}</span>
+                    {isNew && (
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider"
+                        style={{ backgroundColor: tint, color }}
+                      >
+                        NEW
+                      </span>
+                    )}
                   </span>
-                  <span className="flex-shrink-0 text-2xl">🐾</span>
-                </div>
-              </div>
-              <p className="text-sm text-zinc-400 group-hover:text-zinc-300">
-                Share your dog stories, photos, and get advice from our community
-              </p>
-              <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-blue-500/0 via-blue-500/50 to-blue-500/0 transition-transform group-hover:translate-x-1" />
-            </div>
-          </Link>
-
-          {/* Pawsistence Mode */}
-          <Link href="/pawsistence" className="block">
-            <div className="group relative rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all hover:bg-zinc-800/50">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="mr-2 truncate text-lg font-bold text-orange-400 group-hover:text-orange-300">
-                  Pawsistence
+                  <span className="text-sm leading-snug text-[#4a5465]">{description}</span>
                 </span>
-                <span className="flex-shrink-0 text-2xl">🎯</span>
-              </div>
-              <p className="text-sm text-zinc-400 group-hover:text-zinc-300">
-                Keep playing until you miss! How far can you go?
-              </p>
-              <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-orange-500/0 via-orange-500/50 to-orange-500/0 transition-transform group-hover:translate-x-1" />
-            </div>
-          </Link>
-
-          {/* Pawpulation Mode */}
-          <Link href="/pawpulation" className="block">
-            <div className="group relative rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all hover:bg-zinc-800/50">
-              <div className="relative mb-3 flex items-center justify-between">
-                <span className="mr-2 truncate text-lg font-bold text-purple-400 group-hover:text-purple-300">
-                  Pawpulation
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-purple-300 border border-purple-500/20">
-                    NEW
-                  </span>
-                  <span className="flex-shrink-0 text-2xl">🎲</span>
-                </div>
-              </div>
-              <p className="text-sm text-zinc-400 group-hover:text-zinc-300">
-                Higher or lower? Test your knowledge of global breed populations!
-              </p>
-              <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-purple-500/0 via-purple-500/50 to-purple-500/0 transition-transform group-hover:translate-x-1" />
-            </div>
-          </Link>
-
-        </div>
+                <ChevronRight
+                  className="h-5 w-5 flex-shrink-0 text-[#5f6b7d] transition-transform group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </Link>
+            </li>
+          ))}
+        </ul>
       </DialogContent>
     </Dialog>
   );

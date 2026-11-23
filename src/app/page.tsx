@@ -11,7 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { GameModeModal } from "./components/GameModeModal";
 import { useSession } from "next-auth/react";
-import { Instrument_Serif } from "next/font/google";
+import { instrumentSerif } from "~/lib/fonts";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DogSubmissionModal } from "./components/DogSubmissionModal";
@@ -24,11 +24,7 @@ import { DogAvatar } from "~/components/DogAvatar/DogAvatar";
 import { useSignIn } from "~/hooks/useSignIn";
 import { LevelSystemModal } from "./components/LevelSystemModal";
 
-const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-});
+
 
 export default function Home() {
   const { data: session } = useSession();
