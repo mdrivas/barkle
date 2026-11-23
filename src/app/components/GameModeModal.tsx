@@ -12,13 +12,16 @@ import { Button } from "~/components/ui/button";
 import Link from "next/link";
 import { PawPrintIcon } from "lucide-react";
 
-export function GameModeModal() {
+const defaultTriggerClass =
+  "w-full transform rounded-2xl border border-green-600/20 bg-[#58A84D] py-7 text-xl font-bold text-white shadow-lg transition-all hover:bg-[#4A9341] active:scale-95";
+
+export function GameModeModal({ className = defaultTriggerClass }: { className?: string }) {
   const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full transform rounded-2xl border border-green-600/20 bg-[#58A84D] py-7 text-xl font-bold text-white shadow-lg transition-all hover:bg-[#4A9341] active:scale-95">
+        <Button className={className}>
           PLAY
         </Button>
       </DialogTrigger>

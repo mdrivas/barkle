@@ -1,15 +1,17 @@
 "use client";
 
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
-import { NavigationBar } from "./components/NavigationBar";
+import { Terms } from "./components/Terms";
+import { FAQSheet } from "./components/FAQSheet";
+import { FeedbackSheet } from "./components/FeedbackSheet";
+import { Instagram, TiktokIcon } from "./components/icons";
 import { getCurrentMonthYear } from "~/lib/dates";
 import { LeaderboardModal } from "./components/LeaderboardModal";
 import Image from "next/image";
 import Link from "next/link";
 import { GameModeModal } from "./components/GameModeModal";
 import { useSession } from "next-auth/react";
-import { Roboto } from "next/font/google";
+import { Instrument_Serif } from "next/font/google";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DogSubmissionModal } from "./components/DogSubmissionModal";
@@ -22,10 +24,10 @@ import { DogAvatar } from "~/components/DogAvatar/DogAvatar";
 import { useSignIn } from "~/hooks/useSignIn";
 import { LevelSystemModal } from "./components/LevelSystemModal";
 
-const roboto = Roboto({
+const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-roboto",
+  weight: "400",
+  style: ["normal", "italic"],
 });
 
 export default function Home() {
@@ -124,175 +126,162 @@ export default function Home() {
   }, []);
 
   const { month: currentMonth, year: currentYear } = getCurrentMonthYear();
+  const { data: isAdmin } = api.profile.isAdmin.useQuery(undefined, {
+    enabled: !!session?.user,
+  });
+
+  const gamesToday = gamesCount === undefined ? undefined : gamesCount + 4;
+  const gamesLabel =
+    gamesToday === undefined
+      ? "… games played today"
+      : `${gamesToday} ${gamesToday === 1 ? "game" : "games"} played today`;
 
   return (
-    <div className="relative min-h-screen">
-      <div className="fixed inset-0 bg-gradient-to-b from-[#27446b] to-[#141f36]" />
+    <div className="relative min-h-screen text-[#1a1d24]">
+      <div
+        aria-hidden="true"
+        className="fixed inset-0 bg-[#f5f7f9] bg-[radial-gradient(rgba(31,59,92,0.09)_1.5px,transparent_1.5px)] [background-size:24px_24px] sm:[background-size:28px_28px]"
+      />
 
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {(Array.from({ length: 20 }) as undefined[]).map((_, i) => (
-          <div
-            key={i}
-            className="absolute text-white/40"
-            style={{
-              left: `${Math.random() * 100}%`,
-              animation: `float ${Math.random() * 3 + 8}s linear infinite`,
-              animationDelay: `${Math.random() * 5}s`,
-              fontSize: `${Math.random() * 15 + 15}px`,
-              transform: 'translateZ(0)'
-            }}
-          >
-            {['🐕', '❄️', '🐾', '⛄', '🐶', '🧣', '🌨️', '🧤', '☕', '🏔️', '🤍'][Math.floor(Math.random() * 11)]}
-          </div>
-        ))}
-      </div>
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-5">
+        <Link href="/" className="flex items-center gap-2 sm:gap-2.5">
+          <Image
+            src="/barklelogo-tight.png"
+            alt=""
+            width={36}
+            height={36}
+            className="h-8 w-8 rounded-full object-cover sm:h-9 sm:w-9"
+          />
+          <span className="text-base font-semibold sm:text-[17px]">Barkle</span>
+        </Link>
 
-      <div className="fixed inset-0 bg-gradient-to-t from-transparent via-cyan-100/5 to-transparent animate-aurora pointer-events-none" />
+        <div className="flex items-center gap-2 sm:gap-6">
+          <SiteLinks isAdmin={!!isAdmin} className="hidden sm:flex" />
 
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(165,243,252,0.12),transparent_50%)] pointer-events-none" />
-      
-      <NavigationBar />
-      <main
-        className={`relative flex flex-col items-center font-sans text-zinc-50 ${roboto.variable}`}
-      >
-        <div className="fixed bottom-0 w-full h-20 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
-        <div className="relative w-full max-w-4xl px-4 py-2 z-10">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                {session?.user ? (
-                  <Button
-                    onClick={() => setShowLevelSystem(true)}
-                    variant="ghost"
-                    className="flex items-center gap-1 text-sm text-yellow-500/80 hover:text-yellow-400"
-                  >
-                    <span className="text-xl">🎖️</span>
-                    My Level
-                  </Button>
-                ) : (
-                  tempProfile?.username && (
-                    <span className="text-sm font-medium text-emerald-400">
-                      Playing as: <span className="text-emerald-300">{tempProfile.username}</span>
-                    </span>
-                  )
-                )}
-              </div>
-              
-              {session?.user ? (
-                <Link href="/account">
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-2 text-base text-zinc-400 hover:text-zinc-200"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-medium">
-                        {userProfile?.username ?? "Loading..."}
-                      </span>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
-                        <DogAvatar 
-                          size="sm"
-                          imageUrl={userProfile?.profileImageUrl}
-                        />
-                      </div>
-                    </div>
-                  </Button>
-                </Link>
-              ) : (
-                <Button
-                  onClick={handleSignIn}
-                  variant="ghost"
-                  className="flex items-center gap-2 py-1 text-sm font-medium text-zinc-400 hover:text-zinc-200 -ml-4 sm:-ml-4"
-                >
-                  Sign in with Google
-                </Button>
-              )}
+          {session?.user ? (
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Button
+                onClick={() => setShowLevelSystem(true)}
+                variant="ghost"
+                className="h-11 gap-1.5 rounded-[14px] px-3 text-sm font-semibold text-[#1f3b5c] hover:bg-white hover:text-[#1a1d24]"
+              >
+                <span aria-hidden="true">🎖️</span>
+                My Level
+              </Button>
+              <Link
+                href="/account"
+                aria-label="Your account"
+                className="flex h-11 items-center gap-2 rounded-[14px] border-2 border-[#dfe4ea] bg-white pl-1 pr-1 shadow-[0_3px_0_#dfe4ea] sm:pl-3"
+              >
+                <span className="hidden text-sm font-semibold sm:inline">
+                  {userProfile?.username ?? "Loading..."}
+                </span>
+                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#eef1f4]">
+                  <DogAvatar size="sm" imageUrl={userProfile?.profileImageUrl} />
+                </span>
+              </Link>
             </div>
+          ) : (
+            <Button
+              onClick={handleSignIn}
+              className="h-11 rounded-[14px] border-2 border-[#dfe4ea] bg-white px-4 text-sm font-semibold text-[#1a1d24] shadow-[0_3px_0_#dfe4ea] hover:bg-[#f8fafb] active:translate-y-[3px] active:shadow-none"
+            >
+              Sign in with Google
+            </Button>
+          )}
+        </div>
+      </header>
 
-            {/* Remove the entire block for non-signed in users */}
-            {/* {!session?.user && (
-              <div className="flex justify-end">
-                <Button
-                  onClick={() => setShowAchievements(true)}
-                  variant="ghost"
-                  className="flex items-center gap-1 py-1 text-xs text-amber-500/80 hover:text-amber-400"
-                >
-                  <TrophyIcon className="h-4 w-4" />
-                  Achievements
-                </Button>
-              </div>
-            )} */}
+      <main className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 px-5 pb-8 pt-2 sm:px-8 lg:grid-cols-2 lg:gap-16 lg:px-24 lg:pt-12">
+        <div className="flex flex-col gap-4 lg:gap-6">
+          <div className="flex items-end justify-between gap-4">
+            <div className="flex flex-col gap-2 lg:gap-5">
+              <p
+                className="text-xs font-semibold tracking-[0.18em] text-[#1f3b5c] sm:text-[13px]"
+                suppressHydrationWarning
+              >
+                {currentMonth} {currentYear}
+              </p>
+              <h1
+                className={`${instrumentSerif.className} text-[76px] font-normal leading-[0.9] tracking-[-0.02em] lg:text-[120px]`}
+              >
+                Barkle<span className="italic text-[#2f7d32]">.</span>
+              </h1>
+            </div>
+            <Image
+              src="/barklelogo-tight.png"
+              alt="Barkle logo"
+              width={96}
+              height={96}
+              priority
+              className="h-24 w-24 rounded-full border-4 border-white object-cover shadow-[0_10px_24px_-14px_rgba(31,59,92,0.5)] lg:hidden"
+            />
+          </div>
+
+          <p className="max-w-[420px] text-base leading-relaxed text-[#4a5465] lg:text-[19px]">
+            5 chances to guess different dog breeds from their photos. A new set
+            of pups every day!
+          </p>
+
+          <div className="flex items-center justify-between rounded-[18px] border-2 border-[#e6eaef] bg-white px-4 py-3.5 lg:hidden">
+            <span className="text-sm font-semibold">{gamesLabel}</span>
+            <ChanceDots size="sm" />
+          </div>
+
+          {!session?.user && tempProfile?.username && (
+            <p className="text-sm text-[#4a5465]">
+              Playing as{" "}
+              <span className="font-semibold text-[#2f7d32]">{tempProfile.username}</span>
+            </p>
+          )}
+
+          <div className="mt-1 flex w-full max-w-[460px] flex-col gap-3 lg:mt-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <GameModeModal className="h-[60px] w-full rounded-2xl border-0 bg-[#2f7d32] text-lg font-bold tracking-[0.08em] text-white shadow-[0_4px_0_#1f5a22] transition-all hover:bg-[#2a7030] active:translate-y-1 active:shadow-none" />
+              <Button
+                onClick={() => setShowLeaderboard(true)}
+                className="h-[60px] w-full rounded-2xl border-0 bg-[#1f3b5c] text-lg font-bold tracking-[0.08em] text-white shadow-[0_4px_0_#122539] transition-all hover:bg-[#1a3350] active:translate-y-1 active:shadow-none"
+              >
+                LEADERBOARD
+              </Button>
+              <LeaderboardModal
+                open={showLeaderboard}
+                onOpenChange={setShowLeaderboard}
+                defaultMode="daily"
+                showMonthlyIntro={showMonthlyIntro}
+                onMonthlyIntroClose={() => {
+                  setShowMonthlyIntro(false);
+                  setShowLeaderboard(true);
+                }}
+              />
+            </div>
+            <DogSubmissionModal
+              className="h-[50px] w-full rounded-[14px] border-2 border-[#dfe4ea] bg-white text-[15px] font-semibold text-[#1a1d24] shadow-[0_3px_0_#dfe4ea] transition-all hover:bg-[#f8fafb] active:translate-y-[3px] active:shadow-none"
+              variant="default"
+            />
           </div>
         </div>
 
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
-          <div className="flex w-full max-w-2xl flex-col items-center gap-4 px-4">
-            <div className="absolute top-0 right-4 sm:right-8">
-              <div className="flex flex-col items-end">
-                <div className="text-lg font-light tracking-widest text-cyan-100/90 relative" suppressHydrationWarning>
-                  {currentMonth}
-                  <span className="absolute -right-6 top-0"></span>
-                </div>
-                <div className="text-4xl font-bold tracking-[0.2em] text-cyan-100/40" suppressHydrationWarning>
-                  {currentYear}
-                </div>
+        <div className="hidden justify-center lg:flex">
+          <div className="flex w-[420px] flex-col items-center gap-6 rounded-[32px] border-2 border-[#e6eaef] bg-white p-9 shadow-[0_30px_60px_-36px_rgba(31,59,92,0.35)]">
+            <Image
+              src="/barklelogo-tight.png"
+              alt="Barkle logo"
+              width={260}
+              height={260}
+              priority
+              className="h-[260px] w-[260px] rounded-full object-cover"
+            />
+            <div className="h-0.5 w-full bg-[#eef1f4]" />
+            <div className="flex w-full items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold tracking-[0.14em] text-[#5f6b7d]">TODAY</span>
+                <span className="text-[15px] font-semibold">
+                  <span className="text-[#2f7d32]">{gamesToday ?? "…"}</span>{" "}
+                  {gamesToday === 1 ? "game" : "games"} played
+                </span>
               </div>
-            </div>
-
-            <div className="relative aspect-square h-52 sm:h-72">
-              <Image
-                src="/barklelogo.png"
-                alt="Barkle Logo"
-                fill
-                priority
-                className="rounded-full object-cover"
-              />
-            </div>
-
-            <div className="relative">
-              <h1 className="font-roboto text-4xl font-bold tracking-[0.15em] text-zinc-50 sm:text-5xl">
-                BARKLE
-              </h1>
-            </div>
-
-            <p className="font-roboto max-w-[400px] px-6 text-center text-base text-zinc-300 sm:text-lg">
-              5 chances to guess different dog breeds from their photos. A new set
-              of pups every day!
-            </p>
-
-            <Card className="mt-4 rounded-full backdrop-blur-md bg-slate-900/20 border border-cyan-200/10 px-6 py-2 text-sm text-white/90 shadow-xl">
-              <p className="font-medium">
-                🐾{" "}
-                {gamesCount === undefined
-                  ? "..."
-                  : `${gamesCount + 4} ${gamesCount + 4 === 1 ? "Game" : "Games"}`}{" "}
-                Played Today 🐾
-              </p>
-            </Card>
-
-            <div className="mt-2 flex w-full max-w-lg flex-col items-center gap-2 px-4">
-              <div className="flex w-full gap-4">
-                <GameModeModal />
-                <Button
-                  onClick={() => setShowLeaderboard(true)}
-                  className="w-full transform rounded-2xl border border-cyan-200/15 bg-[#3a6ea5]/90 py-7 text-xl font-bold text-white shadow-lg transition-all hover:bg-[#2f5a88] active:scale-95"
-                >
-                  LEADERBOARD
-                </Button>
-                <LeaderboardModal
-                  open={showLeaderboard}
-                  onOpenChange={setShowLeaderboard}
-                  defaultMode="daily"
-                  showMonthlyIntro={showMonthlyIntro}
-                  onMonthlyIntroClose={() => {
-                    setShowMonthlyIntro(false);
-                    setShowLeaderboard(true);
-                  }}
-                />
-              </div>
-              <DogSubmissionModal
-                className="mt-2 flex w-full transform items-center justify-center gap-2 rounded-xl border border-cyan-200/15 bg-[#3a6ea5]/90 py-4 text-lg font-medium text-white shadow-lg transition-all hover:bg-[#2f5a88] active:scale-95"
-                variant="default"
-              />
+              <ChanceDots size="md" />
             </div>
           </div>
         </div>
@@ -301,11 +290,15 @@ export default function Home() {
           isOpen={showNewUserDialog}
           onClose={() => setShowNewUserDialog(false)}
         />
-        <FeatureAnnouncementModal 
-          open={showAchievements} 
+        <FeatureAnnouncementModal
+          open={showAchievements}
           onOpenChange={setShowAchievements}
         />
       </main>
+
+      <footer className="relative z-10 flex justify-center px-2 pb-6 sm:hidden">
+        <SiteLinks isAdmin={!!isAdmin} className="flex" />
+      </footer>
 
       <Dialog open={showEndOfMonth} onOpenChange={setShowEndOfMonth}>
         <DialogContent className="border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8 text-center">
@@ -432,6 +425,65 @@ export default function Home() {
           animation: aurora 8s ease-in-out infinite;
         }
       `}</style>
+    </div>
+  );
+}
+
+const siteLinkClass =
+  "flex h-11 items-center px-2 text-[13px] text-[#4a5465] transition-colors hover:text-[#1a1d24] sm:h-auto sm:px-0 sm:text-sm";
+
+function SiteLinks({ isAdmin, className = "" }: { isAdmin: boolean; className?: string }) {
+  return (
+    <nav aria-label="Site" className={`items-center sm:gap-6 ${className}`}>
+      {isAdmin && (
+        <>
+          <Link href="/admin" className={siteLinkClass}>
+            Admin
+          </Link>
+          <Link href="/preview" className={siteLinkClass}>
+            QR Code
+          </Link>
+        </>
+      )}
+      {[Terms, FAQSheet, FeedbackSheet].map((Component, i) => (
+        <div
+          key={i}
+          className="[&>button]:!flex [&>button]:!h-11 [&>button]:!items-center [&>button]:!px-2 [&>button]:!text-[13px] [&>button]:!font-normal [&>button]:!text-[#4a5465] [&>button:hover]:!text-[#1a1d24] sm:[&>button]:!h-auto sm:[&>button]:!px-0 sm:[&>button]:!text-sm"
+        >
+          <Component />
+        </div>
+      ))}
+      <div className="flex items-center sm:gap-1">
+        <a
+          href="https://www.instagram.com/barkledailyy"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Barkle on Instagram"
+          className="flex h-11 w-11 items-center justify-center text-[#4a5465] transition-colors hover:text-[#1a1d24] sm:h-10 sm:w-10"
+        >
+          <Instagram className="h-[18px] w-[18px]" />
+        </a>
+        <a
+          href="https://www.tiktok.com/@barkleapp"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Barkle on TikTok"
+          className="flex h-11 w-11 items-center justify-center text-[#4a5465] transition-colors hover:text-[#1a1d24] sm:h-10 sm:w-10"
+        >
+          <TiktokIcon className="h-[18px] w-[18px]" />
+        </a>
+      </div>
+    </nav>
+  );
+}
+
+function ChanceDots({ size }: { size: "sm" | "md" }) {
+  const dot = size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5";
+  return (
+    <div role="img" aria-label="5 chances" className={`flex ${size === "sm" ? "gap-[5px]" : "gap-1.5"}`}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span key={i} className={`${dot} rounded-full bg-[#1f3b5c]`} />
+      ))}
     </div>
   );
 }
