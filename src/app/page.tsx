@@ -3,6 +3,7 @@
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { NavigationBar } from "./components/NavigationBar";
+import { getCurrentMonthYear } from "~/lib/dates";
 import { LeaderboardModal } from "./components/LeaderboardModal";
 import Image from "next/image";
 import Link from "next/link";
@@ -122,6 +123,8 @@ export default function Home() {
     setShowMonthlyIntro(true);
   }, []);
 
+  const { month: currentMonth, year: currentYear } = getCurrentMonthYear();
+
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 bg-gradient-to-b from-[#27446b] to-[#141f36]" />
@@ -225,12 +228,12 @@ export default function Home() {
           <div className="flex w-full max-w-2xl flex-col items-center gap-4 px-4">
             <div className="absolute top-0 right-4 sm:right-8">
               <div className="flex flex-col items-end">
-                <div className="text-lg font-light tracking-widest text-cyan-100/90 relative">
-                  NOVEMBER
+                <div className="text-lg font-light tracking-widest text-cyan-100/90 relative" suppressHydrationWarning>
+                  {currentMonth}
                   <span className="absolute -right-6 top-0"></span>
                 </div>
-                <div className="text-4xl font-bold tracking-[0.2em] text-cyan-100/40">
-                  2026
+                <div className="text-4xl font-bold tracking-[0.2em] text-cyan-100/40" suppressHydrationWarning>
+                  {currentYear}
                 </div>
               </div>
             </div>

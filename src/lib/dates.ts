@@ -34,3 +34,12 @@ export function canPlayToday(lastPlayedAt: Date | null): boolean {
   // (this is handled by the playsToday count in the router)
   return true;
 }
+
+// Current month/year in Pacific time (the game's day boundary), e.g. { month: "NOVEMBER", year: "2026" }
+export function getCurrentMonthYear(now: Date = new Date()): { month: string; year: string } {
+  const opts = { timeZone: "America/Los_Angeles" } as const;
+  return {
+    month: now.toLocaleString("en-US", { ...opts, month: "long" }).toUpperCase(),
+    year: now.toLocaleString("en-US", { ...opts, year: "numeric" }),
+  };
+}
